@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -16,13 +16,16 @@ import {
   AlertCircle,
   ClipboardList,
   Printer,
+  Mail,
   MessageCircle,
   Trash2,
   Edit3,
+  CheckCircle2,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Notificacoes } from "@/components/Notificacoes";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -52,32 +55,6 @@ type Equip = {
   status: string | null;
   cl: string | null;
   cover_storage_path: string | null;
-};
-
-type ItemTacografo = {
-  id: string;
-  numero?: string;
-  veiculo_equipamento?: string;
-  equipamento?: string;
-  placa?: string;
-  data_vencimento?: string;
-  vencimento_tacografo?: string;
-  vencimento?: string;
-  afericao_taco?: string;
-};
-
-type ItemSeguro = {
-  id: string;
-  equipamento?: string;
-  numero?: string;
-  veiculo_equipamento?: string;
-  seguradora?: string;
-  empresa?: string;
-  data_vencimento?: string;
-  vencimento?: string;
-  vencimento_seguro?: string;
-  contato_sinistro_nome?: string;
-  contato_sinistro_telefone?: string;
 };
 
 function calcularDiasVencimento(dataVencimentoStr: string): number | null {
@@ -138,17 +115,18 @@ function BotaoTacografo() {
     queryKey: ["tacografos-vencimentos"],
     queryFn: async () => {
       const { data, error } = await supabase.from("tacografos_vencimentos").select("*");
+
       if (error) {
         console.error("Erro ao carregar tacógrafos:", error);
         return [];
       }
-      return (data as ItemTacografo[]) ?? [];
+      return data ?? [];
     },
   });
 
   const tacografosVencidos = useMemo(() => {
     if (!tacografos) return [];
-    return tacografos.filter((item) => {
+    return tacografos.filter((item: any) => {
       const dataVal = item.data_vencimento || item.vencimento_tacografo || item.vencimento;
       if (!dataVal) return false;
       const dias = calcularDiasVencimento(dataVal);
@@ -158,7 +136,7 @@ function BotaoTacografo() {
 
   const tacografosComAlerta = useMemo(() => {
     if (!tacografos) return [];
-    return tacografos.filter((item) => {
+    return tacografos.filter((item: any) => {
       const dataVal = item.data_vencimento || item.vencimento_tacografo || item.vencimento;
       if (!dataVal) return false;
       const dias = calcularDiasVencimento(dataVal);
@@ -169,12 +147,17 @@ function BotaoTacografo() {
   const todosComStatus = useMemo(() => {
     if (!tacografos) return [];
     return tacografos
-      .filter((item) => Boolean(item.data_vencimento || item.vencimento_tacografo || item.vencimento))
-      .map((item) => {
+      .filter((item: any) => {
+        const dataVal = item.data_vencimento || item.vencimento_tacografo || item.vencimento;
+        return Boolean(dataVal);
+      })
+      .map((item: any) => {
         const dataVal = item.data_vencimento || item.vencimento_tacografo || item.vencimento;
         const diasRestantes = dataVal ? calcularDiasVencimento(dataVal) : null;
+
         const isVencido = diasRestantes !== null && diasRestantes < 0;
-        const isVencendoEmBreve = diasRestantes !== null && diasRestantes >= 0 && diasRestantes <= 30;
+        const isVencendoEmBreve =
+          diasRestantes !== null && diasRestantes >= 0 && diasRestantes <= 30;
 
         return {
           ...item,
@@ -194,11 +177,16 @@ function BotaoTacografo() {
   const listaFiltrada = useMemo(() => {
     const f = filtro.toLowerCase().trim();
     if (!f) return todosComStatus;
-    return todosComStatus.filter((item) =>
-      Object.values(item).some((val) => String(val ?? "").toLowerCase().includes(f))
+    return todosComStatus.filter((item: any) =>
+      Object.values(item).some((val) =>
+        String(val ?? "")
+          .toLowerCase()
+          .includes(f),
+      ),
     );
   }, [todosComStatus, filtro]);
 
+  // Função para Enviar Relatório via WhatsApp (Tacógrafos)
   const handleEnviarWhatsAppTacografo = () => {
     if (todosComStatus.length === 0) {
       toast.error("Não há dados de tacógrafos para enviar.");
@@ -206,19 +194,22 @@ function BotaoTacografo() {
     }
 
     let texto = `📊 *RELATÓRIO DE VENCIMENTOS DE TACÓGRAFOS*\n\n`;
-    todosComStatus.forEach((item, idx) => {
+
+    todosComStatus.forEach((item: any, idx: number) => {
       const nome = item.numero || item.veiculo_equipamento || item.equipamento || "Equipamento";
       const statusStr = item.isVencido ? "🚨 VENCIDO" : item.isVencendoEmBreve ? "⚠️ Vencendo em breve" : "✅ Em dia";
       const dataFmt = item.dataVal ? new Date(item.dataVal + "T00:00:00").toLocaleDateString("pt-BR") : "-";
-
+      
       texto += `${idx + 1}. *${nome}* ${item.placa ? `(${item.placa})` : ""}\n`;
       texto += `   • Vencimento: ${dataFmt}\n`;
       texto += `   • Situação: ${statusStr}\n\n`;
     });
 
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`, "_blank");
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
+    window.open(url, "_blank");
   };
 
+  // Função para Imprimir Relatório (Tacógrafos)
   const handleImprimirTacografo = () => {
     const janela = window.open("", "", "width=800,height=600");
     if (!janela) return;
@@ -251,29 +242,27 @@ function BotaoTacografo() {
               </tr>
             </thead>
             <tbody>
-              ${todosComStatus
-                .map((item) => {
-                  const nome = item.numero || item.veiculo_equipamento || item.equipamento || "Equipamento";
-                  const dataFmt = item.dataVal ? new Date(item.dataVal + "T00:00:00").toLocaleDateString("pt-BR") : "-";
-                  let statusClass = "ok";
-                  let statusText = "Em dia";
-                  if (item.isVencido) {
-                    statusClass = "vencido";
-                    statusText = "Vencido";
-                  } else if (item.isVencendoEmBreve) {
-                    statusClass = "atencao";
-                    statusText = item.diasRestantes === 0 ? "Vence Hoje" : `Vence em ${item.diasRestantes}d`;
-                  }
-                  return `
-                    <tr>
-                      <td><b>${nome}</b></td>
-                      <td>${item.placa || "-"}</td>
-                      <td>${dataFmt}</td>
-                      <td class="${statusClass}">${statusText}</td>
-                    </tr>
-                  `;
-                })
-                .join("")}
+              ${todosComStatus.map((item: any) => {
+                const nome = item.numero || item.veiculo_equipamento || item.equipamento || "Equipamento";
+                const dataFmt = item.dataVal ? new Date(item.dataVal + "T00:00:00").toLocaleDateString("pt-BR") : "-";
+                let statusClass = "ok";
+                let statusText = "Em dia";
+                if (item.isVencido) {
+                  statusClass = "vencido";
+                  statusText = "Vencido";
+                } else if (item.isVencendoEmBreve) {
+                  statusClass = "atencao";
+                  statusText = item.diasRestantes === 0 ? "Vence Hoje" : `Vence em ${item.diasRestantes}d`;
+                }
+                return `
+                  <tr>
+                    <td><b>${nome}</b></td>
+                    <td>${item.placa || "-"}</td>
+                    <td>${dataFmt}</td>
+                    <td class="${statusClass}">${statusText}</td>
+                  </tr>
+                `;
+              }).join("")}
             </tbody>
           </table>
         </body>
@@ -281,11 +270,75 @@ function BotaoTacografo() {
     `;
     janela.document.write(html);
     janela.document.close();
+    janela.print();
+
+    const obterStatusSeguro = (item: any) => {
+    if (item.isVencido) return "Vencido";
+    if (item.isVencendoEmBreve) {
+      return item.diasRestantes === 0 ? "Vence hoje" : `Vence em ${item.diasRestantes} dias`;
+    }
+    return "Em dia";
+  };
+
+  const gerarRelatorioSeguros = () => {
+    const linhas = [
+      "RELATÓRIO DE SEGUROS CADASTRADOS",
+      `Emissão: ${new Date().toLocaleString("pt-BR")}`,
+      filtro.trim() ? `Filtro: ${filtro.trim()}` : "Filtro: Todos os seguros",
+      "",
+    ];
+
+    listaFiltrada.forEach((item: any, index: number) => {
+      const equipamento =
+        item.equipamento || item.numero || item.veiculo_equipamento || "Equipamento";
+      const vencimento = item.dataVal
+        ? new Date(item.dataVal + "T00:00:00").toLocaleDateString("pt-BR")
+        : "Não informado";
+      linhas.push(`${index + 1}. ${equipamento}`);
+      linhas.push(`   Seguradora: ${item.seguradora || item.empresa || "Não informada"}`);
+      linhas.push(`   Vencimento: ${vencimento} | Situação: ${obterStatusSeguro(item)}`);
+      if (item.contato_sinistro_nome || item.contato_sinistro_telefone) {
+        linhas.push(
+          `   Contato de sinistro: ${item.contato_sinistro_nome || "Não informado"}${item.contato_sinistro_telefone ? ` - ${item.contato_sinistro_telefone}` : ""}`,
+        );
+      }
+      linhas.push("");
+    });
+
+    if (listaFiltrada.length === 0) linhas.push("Nenhum seguro encontrado.");
+    return linhas.join("\n");
+  };
+
+  const handleEnviarRelatorioWhatsApp = () => {
+    if (listaFiltrada.length === 0) {
+      alert("Não há seguros para enviar.");
+      return;
+    }
+    window.open(`https://wa.me/?text=${encodeURIComponent(gerarRelatorioSeguros())}`, "_blank");
+  };
+
+  const handleImprimirRelatorioSeguros = () => {
+    const janela = window.open("", "", "width=900,height=700");
+    if (!janela) return;
+
+    const itensHtml = listaFiltrada
+      .map((item: any, index: number) => {
+        const equipamento =
+          item.equipamento || item.numero || item.veiculo_equipamento || "Equipamento";
+        const vencimento = item.dataVal
+          ? new Date(item.dataVal + "T00:00:00").toLocaleDateString("pt-BR")
+          : "Não informado";
+        return `<div class="item"><h3>${index + 1}. ${equipamento}</h3><p><strong>Seguradora:</strong> ${item.seguradora || item.empresa || "Não informada"}</p><p><strong>Vencimento:</strong> ${vencimento} | <strong>Situação:</strong> ${obterStatusSeguro(item)}</p><p><strong>Contato de sinistro:</strong> ${item.contato_sinistro_nome || "Não informado"}${item.contato_sinistro_telefone ? ` - ${item.contato_sinistro_telefone}` : ""}</p></div>`;
+      })
+      .join("");
+
+    janela.document.write(`<html><head><title>Relatório de Seguros</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#1f2937}h1{font-size:22px;border-bottom:2px solid #1f2937;padding-bottom:8px}h3{margin:0 0 8px}.meta{color:#6b7280;font-size:12px}.item{border:1px solid #d1d5db;border-radius:6px;padding:12px;margin:10px 0}.item p{margin:4px 0;font-size:13px}</style></head><body><h1>Relatório de Seguros Cadastrados</h1><p class="meta">Emissão: ${new Date().toLocaleString("pt-BR")}</p>${itensHtml || "<p>Nenhum seguro encontrado.</p>"}</body></html>`);
+    janela.document.close();
     janela.focus();
     setTimeout(() => {
       janela.print();
       janela.close();
-    }, 250);
+    }, 500);
   };
 
   return (
@@ -298,14 +351,14 @@ function BotaoTacografo() {
       >
         <Calendar className="w-4 h-4 text-slate-900" />
         <span>Tacógrafo</span>
-        {tacografosVencidos.length > 0 && (
+        {tacografosVencidos.length > 0 ? (
           <span
             className="font-bold text-[10px] h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-full border-none"
             style={{ backgroundColor: "#dc2626", color: "#ffffff" }}
           >
             {tacografosVencidos.length}
           </span>
-        )}
+        ) : null}
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -346,7 +399,8 @@ function BotaoTacografo() {
                 <div>
                   <p className="font-semibold">Atenção aos Vencimentos!</p>
                   <p className="text-[11px] text-amber-800">
-                    Existe(m) <strong>{tacografosComAlerta.length}</strong> tacógrafo(s) vencido(s) ou que vence(m) nos próximos 30 dias.
+                    Existe(m) <strong>{tacografosComAlerta.length}</strong> tacógrafo(s) vencido(s)
+                    ou que vence(m) nos próximos 30 dias.
                   </p>
                 </div>
               </div>
@@ -370,7 +424,7 @@ function BotaoTacografo() {
               </p>
             ) : (
               <div className="space-y-2">
-                {listaFiltrada.map((item, idx) => {
+                {listaFiltrada.map((item: any, idx: number) => {
                   let bgCard = "bg-slate-50 border-slate-200";
                   let badgeStyle = { backgroundColor: "#e2e8f0", color: "#334155" };
                   let badgeText = "Em dia";
@@ -382,7 +436,8 @@ function BotaoTacografo() {
                   } else if (item.isVencendoEmBreve) {
                     bgCard = "bg-amber-50 border-amber-200";
                     badgeStyle = { backgroundColor: "#f59e0b", color: "#ffffff" };
-                    badgeText = item.diasRestantes === 0 ? "Hoje" : `Vence em ${item.diasRestantes}d`;
+                    badgeText =
+                      item.diasRestantes === 0 ? "Hoje" : `Vence em ${item.diasRestantes}d`;
                   }
 
                   return (
@@ -393,7 +448,10 @@ function BotaoTacografo() {
                       <div>
                         <div className="flex items-center gap-2">
                           <p className="font-bold text-slate-900">
-                            {item.numero || item.veiculo_equipamento || item.equipamento || "Equipamento"}
+                            {item.numero ||
+                              item.veiculo_equipamento ||
+                              item.equipamento ||
+                              "Equipamento"}
                           </p>
                           <span
                             className="text-[10px] px-1.5 py-0.5 rounded-full font-bold shadow-sm inline-block"
@@ -402,7 +460,9 @@ function BotaoTacografo() {
                             {badgeText}
                           </span>
                         </div>
-                        {item.placa && <p className="text-slate-500 font-mono mt-0.5">{item.placa}</p>}
+                        {item.placa && (
+                          <p className="text-slate-500 font-mono mt-0.5">{item.placa}</p>
+                        )}
                       </div>
 
                       <div className="text-right">
@@ -486,15 +546,20 @@ function BotaoSeguro() {
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
 
-  const { data: seguros, isLoading, refetch } = useQuery({
+  const {
+    data: seguros,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["seguros-vencimentos"],
     queryFn: async () => {
       const { data, error } = await supabase.from("seguros").select("*");
+
       if (error) {
         console.error("Erro ao carregar seguros:", error);
         return [];
       }
-      return (data as ItemSeguro[]) ?? [];
+      return data ?? [];
     },
   });
 
@@ -511,7 +576,7 @@ function BotaoSeguro() {
 
   async function salvarSeguro() {
     if (!form.veiculo_equipamento.trim() || !form.seguradora.trim() || !form.data_vencimento) {
-      toast.error("Preencha equipamento, seguradora e data de vencimento.");
+      alert("Preencha equipamento, seguradora e data de vencimento.");
       return;
     }
     setSalvando(true);
@@ -526,12 +591,10 @@ function BotaoSeguro() {
       ? await supabase.from("seguros").update(payload).eq("id", editandoId)
       : await supabase.from("seguros").insert(payload);
     setSalvando(false);
-
     if (error) {
-      toast.error("Erro ao salvar seguro: " + error.message);
+      alert("Erro ao salvar seguro: " + error.message);
       return;
     }
-    toast.success("Seguro salvo com sucesso!");
     limpar();
     refetch();
   }
@@ -540,17 +603,16 @@ function BotaoSeguro() {
     if (!confirm("Excluir este seguro?")) return;
     const { error } = await supabase.from("seguros").delete().eq("id", id);
     if (error) {
-      toast.error("Erro ao excluir: " + error.message);
+      alert("Erro ao excluir: " + error.message);
       return;
     }
-    toast.success("Seguro removido.");
     if (editandoId === id) limpar();
     refetch();
   }
 
   const segurosVencidos = useMemo(() => {
     if (!seguros) return [];
-    return seguros.filter((item) => {
+    return seguros.filter((item: any) => {
       const dataVal = item.vencimento || item.data_vencimento || item.vencimento_seguro;
       if (!dataVal) return false;
       const dias = calcularDiasVencimento(dataVal);
@@ -558,14 +620,26 @@ function BotaoSeguro() {
     });
   }, [seguros]);
 
+  const segurosComAlerta = useMemo(() => {
+    if (!seguros) return [];
+    return seguros.filter((item: any) => {
+      const dataVal = item.vencimento || item.data_vencimento || item.vencimento_seguro;
+      if (!dataVal) return false;
+      const dias = calcularDiasVencimento(dataVal);
+      return dias !== null && dias <= 30;
+    });
+  }, [seguros]);
+
   const todosComStatus = useMemo(() => {
     if (!seguros) return [];
     return seguros
-      .map((item) => {
+      .map((item: any) => {
         const dataVal = item.vencimento || item.data_vencimento || item.vencimento_seguro;
         const diasRestantes = dataVal ? calcularDiasVencimento(dataVal) : null;
+
         const isVencido = diasRestantes !== null && diasRestantes < 0;
-        const isVencendoEmBreve = diasRestantes !== null && diasRestantes >= 0 && diasRestantes <= 30;
+        const isVencendoEmBreve =
+          diasRestantes !== null && diasRestantes >= 0 && diasRestantes <= 30;
 
         return {
           ...item,
@@ -585,11 +659,16 @@ function BotaoSeguro() {
   const listaFiltrada = useMemo(() => {
     const f = filtro.toLowerCase().trim();
     if (!f) return todosComStatus;
-    return todosComStatus.filter((item) =>
-      Object.values(item).some((val) => String(val ?? "").toLowerCase().includes(f))
+    return todosComStatus.filter((item: any) =>
+      Object.values(item).some((val) =>
+        String(val ?? "")
+          .toLowerCase()
+          .includes(f),
+      ),
     );
   }, [todosComStatus, filtro]);
 
+  // Função para Enviar Relatório via WhatsApp (Seguros)
   const handleEnviarWhatsAppSeguro = () => {
     if (todosComStatus.length === 0) {
       toast.error("Não há dados de seguros para enviar.");
@@ -597,7 +676,8 @@ function BotaoSeguro() {
     }
 
     let texto = `🛡️ *RELATÓRIO DE VENCIMENTOS DE SEGUROS*\n\n`;
-    todosComStatus.forEach((item, idx) => {
+
+    todosComStatus.forEach((item: any, idx: number) => {
       const equip = item.equipamento || item.numero || item.veiculo_equipamento || "Equipamento";
       const seguradora = item.seguradora || item.empresa || "N/I";
       const statusStr = item.isVencido ? "🚨 VENCIDO" : item.isVencendoEmBreve ? "⚠️ Vencendo em breve" : "✅ Em dia";
@@ -612,9 +692,11 @@ function BotaoSeguro() {
       texto += `\n`;
     });
 
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`, "_blank");
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
+    window.open(url, "_blank");
   };
 
+  // Função para Imprimir Relatório (Seguros)
   const handleImprimirSeguro = () => {
     const janela = window.open("", "", "width=800,height=600");
     if (!janela) return;
@@ -648,34 +730,32 @@ function BotaoSeguro() {
               </tr>
             </thead>
             <tbody>
-              ${todosComStatus
-                .map((item) => {
-                  const equip = item.equipamento || item.numero || item.veiculo_equipamento || "Equipamento";
-                  const seguradora = item.seguradora || item.empresa || "N/I";
-                  const dataFmt = item.dataVal ? new Date(item.dataVal + "T00:00:00").toLocaleDateString("pt-BR") : "-";
-                  const contato = `${item.contato_sinistro_nome || "-"} ${item.contato_sinistro_telefone ? `(${item.contato_sinistro_telefone})` : ""}`;
-                  
-                  let statusClass = "ok";
-                  let statusText = "Em dia";
-                  if (item.isVencido) {
-                    statusClass = "vencido";
-                    statusText = "Vencido";
-                  } else if (item.isVencendoEmBreve) {
-                    statusClass = "atencao";
-                    statusText = item.diasRestantes === 0 ? "Vence Hoje" : `Vence em ${item.diasRestantes}d`;
-                  }
+              ${todosComStatus.map((item: any) => {
+                const equip = item.equipamento || item.numero || item.veiculo_equipamento || "Equipamento";
+                const seguradora = item.seguradora || item.empresa || "N/I";
+                const dataFmt = item.dataVal ? new Date(item.dataVal + "T00:00:00").toLocaleDateString("pt-BR") : "-";
+                const contato = `${item.contato_sinistro_nome || "-"} ${item.contato_sinistro_telefone ? `(${item.contato_sinistro_telefone})` : ""}`;
+                
+                let statusClass = "ok";
+                let statusText = "Em dia";
+                if (item.isVencido) {
+                  statusClass = "vencido";
+                  statusText = "Vencido";
+                } else if (item.isVencendoEmBreve) {
+                  statusClass = "atencao";
+                  statusText = item.diasRestantes === 0 ? "Vence Hoje" : `Vence em ${item.diasRestantes}d`;
+                }
 
-                  return `
-                    <tr>
-                      <td><b>${equip}</b></td>
-                      <td>${seguradora}</td>
-                      <td>${dataFmt}</td>
-                      <td>${contato}</td>
-                      <td class="${statusClass}">${statusText}</td>
-                    </tr>
-                  `;
-                })
-                .join("")}
+                return `
+                  <tr>
+                    <td><b>${equip}</b></td>
+                    <td>${seguradora}</td>
+                    <td>${dataFmt}</td>
+                    <td>${contato}</td>
+                    <td class="${statusClass}">${statusText}</td>
+                  </tr>
+                `;
+              }).join("")}
             </tbody>
           </table>
         </body>
@@ -683,11 +763,7 @@ function BotaoSeguro() {
     `;
     janela.document.write(html);
     janela.document.close();
-    janela.focus();
-    setTimeout(() => {
-      janela.print();
-      janela.close();
-    }, 250);
+    janela.print();
   };
 
   return (
@@ -700,20 +776,20 @@ function BotaoSeguro() {
       >
         <ShieldCheck className="w-4 h-4 text-slate-900" />
         <span>Seguro</span>
-        {segurosVencidos.length > 0 && (
+        {segurosVencidos.length > 0 ? (
           <span
             className="font-bold text-[10px] h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-full border-none"
             style={{ backgroundColor: "#dc2626", color: "#ffffff" }}
           >
             {segurosVencidos.length}
           </span>
-        )}
+        ) : null}
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
           style={{ backgroundColor: "#ffffff", opacity: 1 }}
-          className="sm:max-w-xl text-slate-900 border border-slate-300 shadow-2xl p-0 overflow-hidden"
+          className="sm:max-w-lg text-slate-900 border border-slate-300 shadow-2xl p-0 overflow-hidden"
         >
           <DialogHeader className="p-4 pb-3 border-b border-slate-200 bg-slate-50 flex flex-row items-center justify-between">
             <DialogTitle className="text-slate-900 font-bold text-base">
@@ -738,68 +814,123 @@ function BotaoSeguro() {
                 <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
                 WhatsApp
               </Button>
+
+          <DialogHeader className="p-4 pb-3 border-b border-slate-200 bg-slate-50">
+            <div className="flex items-center justify-between gap-2">
+              <DialogTitle className="text-slate-900 font-bold text-base">
+                Gerenciar Seguros
+              </DialogTitle>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-8 gap-1 text-xs"
+                  onClick={handleImprimirRelatorioSeguros}
+                  disabled={isLoading}
+                  title="Imprimir relatório de seguros"
+                >
+                  <Printer className="h-3.5 w-3.5" /> Imprimir
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 gap-1 bg-emerald-600 text-xs text-white hover:bg-emerald-700"
+                  onClick={handleEnviarRelatorioWhatsApp}
+                  disabled={isLoading || listaFiltrada.length === 0}
+                  title="Enviar relatório via WhatsApp"
+                >
+                  <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                </Button>
+              </div>
             </div>
           </DialogHeader>
 
-          <div className="p-4 max-h-[75vh] overflow-y-auto space-y-4 bg-white">
-            {/* Formulário de cadastro/edição */}
-            <div className="p-3 border rounded-lg bg-slate-50 space-y-2">
-              <p className="font-bold text-xs text-slate-700">
-                {editandoId ? "Editar Seguro" : "Novo Seguro"}
-              </p>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <Input
-                  placeholder="Veículo / Equipamento"
-                  value={form.veiculo_equipamento}
-                  onChange={(e) => setForm({ ...form, veiculo_equipamento: e.target.value })}
-                  className="h-8 bg-white"
-                />
-                <Input
-                  placeholder="Seguradora"
-                  value={form.seguradora}
-                  onChange={(e) => setForm({ ...form, seguradora: e.target.value })}
-                  className="h-8 bg-white"
-                />
-                <Input
-                  type="date"
-                  value={form.data_vencimento}
-                  onChange={(e) => setForm({ ...form, data_vencimento: e.target.value })}
-                  className="h-8 bg-white"
-                />
-                <Input
-                  placeholder="Contato Sinistro (Nome)"
-                  value={form.contato_sinistro_nome}
-                  onChange={(e) => setForm({ ...form, contato_sinistro_nome: e.target.value })}
-                  className="h-8 bg-white"
-                />
-                <Input
-                  placeholder="Contato Sinistro (Telefone)"
-                  value={form.contato_sinistro_telefone}
-                  onChange={(e) => setForm({ ...form, contato_sinistro_telefone: e.target.value })}
-                  className="h-8 bg-white col-span-2"
-                />
+          <div className="p-4 max-h-[70vh] overflow-y-auto space-y-3 bg-white">
+            {segurosComAlerta.length > 0 && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2 text-amber-900 text-xs">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold">Atenção aos Vencimentos!</p>
+                  <p className="text-[11px] text-amber-800">
+                    Existe(m) <strong>{segurosComAlerta.length}</strong> seguro(s) vencido(s) ou que
+                    vence(m) nos próximos 30 dias.
+                  </p>
+                </div>
               </div>
-              <div className="flex gap-2 justify-end pt-1">
+            )}
+
+            <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 space-y-2">
+              <p className="text-xs font-bold text-slate-900">
+                {editandoId ? "Editar seguro" : "Cadastrar seguro"}
+              </p>
+              <Input
+                placeholder="Veículo / Equipamento *"
+                value={form.veiculo_equipamento}
+                onChange={(e) => setForm({ ...form, veiculo_equipamento: e.target.value })}
+                className="h-8 text-xs bg-white border-slate-300 text-slate-900"
+              />
+              <Input
+                placeholder="Seguradora *"
+                value={form.seguradora}
+                onChange={(e) => setForm({ ...form, seguradora: e.target.value })}
+                className="h-8 text-xs bg-white border-slate-300 text-slate-900"
+              />
+              <Input
+                type="date"
+                value={form.data_vencimento}
+                onChange={(e) => setForm({ ...form, data_vencimento: e.target.value })}
+                className="h-8 text-xs bg-white border-slate-300 text-slate-900"
+              />
+              <div className="pt-1 border-t border-slate-200">
+                <p className="text-[11px] font-semibold text-slate-600 mb-1.5">
+                  Em caso de sinistro, contactar:
+                </p>
+                <div className="space-y-2">
+                  <Input
+                    placeholder="Nome do contato"
+                    value={form.contato_sinistro_nome}
+                    onChange={(e) =>
+                      setForm({ ...form, contato_sinistro_nome: e.target.value })
+                    }
+                    className="h-8 text-xs bg-white border-slate-300 text-slate-900"
+                  />
+                  <Input
+                    placeholder="Telefone do contato"
+                    value={form.contato_sinistro_telefone}
+                    onChange={(e) =>
+                      setForm({ ...form, contato_sinistro_telefone: e.target.value })
+                    }
+                    className="h-8 text-xs bg-white border-slate-300 text-slate-900"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={salvarSeguro}
+                  disabled={salvando}
+                  className="h-8 text-xs flex-1 bg-blue-700 hover:bg-blue-600 text-white"
+                >
+                  {salvando ? "Salvando..." : editandoId ? "Salvar alterações" : "Cadastrar"}
+                </Button>
                 {editandoId && (
-                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={limpar}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={limpar}
+                    className="h-8 text-xs border-slate-300 text-slate-700"
+                  >
                     Cancelar
                   </Button>
                 )}
-                <Button
-                  size="sm"
-                  className="h-7 text-xs bg-slate-900 text-white"
-                  disabled={salvando}
-                  onClick={salvarSeguro}
-                >
-                  {salvando ? "Salvando..." : editandoId ? "Atualizar" : "Cadastrar"}
-                </Button>
               </div>
             </div>
 
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
               <Input
-                placeholder="Filtrar por equipamento, seguradora..."
+                placeholder="Filtrar equipamento ou seguradora..."
                 value={filtro}
                 onChange={(e) => setFiltro(e.target.value)}
                 className="pl-8 h-8 text-xs bg-white border-slate-300 text-slate-900"
@@ -807,53 +938,93 @@ function BotaoSeguro() {
             </div>
 
             {isLoading ? (
-              <p className="text-xs text-slate-500 text-center py-4">Carregando seguros...</p>
+              <p className="text-xs text-slate-500 text-center py-4">Carregando dados...</p>
             ) : listaFiltrada.length === 0 ? (
               <p className="text-xs text-slate-500 text-center py-4">Nenhum seguro encontrado.</p>
             ) : (
               <div className="space-y-2">
-                {listaFiltrada.map((item) => {
-                  const dataFmt = item.dataVal
-                    ? new Date(item.dataVal + "T00:00:00").toLocaleDateString("pt-BR")
-                    : "-";
+                {listaFiltrada.map((item: any, idx: number) => {
+                  let bgCard = "bg-slate-50 border-slate-200";
+                  let badgeStyle = { backgroundColor: "#e2e8f0", color: "#334155" };
+                  let badgeText = "Em dia";
+
+                  if (item.isVencido) {
+                    bgCard = "bg-red-50 border-red-200";
+                    badgeStyle = { backgroundColor: "#dc2626", color: "#ffffff" };
+                    badgeText = "Vencido";
+                  } else if (item.isVencendoEmBreve) {
+                    bgCard = "bg-amber-50 border-amber-200";
+                    badgeStyle = { backgroundColor: "#f59e0b", color: "#ffffff" };
+                    badgeText =
+                      item.diasRestantes === 0 ? "Hoje" : `Vence em ${item.diasRestantes}d`;
+                  }
 
                   return (
                     <div
-                      key={item.id}
-                      className="p-3 border rounded-lg bg-slate-50 flex justify-between items-center text-xs"
+                      key={item.id || idx}
+                      className={`p-3 rounded-lg border text-xs flex justify-between items-center shadow-sm ${bgCard}`}
                     >
                       <div>
-                        <p className="font-bold text-slate-900">
-                          {item.equipamento || item.numero || item.veiculo_equipamento || "Equipamento"}
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-slate-900">
+                            {item.equipamento ||
+                              item.numero ||
+                              item.veiculo_equipamento ||
+                              "Equipamento"}
+                          </p>
+                          <span
+                            className="text-[10px] px-1.5 py-0.5 rounded-full font-bold shadow-sm inline-block"
+                            style={badgeStyle}
+                          >
+                            {badgeText}
+                          </span>
+                        </div>
+                        <p className="text-slate-500 font-medium mt-0.5">
+                          {item.seguradora || item.empresa || "Seguradora não informada"}
                         </p>
-                        <p className="text-slate-600">Seguradora: {item.seguradora || item.empresa || "-"}</p>
-                        <p className="text-slate-500 font-mono text-[11px]">Vencimento: {dataFmt}</p>
+                        {(item.contato_sinistro_nome || item.contato_sinistro_telefone) && (
+                          <p className="text-[11px] text-slate-600 mt-0.5">
+                            Sinistro: {item.contato_sinistro_nome || "-"}{" "}
+                            {item.contato_sinistro_telefone
+                              ? `• ${item.contato_sinistro_telefone}`
+                              : ""}
+                          </p>
+                        )}
                       </div>
-                      <div className="flex items-center gap-1">
+
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <p className="text-slate-500 font-medium text-[10px]">Vencimento:</p>
+                          <p className="font-bold font-mono text-slate-900">
+                            {item.dataVal
+                              ? new Date(item.dataVal + "T00:00:00").toLocaleDateString("pt-BR")
+                              : "-"}
+                          </p>
+                        </div>
                         <Button
-                          size="sm"
+                          size="icon"
                           variant="ghost"
-                          className="h-7 w-7 p-0"
+                          className="h-7 w-7"
                           onClick={() => {
                             setEditandoId(item.id);
                             setForm({
-                              veiculo_equipamento: item.veiculo_equipamento || item.equipamento || item.numero || "",
-                              seguradora: item.seguradora || item.empresa || "",
-                              data_vencimento: item.dataVal || "",
-                              contato_sinistro_nome: item.contato_sinistro_nome || "",
-                              contato_sinistro_telefone: item.contato_sinistro_telefone || "",
+                              veiculo_equipamento: item.veiculo_equipamento ?? "",
+                              seguradora: item.seguradora ?? "",
+                              data_vencimento: item.dataVal ?? "",
+                              contato_sinistro_nome: item.contato_sinistro_nome ?? "",
+                              contato_sinistro_telefone: item.contato_sinistro_telefone ?? "",
                             });
                           }}
                         >
-                          <Edit3 className="w-3.5 h-3.5 text-slate-600" />
+                          <Edit3 className="w-3.5 h-3.5 text-blue-700" />
                         </Button>
                         <Button
-                          size="sm"
+                          size="icon"
                           variant="ghost"
-                          className="h-7 w-7 p-0 text-red-600 hover:text-red-700"
+                          className="h-7 w-7"
                           onClick={() => excluirSeguro(item.id)}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3.5 h-3.5 text-red-600" />
                         </Button>
                       </div>
                     </div>
@@ -867,100 +1038,3 @@ function BotaoSeguro() {
     </>
   );
 }
-
-// ----------------------------------------------------
-// PAGINA PRINCIPAL: LISTA DE EQUIPAMENTOS
-// ----------------------------------------------------
-export function EquipamentosList() {
-  const [busca, setBusca] = useState("");
-  const navigate = useNavigate();
-
-  const { data: equipamentos, isLoading } = useQuery({
-    queryKey: ["equipamentos"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("equipamentos").select("*").order("numero");
-      if (error) throw error;
-      return (data as Equip[]) ?? [];
-    },
-  });
-
-  const equipamentosFiltrados = useMemo(() => {
-    if (!equipamentos) return [];
-    const term = busca.toLowerCase();
-    return equipamentos.filter(
-      (eq) =>
-        eq.numero?.toLowerCase().includes(term) ||
-        eq.placa?.toLowerCase().includes(term) ||
-        eq.identificacao?.toLowerCase().includes(term)
-    );
-  }, [equipamentos, busca]);
-
-  return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Equipamentos</h1>
-          <p className="text-slate-500 text-sm">Gerencie a frota e manutenções ativas</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <BotaoTacografo />
-          <BotaoSeguro />
-          <Button
-            onClick={() => navigate({ to: "/equipamentos/novo" })}
-            className="bg-slate-900 text-white gap-2"
-          >
-            <Plus className="w-4 h-4" /> Novo Equipamento
-          </Button>
-        </div>
-      </div>
-
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <Input
-          placeholder="Buscar equipamento por código, identificação ou placa..."
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-          className="pl-9 bg-white"
-        />
-      </div>
-
-      {isLoading ? (
-        <div className="text-center py-12 text-slate-500">Carregando frota...</div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {equipamentosFiltrados.map((equip) => (
-            <Card
-              key={equip.id}
-              className="p-4 hover:shadow-md transition-shadow cursor-pointer flex flex-col justify-between"
-              onClick={() => navigate({ to: `/equipamentos/${equip.id}` })}
-            >
-              <div className="space-y-2">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-bold text-lg">{equip.numero}</h3>
-                    <p className="text-xs text-slate-500">{equip.identificacao || "Sem identificação"}</p>
-                  </div>
-                  <Badge variant="outline">{equip.status || "Operacional"}</Badge>
-                </div>
-                {equip.placa && (
-                  <p className="text-xs font-mono bg-slate-100 px-2 py-0.5 rounded w-fit">
-                    {equip.placa}
-                  </p>
-                )}
-              </div>
-              <div className="mt-4 pt-3 border-t flex justify-between items-center text-xs text-slate-500">
-                <div className="flex items-center gap-1">
-                  <Gauge className="w-3.5 h-3.5" />
-                  <span>{equip.horimetro_atual ? `${equip.horimetro_atual} h` : "N/I"}</span>
-                </div>
-                <ChevronRight className="w-4 h-4 text-slate-400" />
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-export default EquipamentosList;
