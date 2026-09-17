@@ -50,6 +50,7 @@ interface Cotacao {
   data_cotacao?: string | null;
   observacoes?: string | null;
   status?: string | null;
+  criado_por?: string | null; 
 }
 
 interface ItemCotacao {
@@ -696,7 +697,7 @@ export default function DetalheCotacaoPage() {
             </h1>
             <p className="text-sm text-slate-600 mt-1">
               Setor: {cotacao.setor || "—"} | Data: {formatarData(cotacao.data_cotacao)} |{" "}
-              <strong>Solicitante:</strong> {usuarioNome}
+              <strong>Solicitante:</strong> {cotacao.criado_por ||usuarioNome}
             </p>
             {cotacao.observacoes && (
               <p className="text-xs text-slate-500 mt-2">Obs: {cotacao.observacoes}</p>
@@ -1167,7 +1168,7 @@ export default function DetalheCotacaoPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isPrecosOpen} onOpenChange={setIsPrecosOpen}>
+    <Dialog open={isPrecosOpen} onOpenChange={setIsPrecosOpen}>
         <DialogContent className="sm:max-w-2xl bg-white max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Informar Preços</DialogTitle>
@@ -1180,7 +1181,15 @@ export default function DetalheCotacaoPage() {
                   className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center bg-slate-50 p-3 rounded-lg border border-slate-200"
                 >
                   <div className="md:col-span-6 text-sm">
-                    <span className="font-semibold text-slate-800">{item.descricao}</span>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-mono font-bold bg-slate-200 px-1.5 py-0.5 rounded text-slate-700">
+                        {item.codigo || "SEM CÓD."}
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        Qtd: {item.quantidade} {item.unidade}
+                      </span>
+                    </div>
+                    <span className="font-semibold text-slate-800 block">{item.descricao}</span>
                   </div>
                   <div className="md:col-span-3">
                     <Input

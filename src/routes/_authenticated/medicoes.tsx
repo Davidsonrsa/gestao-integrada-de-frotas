@@ -760,20 +760,45 @@ export function MedicoesPage() {
                         <Trash2 size={16} />
                       </button>
                     </div>
-                    <div className="bg-orange-50/60 p-2.5 rounded-lg border border-orange-100 flex justify-between items-center">
-                      <span className="text-xs font-semibold text-gray-600">Total Medição:</span>
-                      <span className="text-sm font-bold text-orange-700">
-                        R$ {totalMesValor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                      </span>
-                    </div>
+     
+<div className="bg-orange-50/60 p-2.5 rounded-lg border border-orange-100 flex justify-between items-center">
+  <span className="text-xs font-semibold text-gray-600">
+    Total Medição:
+  </span>
+
+  <span className="text-sm font-bold text-orange-700">
+    {`R$ ${maquinas
+      .filter((eq: any) => eq.mesId === (m as any)?.id)
+      .reduce((acc: number, maq: any) => {
+        const valorMensal = Number(maq.valorHora) || 0;
+        const taxa50 = Number(maq.taxa50) || 142.72;
+        const taxa100 = Number(maq.taxa100) || 170.63;
+
+        let extras50 = 0;
+        let extras100 = 0;
+
+        if (Array.isArray(maq.dias)) {
+          maq.dias.forEach((d: any) => {
+            extras50 += (Number(d.horas50) || 0) * taxa50;
+            extras100 += (Number(d.horas100) || 0) * taxa100;
+          });
+        }
+
+        return acc + valorMensal + extras50 + extras100;
+      }, 0)
+      .toLocaleString("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+                          })}`}
+                    </span>
+                  </div>
                   </div>
                 );
-              })}
-          </div>
-        </div>
-      )}
-
-      {visao === "maquina" && mesSelecionado && contratoSelecionado && (
+                 })}
+              </div>
+            </div>
+          )}
+{visao === "maquina" && mesSelecionado && contratoSelecionado && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 space-y-4 print:border-none print:p-0 print:m-0">
           <div className="flex justify-between items-center border-b pb-3 print:hidden">
             <h2 className="text-lg font-bold text-gray-800">
@@ -874,10 +899,11 @@ export function MedicoesPage() {
             </div>
           </div>
 
-          {(() => {
+         {(() => {
             const listaMes = maquinas.filter((eq) => eq.mesId === mesSelecionado.id);
             const maqAtiva = listaMes.find((eq) => eq.id === maquinaSelecionadaId) || listaMes[0];
-            if (!maqAtiva)
+            
+            if (!maqAtiva) {
               return (
                 <div className="text-center py-8 space-y-3 print:hidden">
                   <p className="text-gray-500">Nenhum equipamento cadastrado neste mês.</p>
@@ -896,7 +922,313 @@ export function MedicoesPage() {
                   </button>
                 </div>
               );
+            }
 
+            const isCasanContrato = contratoSelecionado?.numero.includes("1546") || contratoSelecionado?.contratante.includes("CASAN");
+
+ // ==========================================
+            // 1. LAYOUT EXCLUSIVO PARA O CONTRATO DA CASAN
+            // ==========================================
+            if (isCasanContrato) {
+              const valorMensalFixo = maqAtiva.valorHora ?? 60569.41;
+              const taxa50 = (maqAtiva as any).taxa50 ?? 142.72;
+              const taxa100 = (maqAtiva as any).taxa100 ?? 170.63;
+
+              let totalValor50Mes = 0;
+              let totalValor100Mes = 0;
+              let totalHoras50Mes = 0;
+              let totalHoras100Mes = 0;
+
+              return (
+                <div className="space-y-1 print:space-y-0.5">
+                  <style>{`
+                    @media print {
+                      @page {
+                        size: A4 portrait;
+                        margin: 4mm !important;
+                      }
+                      body {
+                        font-size: 8px !important;
+                        background: white !important;
+                        color: black !important;
+                      }
+                      input {
+                        border: none !important;
+                        background: transparent !important;
+                        text-align: center !important;
+                        padding: 0 !important;
+                      }
+                      .print\\:hidden {
+                        display: none !important;
+                      }
+                    }
+                  `}</style>
+
+                  <div className="border border-gray-800 text-[10px] print:text-[7.5px]">
+                    <div className="bg-gray-200 text-center font-bold py-0.5 border-b border-gray-800 uppercase">
+                      RESUMO DA MEDIÇÃO - CASAN - {mesSelecionado.nome.toUpperCase()} / {mesSelecionado.ano}
+                    </div>
+                    
+                    <div className="grid grid-cols-2 border-b border-gray-800 p-1 font-semibold items-center">
+                      <div>CONTRATANTE: COMPANHIA CATARINENSE DE AGUAS E SANEAMENTO - CASAN</div>
+                      <div className="flex items-center gap-1 justify-end">
+                        <span>CONTRATO Nº:</span>
+                        <input
+                          type="text"
+                          value={contratoSelecionado.numero}
+                          onChange={(e) => {
+                            const novoNumero = e.target.value;
+                            setContratoSelecionado({ ...contratoSelecionado, numero: novoNumero });
+                            setContratos(contratos.map(c => c.id === contratoSelecionado.id ? { ...c, numero: novoNumero } : c));
+                          }}
+                          className="w-36 p-0.5 border rounded bg-white text-right font-bold print:border-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 p-1 font-semibold items-center gap-1">
+                      <div>EQUIPAMENTO: {maqAtiva.tipo.toUpperCase()} ({maqAtiva.codigo})</div>
+                      <div>OPERADOR: {maqAtiva.operador.toUpperCase()}</div>
+                      
+                      <div className="flex items-center gap-1 justify-end text-[10px] flex-wrap">
+                        <span className="font-bold">VALOR MENSAL R$:</span>
+                        <input
+                          type="text"
+                          value={maqAtiva.valorHora === 0 ? "" : maqAtiva.valorHora}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            if (raw === "") {
+                              setMaquinas(maquinas.map((m) => m.id === maqAtiva.id ? { ...m, valorHora: 0 } : m));
+                              return;
+                            }
+                            const val = Number(raw);
+                            if (!isNaN(val)) {
+                              setMaquinas(maquinas.map((m) => m.id === maqAtiva.id ? { ...m, valorHora: val } : m));
+                            }
+                          }}
+                          className="w-20 p-0.5 border rounded text-right font-bold bg-white print:border-none"
+                        />
+                        <span className="font-bold ml-1">50%:</span>
+                        <input
+                          type="text"
+                          value={taxa50 === 0 ? "" : taxa50}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            const val = raw === "" ? 0 : Number(raw);
+                            if (!isNaN(val)) {
+                              setMaquinas(maquinas.map((m) => m.id === maqAtiva.id ? { ...m, taxa50: val } as any : m));
+                            }
+                          }}
+                          className="w-14 p-0.5 border rounded text-right font-bold bg-white print:border-none"
+                        />
+                        <span className="font-bold ml-1">100%:</span>
+                        <input
+                          type="text"
+                          value={taxa100 === 0 ? "" : taxa100}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            const val = raw === "" ? 0 : Number(raw);
+                            if (!isNaN(val)) {
+                              setMaquinas(maquinas.map((m) => m.id === maqAtiva.id ? { ...m, taxa100: val } as any : m));
+                            }
+                          }}
+                          className="w-14 p-0.5 border rounded text-right font-bold bg-white print:border-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto border border-gray-800">
+                    <table className="w-full text-left border-collapse text-[10px] print:text-[7.5px]">
+                      <thead>
+                        <tr className="bg-gray-200 text-gray-900 border-b border-gray-800 text-center font-bold">
+                          <th className="p-0.5 border-r border-gray-800" rowSpan={2}>Data</th>
+                          <th className="p-0.5 border-r border-gray-800" rowSpan={2}>DIA</th>
+                          <th className="p-0.5 border-r border-gray-800" colSpan={2}>HORAS NORMAIS</th>
+                          <th className="p-0.5 border-r border-gray-800" rowSpan={2}>VALOR MENSAL R$</th>
+                          <th className="p-0.5 border-r border-gray-800" colSpan={2}>HR EXTRAS QTD</th>
+                          <th className="p-0.5 border-r border-gray-800" colSpan={2}>VALORES EXTRAS</th>
+                          <th className="p-0.5" rowSpan={2}>OBSERVAÇÃO</th>
+                        </tr>
+                        <tr className="bg-gray-100 text-gray-800 border-b border-gray-800 text-center font-semibold">
+                          <th className="p-0.2 border-r border-gray-800">INICIO</th>
+                          <th className="p-0.2 border-r border-gray-800">FINAL</th>
+                          <th className="p-0.2 border-r border-gray-800">HR 50%</th>
+                          <th className="p-0.2 border-r border-gray-800">HR 100%</th>
+                          <th className="p-0.2 border-r border-gray-800">HR 50% (R$ {taxa50.toFixed(2)})</th>
+                          <th className="p-0.2 border-r border-gray-800">HR 100% (R$ {taxa100.toFixed(2)})</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {maqAtiva.dias.map((d, i) => {
+                          const subNormal = calcularSubtotal(d.manhaInicio, d.manhaFim);
+                          const h50 = Number((d as any).horas50) || 0;
+                          const h100 = Number((d as any).horas100) || 0;
+                          const valor50Dia = h50 * taxa50;
+                          const valor100Dia = h100 * taxa100;
+
+                          totalHoras50Mes += h50;
+                          totalHoras100Mes += h100;
+                          totalValor50Mes += valor50Dia;
+                          totalValor100Mes += valor100Dia;
+
+                          const isFDS = d.diaSemana === "sábado" || d.diaSemana === "domingo";
+
+                          return (
+                            <tr key={i} className={`border-b border-gray-300 text-center ${isFDS ? "bg-gray-100" : ""}`}>
+                              <td className="p-0.5 border-r border-gray-300">{d.dataStr}</td>
+                              <td className="p-0.5 border-r border-gray-300">{d.diaSemana}</td>
+                              
+                              <td className="p-0.5 border-r border-gray-300">
+                                <input
+                                  type="text"
+                                  value={d.manhaInicio}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setMaquinas(maquinas.map((m) => m.id !== maqAtiva.id ? m : {
+                                      ...m, dias: m.dias.map((di, idx) => idx === i ? { ...di, manhaInicio: val } : di)
+                                    }));
+                                  }}
+                                  onBlur={(e) => {
+                                    const formatado = formatarHoraInput(e.target.value);
+                                    setMaquinas(maquinas.map((m) => m.id !== maqAtiva.id ? m : {
+                                      ...m, dias: m.dias.map((di, idx) => idx === i ? { ...di, manhaInicio: formatado } : di)
+                                    }));
+                                  }}
+                                  className="w-12 p-0.5 text-center border rounded bg-white text-[10px] print:border-none"
+                                  placeholder="07:00"
+                                />
+                              </td>
+                              <td className="p-0.5 border-r border-gray-300">
+                                <input
+                                  type="text"
+                                  value={d.manhaFim}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setMaquinas(maquinas.map((m) => m.id !== maqAtiva.id ? m : {
+                                      ...m, dias: m.dias.map((di, idx) => idx === i ? { ...di, manhaFim: val } : di)
+                                    }));
+                                  }}
+                                  onBlur={(e) => {
+                                    const formatado = formatarHoraInput(e.target.value);
+                                    setMaquinas(maquinas.map((m) => m.id !== maqAtiva.id ? m : {
+                                      ...m, dias: m.dias.map((di, idx) => idx === i ? { ...di, manhaFim: formatado } : di)
+                                    }));
+                                  }}
+                                  className="w-12 p-0.5 text-center border rounded bg-white text-[10px] print:border-none"
+                                  placeholder="19:00"
+                                />
+                              </td>
+                              <td className="p-0.5 border-r border-gray-300 font-bold bg-orange-50 text-orange-800">
+                                {subNormal > 0 ? `${subNormal.toFixed(2)}:00` : ""}
+                              </td>
+
+                              <td className="p-0.5 border-r border-gray-300">
+                                <input
+                                  type="number"
+                                  step="0.5"
+                                  value={(d as any).horas50 || ""}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setMaquinas(maquinas.map((m) => m.id !== maqAtiva.id ? m : {
+                                      ...m, dias: m.dias.map((di, idx) => idx === i ? { ...di, horas50: val } : di) as any
+                                    }));
+                                  }}
+                                  className="w-10 p-0.5 text-center border rounded bg-white text-[10px] print:border-none"
+                                  placeholder="0"
+                                />
+                              </td>
+                              <td className="p-0.5 border-r border-gray-300">
+                                <input
+                                  type="number"
+                                  step="0.5"
+                                  value={(d as any).horas100 || ""}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setMaquinas(maquinas.map((m) => m.id !== maqAtiva.id ? m : {
+                                      ...m, dias: m.dias.map((di, idx) => idx === i ? { ...di, horas100: val } : di) as any
+                                    }));
+                                  }}
+                                  className="w-10 p-0.5 text-center border rounded bg-white text-[10px] print:border-none"
+                                  placeholder="0"
+                                />
+                              </td>
+
+                              <td className="p-0.5 border-r border-gray-300 text-green-700 font-semibold bg-gray-50">
+                                {valor50Dia > 0 ? `R$ ${valor50Dia.toFixed(2)}` : "R$ -"}
+                              </td>
+                              <td className="p-0.5 border-r border-gray-300 text-green-700 font-semibold bg-gray-50">
+                                {valor100Dia > 0 ? `R$ ${valor100Dia.toFixed(2)}` : "R$ -"}
+                              </td>
+
+                              <td className="p-0.5">
+                                <input
+                                  type="text"
+                                  value={d.observacao}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setMaquinas(maquinas.map((m) => m.id !== maqAtiva.id ? m : {
+                                      ...m, dias: m.dias.map((di, idx) => idx === i ? { ...di, observacao: val } : di)
+                                    }));
+                                  }}
+                                  className="w-full p-0.5 border rounded text-[10px] bg-white print:border-none"
+                                  placeholder="Obs..."
+                                />
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-gray-200 font-bold text-center border-t border-gray-800 text-[10px]">
+                          <td className="p-0.5 border-r border-gray-800" colSpan={4}>TOTAL GERAL</td>
+                          <td className="p-0.5 border-r border-gray-800 text-orange-900">
+                            R$ {valorMensalFixo.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                          </td>
+                          <td className="p-0.5 border-r border-gray-800">{totalHoras50Mes > 0 ? totalHoras50Mes.toFixed(2) : ""}</td>
+                          <td className="p-0.5 border-r border-gray-800">{totalHoras100Mes > 0 ? totalHoras100Mes.toFixed(2) : ""}</td>
+                          <td className="p-0.5 border-r border-gray-800 text-green-900">
+                            R$ {totalValor50Mes.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                          </td>
+                          <td className="p-0.5 border-r border-gray-800 text-green-900">
+                            R$ {totalValor100Mes.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                          </td>
+                          <td className="p-0.5 text-right font-extrabold text-blue-900">
+                            TOTAL: R$ {(valorMensalFixo + totalValor50Mes + totalValor100Mes).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+
+                  <div className="border border-gray-800 p-2 space-y-2 bg-white text-xs print:mt-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-[10px]">DATA DE APROVAÇÃO:</span>
+                      <input
+                        type="date"
+                        value={maqAtiva.dataAprovacao || ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setMaquinas(maquinas.map((m) => m.id !== maqAtiva.id ? m : { ...m, dataAprovacao: val }));
+                        }}
+                        className="border rounded p-0.5 text-xs print:border-none"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-8 pt-6 text-center text-[10px]">
+                      <div className="border-t border-gray-800 pt-1 font-semibold">
+                        Responsável pela Medição / Executante
+                      </div>
+                      <div className="border-t border-gray-800 pt-1 font-semibold">
+                        Fiscal / Gestor do Contrato
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            // ==========================================
+            // 2. LAYOUT ORIGINAL COMPLETO PARA OS OUTROS CONTRATOS
+            // ==========================================
             let totalGeralHoras = 0;
             let totalGeralValor = 0;
             const totalContrato = listaMes.reduce(
@@ -1216,59 +1548,26 @@ export function MedicoesPage() {
                   </span>
                 </div>
 
-                <div className="mt-2 pt-2 border border-gray-800 p-2 text-[10px] print:text-[9px] space-y-4 bg-gray-50 print:bg-white">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold">DATA DE APROVAÇÃO:</span>
-                      <input
-                        type="date"
-                        value={maqAtiva.dataAprovacao}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setMaquinas(
-                            maquinas.map((m) =>
-                              m.id === maqAtiva.id ? { ...m, dataAprovacao: val } : m,
-                            ),
-                          );
-                        }}
-                        className="p-0.5 border rounded bg-white print:border-none"
-                      />
-                    </div>
+                {/* RODAPÉ PADRÃO DOS OUTROS CONTRATOS */}
+                <div className="border border-gray-800 p-3 space-y-4 bg-white text-xs print:mt-4">
+                  <div className="flex items-center gap-2 print:hidden">
+                    <span className="font-bold">DATA DE APROVAÇÃO:</span>
+                    <input
+                      type="date"
+                      value={maqAtiva.dataAprovacao || ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setMaquinas(maquinas.map((m) => m.id !== maqAtiva.id ? m : { ...m, dataAprovacao: val }));
+                      }}
+                      className="border rounded p-1 text-xs"
+                    />
                   </div>
-                  <div className="grid grid-cols-2 gap-8 pt-6 text-center">
-                    <div className="border-t border-gray-600 pt-1">
-                      <input
-                        type="text"
-                        value={maqAtiva.assinaturaResponsavel}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setMaquinas(
-                            maquinas.map((m) =>
-                              m.id === maqAtiva.id ? { ...m, assinaturaResponsavel: val } : m,
-                            ),
-                          );
-                        }}
-                        className="w-full text-center font-bold bg-transparent border-none"
-                      />
-                      <span className="text-[8px] text-gray-500">
-                        Responsável pela Medição / Executante
-                      </span>
+                  <div className="grid grid-cols-2 gap-8 pt-12 text-center">
+                    <div className="border-t border-gray-800 pt-1 font-semibold">
+                      {maqAtiva.assinaturaResponsavel || "Responsável pela Medição / Executante"}
                     </div>
-                    <div className="border-t border-gray-600 pt-1">
-                      <input
-                        type="text"
-                        value={maqAtiva.assinaturaContratante}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setMaquinas(
-                            maquinas.map((m) =>
-                              m.id === maqAtiva.id ? { ...m, assinaturaContratante: val } : m,
-                            ),
-                          );
-                        }}
-                        className="w-full text-center font-bold bg-transparent border-none"
-                      />
-                      <span className="text-[8px] text-gray-500">Fiscal / Gestor do Contrato</span>
+                    <div className="border-t border-gray-800 pt-1 font-semibold">
+                      {maqAtiva.assinaturaContratante || "Fiscal / Gestor do Contrato"}
                     </div>
                   </div>
                 </div>
