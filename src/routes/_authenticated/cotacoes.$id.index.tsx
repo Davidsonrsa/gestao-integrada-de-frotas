@@ -705,6 +705,21 @@ if (cotData?.solicitante_id) {
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6 print:p-0">
+      <style>{`
+        @media print {
+          header, nav, .navbar, .top-bar, footer, button, .print\\:hidden {
+            display: none !important;
+          }
+          body {
+            zoom: 82%;
+            background: white !important;
+          }
+          .shadow-sm, .shadow, .rounded-xl {
+            box-shadow: none !important;
+            border: none !important;
+          }
+        }
+      `}</style>
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <Button variant="outline" onClick={() => navigate({ to: "/cotacoes" })} className="gap-2">
           <ArrowLeft className="w-4 h-4" /> Voltar às Cotações
