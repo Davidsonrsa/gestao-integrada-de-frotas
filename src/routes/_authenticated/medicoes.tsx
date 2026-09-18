@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Plus, Edit, Trash2, Save, Calendar, ArrowLeft, Clock, Printer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { requireAdmin } from "@/lib/route-guards";
-
+import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/medicoes")({
   beforeLoad: requireAdmin,
   component: MedicoesPage,
@@ -470,17 +470,18 @@ export function MedicoesPage() {
       return `${hora}:${min}`;
     }
   };
-
-  const calcularTotalMes = (mesId: string) => {
+const calcularTotalMes = (mesId: string) => {
     const maquinasDoMes = maquinas.filter((m) => m.mesId === mesId);
     let totalMes = 0;
 
     maquinasDoMes.forEach((maq) => {
-      maq.dias.forEach((d) => {
-        const subM = calcularSubtotal(d.manhaInicio, d.manhaFim);
-        const subT = calcularSubtotal(d.tardeInicio, d.tardeFim);
-        totalMes += (subM + subT) * maq.valorHora;
-      });
+      if (maq.dias && Array.isArray(maq.dias)) {
+        maq.dias.forEach((d) => {
+          const subM = calcularSubtotal(d.manhaInicio, d.manhaFim);
+          const subT = calcularSubtotal(d.tardeInicio, d.tardeFim);
+          totalMes += (subM + subT) * (Number(maq.valorHora) || 0);
+        });
+      }
     });
 
     return totalMes;
@@ -749,12 +750,29 @@ export function MedicoesPage() {
                         </div>
                       </div>
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (confirm("Excluir mês?")) {
-                            setMeses(meses.filter((x) => x.id !== m.id));
-                          }
-                        }}
+                       onClick={async (e) => {
+  e.stopPropagation();
+  if (confirm("Deseja realmente excluir este mês/contrato?")) {
+    try {
+      // 1. Apaga no banco de dados do Supabase (verifique se o nome da tabela é 'medicoes' ou 'contratos')
+      const { error } = await supabase
+        .from("contratos") 
+        .delete()
+        .eq("id", m.id);
+
+      if (error) throw error;
+
+      // 2. Se der certo no banco, remove da tela
+      setMeses((mesesAtuais) => mesesAtuais.filter((x) => x.id !== m.id));
+      toast.success("Excluído com sucesso!");
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error("Erro detalhado do Supabase:", err);
+      toast.error("Erro ao excluir: " + (err.message || "Erro desconhecido"));
+      alert("Erro detalhado do banco: " + JSON.stringify(err, null, 2));
+    }
+  }
+}}
                         className="rounded-md bg-red-600 p-1.5 text-white hover:bg-red-700"
                       >
                         <Trash2 size={16} />
@@ -768,30 +786,65 @@ export function MedicoesPage() {
 
   <span className="text-sm font-bold text-orange-700">
     {`R$ ${maquinas
-      .filter((eq: any) => eq.mesId === (m as any)?.id)
-      .reduce((acc: number, maq: any) => {
-        const valorMensal = Number(maq.valorHora) || 0;
-        const taxa50 = Number(maq.taxa50) || 142.72;
-        const taxa100 = Number(maq.taxa100) || 170.63;
+      .filter((eq) => eq.mesId === m.id)
+      .reduce((acc, maq) => {
+        // ==========================================
+        // CASAN
+        // ==========================================
+        const isCasan =
+          contratoSelecionado?.numero?.includes("1546") ||
+          contratoSelecionado?.contratante?.toUpperCase().includes("CASAN");
 
-        let extras50 = 0;
-        let extras100 = 0;
+        if (isCasan) {
+          const valorMensal = Number(maq.valorHora) || 0;
+          const taxa50 = Number((maq as any).taxa50) || 142.72;
+          const taxa100 = Number((maq as any).taxa100) || 170.63;
+
+          let extras50 = 0;
+          let extras100 = 0;
+
+          if (Array.isArray(maq.dias)) {
+            maq.dias.forEach((d: any) => {
+              extras50 += (Number(d.horas50) || 0) * taxa50;
+              extras100 += (Number(d.horas100) || 0) * taxa100;
+            });
+          }
+
+          return acc + valorMensal + extras50 + extras100;
+        }
+
+        // ==========================================
+        // OUTROS CONTRATOS
+        // ==========================================
+        let valorTotal = 0;
 
         if (Array.isArray(maq.dias)) {
-          maq.dias.forEach((d: any) => {
-            extras50 += (Number(d.horas50) || 0) * taxa50;
-            extras100 += (Number(d.horas100) || 0) * taxa100;
+          maq.dias.forEach((d) => {
+            const horasManha = calcularSubtotal(
+              d.manhaInicio,
+              d.manhaFim,
+            );
+
+            const horasTarde = calcularSubtotal(
+              d.tardeInicio,
+              d.tardeFim,
+            );
+
+            const totalHorasDia = horasManha + horasTarde;
+
+            valorTotal +=
+              totalHorasDia * (Number(maq.valorHora) || 0);
           });
         }
 
-        return acc + valorMensal + extras50 + extras100;
+        return acc + valorTotal;
       }, 0)
       .toLocaleString("pt-BR", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
-                          })}`}
-                    </span>
-                  </div>
+      })}`}
+  </span>
+</div>
                   </div>
                 );
                  })}

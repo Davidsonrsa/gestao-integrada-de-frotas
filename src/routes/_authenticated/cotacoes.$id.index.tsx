@@ -50,7 +50,7 @@ interface Cotacao {
   data_cotacao?: string | null;
   observacoes?: string | null;
   status?: string | null;
-  criado_por?: string | null; 
+  solicitante_id?: string | null; // ALTERADO DE CRIADO POR PARA SOLICITANTE
 }
 
 interface ItemCotacao {
@@ -91,7 +91,7 @@ interface RespostaPreco {
 export default function DetalheCotacaoPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
-
+  const [nomeSolicitanteFixo, setNomeSolicitanteFixo] = useState("—");
   const [cotacao, setCotacao] = useState<Cotacao | null>(null);
   const [itens, setItens] = useState<ItemCotacao[]>([]);
   const [fornecedoresCotacao, setFornecedoresCotacao] = useState<CotacaoFornecedor[]>([]);
@@ -136,12 +136,12 @@ export default function DetalheCotacaoPage() {
     try {
       setLoading(true);
 
-      // Buscar usuário logado atual
+      // Buscar usuário logado atual (usado no envio de orçamento ou fallback)
       const {
         data: { user },
       } = await supabase.auth.getUser();
+      let nomeAtual = "Usuário";
       if (user) {
-        // Tenta buscar nome do perfil se houver tabela profiles, senão pega do metadata ou email
         const { data: profile } = await supabase
           .from("profiles")
           .select("full_name")
@@ -149,12 +149,13 @@ export default function DetalheCotacaoPage() {
           .single();
 
         if (profile?.full_name) {
-          setUsuarioNome(profile.full_name);
+          nomeAtual = profile.full_name;
         } else if (user.user_metadata?.name) {
-          setUsuarioNome(user.user_metadata.name);
+          nomeAtual = user.user_metadata.name;
         } else if (user.email) {
-          setUsuarioNome(user.email.split("@")[0].toUpperCase());
+          nomeAtual = user.email.split("@")[0].toUpperCase();
         }
+        setUsuarioNome(nomeAtual);
       }
 
       if (id === "nova") {
@@ -192,7 +193,19 @@ export default function DetalheCotacaoPage() {
         .single();
       if (cotErr) throw cotErr;
       setCotacao(cotData);
+if (cotData?.solicitante_id) {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", cotData.solicitante_id)
+          .single();
 
+        if (profileData?.full_name) {
+          setNomeSolicitanteFixo(profileData.full_name);
+        } else {
+          setNomeSolicitanteFixo("Administrador");
+        }
+      }
       const { data: itensData, error: itensErr } = await supabase
         .from("cotacao_itens")
         .select("*")
@@ -239,6 +252,25 @@ export default function DetalheCotacaoPage() {
 
     try {
       setSaving(true);
+
+      // Obtém o usuário criador logado no momento exato da criação
+      const { data: { user } } = await supabase.auth.getUser();
+      let nomeCriador = "Administrador";
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single();
+        if (profile?.full_name) {
+          nomeCriador = profile.full_name;
+        } else if (user.user_metadata?.name) {
+          nomeCriador = user.user_metadata.name;
+        } else if (user.email) {
+          nomeCriador = user.email.split("@")[0].toUpperCase();
+        }
+      }
+
       const { data, error } = await supabase
         .from("cotacoes")
         .insert([
@@ -250,6 +282,7 @@ export default function DetalheCotacaoPage() {
             observacoes: novaObs.trim() || null,
             status: "aberto",
             valor_total: 0,
+            solicitante_id: user?.id || null, //Salva o ID fixo do criador no banc
           },
         ])
         .select()
@@ -461,7 +494,7 @@ export default function DetalheCotacaoPage() {
       "Prezado Fornecedor";
     let texto = `*SOLICITAÇÃO DE ORÇAMENTO - COTAÇÃO Nº ${cotacao?.numero}*\n`;
     texto += `*Fornecedor:* ${fornNome}\n`;
-    texto += `*Solicitante:* ${usuarioNome}\n`;
+    texto += `*Solicitante:* ${nomeSolicitanteFixo}\n`;
     texto += `*Equipamento/Patrimônio:* ${cotacao?.patrimonio || "—"}\n`;
     texto += `*Setor:* ${cotacao?.setor || "—"} | *Data:* ${formatarData(cotacao?.data_cotacao)}\n\n`;
     texto += `*ITENS SOLICITADOS:*\n`;
@@ -697,7 +730,7 @@ export default function DetalheCotacaoPage() {
             </h1>
             <p className="text-sm text-slate-600 mt-1">
               Setor: {cotacao.setor || "—"} | Data: {formatarData(cotacao.data_cotacao)} |{" "}
-              <strong>Solicitante:</strong> {cotacao.criado_por ||usuarioNome}
+              <strong>Solicitante:</strong> {nomeSolicitanteFixo}
             </p>
             {cotacao.observacoes && (
               <p className="text-xs text-slate-500 mt-2">Obs: {cotacao.observacoes}</p>
@@ -866,367 +899,190 @@ export default function DetalheCotacaoPage() {
                 })
               )}
             </tbody>
-            <tfoot className="bg-slate-100 font-bold text-slate-800">
-              <tr>
-                <td colSpan={4} className="p-3 text-right">
-                  VALOR TOTAL:
-                </td>
-                {fornecedoresCotacao.map((fc) => {
-                  const fornId = fc.fornecedor_id || (fc as any).fornecedores?.id;
-                  let totalForn = 0;
-                  itens.forEach((item) => {
-                    const resp = respostas.find(
-                      (r) =>
-                        String(r.fornecedor_id).trim() === String(fornId).trim() &&
-                        String(r.cotacao_item_id).trim() === String(item.id).trim(),
-                    );
-                    if (resp && (resp.preco ?? 0) > 0) {
-                      totalForn += (resp.preco ?? 0) * (item.quantidade || 1);
-                    }
-                  });
-                  return (
-                    <td key={fornId} className="p-3 text-right">
-                      {totalForn > 0 ? brl(totalForn) : "—"}
-                    </td>
-                  );
-                })}
-                <td className="p-3 text-right bg-emerald-100 text-emerald-900 text-base">
-                  {brl(valorTotalOtimo)}
-                </td>
-                <td className="print:hidden"></td>
-              </tr>
-            </tfoot>
           </table>
         </div>
       </div>
 
-      <div className="hidden print:block mt-12 pt-8 border-t border-slate-400">
-        <div className="grid grid-cols-3 gap-8 text-center">
-          <div className="space-y-2">
-            <div className="border-b border-black pb-12"></div>
-            <p className="text-xs font-bold text-black">Responsável Técnico / Compras</p>
-            <p className="text-[10px] text-slate-600">Data: ____/____/________</p>
-          </div>
-          <div className="space-y-2">
-            <div className="border-b border-black pb-12"></div>
-            <p className="text-xs font-bold text-black">Gerência de Manutenção</p>
-            <p className="text-[10px] text-slate-600">Data: ____/____/________</p>
-          </div>
-          <div className="space-y-2">
-            <div className="border-b border-black pb-12"></div>
-            <p className="text-xs font-bold text-black">Diretoria / Financeiro</p>
-            <p className="text-[10px] text-slate-600">Data: ____/____/________</p>
-          </div>
-        </div>
-      </div>
-
-      {/* MODAL DE ORÇAMENTO ESPECÍFICO PARA O FORNECEDOR */}
-      <Dialog open={isOrcamentoOpen} onOpenChange={setIsOrcamentoOpen}>
-        <DialogContent className="sm:max-w-2xl bg-white max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-blue-600" />
-              Solicitação de Orçamento -{" "}
-              {fornecedorOrcamentoAtivo?.fornecedores?.nome_fantasia ||
-                fornecedorOrcamentoAtivo?.fornecedores?.razao_social}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-1">
-              <p>
-                <strong>Cotação Nº:</strong> {cotacao.numero}
-              </p>
-              <p>
-                <strong>Equipamento / Patrimônio:</strong> {cotacao.patrimonio || "—"}
-              </p>
-              <p>
-                <strong>Setor:</strong> {cotacao.setor || "—"} | <strong>Data:</strong>{" "}
-                {formatarData(cotacao.data_cotacao)}
-              </p>
-              <p>
-                <strong>Solicitante:</strong>{" "}
-                <span className="text-blue-700 font-bold">{usuarioNome}</span>
-              </p>
-              {fornecedorOrcamentoAtivo?.fornecedores?.cnpj && (
-                <p>
-                  <strong>CNPJ Fornecedor:</strong> {fornecedorOrcamentoAtivo.fornecedores.cnpj}
-                </p>
-              )}
-              {fornecedorOrcamentoAtivo?.fornecedores?.telefone && (
-                <p>
-                  <strong>Telefone:</strong> {fornecedorOrcamentoAtivo.fornecedores.telefone}
-                </p>
-              )}
-              {fornecedorOrcamentoAtivo?.fornecedores?.email && (
-                <p>
-                  <strong>E-mail:</strong> {fornecedorOrcamentoAtivo.fornecedores.email}
-                </p>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-2 rounded-lg border border-blue-100 bg-blue-50 p-3 sm:flex-row sm:items-end sm:justify-between">
-              <div className="flex-1">
-                <Label className="text-xs font-semibold text-slate-700">
-                  Status do orçamento
-                </Label>
-                <select
-                  value={statusOrcamento}
-                  onChange={(e) => setStatusOrcamento(e.target.value)}
-                  className="mt-1 h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm"
-                >
-                  <option value="aberto">Em Aberto</option>
-                  <option value="analise">Em Análise</option>
-                  <option value="aprovada">Aprovada</option>
-                  <option value="recusada">Recusada</option>
-                </select>
-              </div>
-              <Button
-                type="button"
-                onClick={salvarStatusOrcamento}
-                disabled={saving}
-                className="bg-blue-600 text-white hover:bg-blue-700"
-              >
-                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Salvar status
-              </Button>
-            </div>
-
-            <div>
-              <h4 className="text-xs font-bold uppercase text-slate-700 mb-2">
-                Itens solicitados para cotação:
-              </h4>
-              <div className="border border-slate-200 rounded-lg overflow-hidden">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-100 text-slate-700">
-                    <tr>
-                      <th className="p-2 border-b">Cód.</th>
-                      <th className="p-2 border-b">Descrição</th>
-                      <th className="p-2 border-b text-center">Qtd</th>
-                      <th className="p-2 border-b text-center">Un</th>
-                      <th className="p-2 border-b text-right">Preço Unit. (R$)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {itens.map((item) => (
-                      <tr key={item.id} className="border-b border-slate-100">
-                        <td className="p-2 font-mono text-slate-500">{item.codigo || "—"}</td>
-                        <td className="p-2 font-medium text-slate-800">{item.descricao}</td>
-                        <td className="p-2 text-center">{item.quantidade}</td>
-                        <td className="p-2 text-center">{item.unidade}</td>
-                        <td className="p-2 text-right text-slate-400">________</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {cotacao.observacoes && (
-              <div className="text-xs text-slate-600 bg-amber-50 border border-amber-200 p-2.5 rounded">
-                <strong>Observações:</strong> {cotacao.observacoes}
-              </div>
-            )}
-          </div>
-
-          <DialogFooter className="flex flex-wrap gap-2 justify-between items-center pt-2 border-t">
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                onClick={enviarPorWhatsApp}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 text-xs"
-              >
-                <MessageCircle className="w-4 h-4" /> Enviar por WhatsApp
-              </Button>
-              <Button
-                type="button"
-                onClick={enviarPorEmail}
-                className="bg-blue-600 hover:bg-blue-700 text-white gap-2 text-xs"
-              >
-                <Mail className="w-4 h-4" /> Enviar por E-mail
-              </Button>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                onClick={() => window.print()}
-                variant="outline"
-                className="gap-2 text-xs"
-              >
-                <Printer className="w-4 h-4" /> Imprimir PDF
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setIsOrcamentoOpen(false)}
-                className="text-xs"
-              >
-                Fechar
-              </Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* MODAIS DE ITEM, FORNECEDOR E PREÇOS */}
+      {/* Modal Adicionar Item */}
       <Dialog open={isNovoItemOpen} onOpenChange={setIsNovoItemOpen}>
-        <DialogContent className="sm:max-w-md bg-white">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Adicionar Item / Peça</DialogTitle>
+            <DialogTitle>Adicionar Item à Cotação</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleAddItem} className="space-y-4 mt-2">
+          <form onSubmit={handleAddItem} className="space-y-4">
             <div>
-              <Label className="text-xs font-semibold text-slate-700">
-                Código do Produto / Peça
-              </Label>
+              <Label>Código (Opcional)</Label>
               <Input
                 value={codigoItem}
                 onChange={(e) => setCodigoItem(e.target.value)}
-                placeholder="Ex: FIL-01"
-                className="mt-1"
+                placeholder="Ex: PEÇA-01"
               />
             </div>
             <div>
-              <Label className="text-xs font-semibold text-slate-700">Descrição *</Label>
+              <Label>Descrição *</Label>
               <Input
                 value={descricaoItem}
                 onChange={(e) => setDescricaoItem(e.target.value)}
                 placeholder="Ex: Filtro de Óleo"
                 required
-                className="mt-1"
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Quantidade</Label>
+                <Label>Quantidade</Label>
                 <Input
                   type="number"
                   step="any"
                   value={quantidadeItem}
                   onChange={(e) => setQuantidadeItem(e.target.value)}
                   required
-                  className="mt-1"
                 />
               </div>
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Unidade</Label>
+                <Label>Unidade</Label>
                 <Input
                   value={unidadeItem}
                   onChange={(e) => setUnidadeItem(e.target.value)}
+                  placeholder="UN, PC, JG..."
                   required
-                  className="mt-1"
                 />
               </div>
             </div>
-            <DialogFooter className="mt-4 flex gap-2 justify-end">
+            <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsNovoItemOpen(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
-                Salvar
-              </Button>
+              <Button type="submit" disabled={saving}>Adicionar</Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
+      {/* Modal Vincular Fornecedor */}
       <Dialog open={isVincularFornecedorOpen} onOpenChange={setIsVincularFornecedorOpen}>
-        <DialogContent className="sm:max-w-md bg-white">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Vincular Fornecedor</DialogTitle>
+            <DialogTitle>Vincular Fornecedor à Cotação</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleVincularFornecedor} className="space-y-4 mt-2">
+          <form onSubmit={handleVincularFornecedor} className="space-y-4">
             <div>
-              <Label className="text-xs font-semibold text-slate-700">Fornecedor *</Label>
+              <Label>Selecione o Fornecedor</Label>
               <select
-                className="w-full mt-1 border border-slate-300 rounded-md p-2 text-sm bg-white"
                 value={fornecedorIdSelecionado}
                 onChange={(e) => setFornecedorIdSelecionado(e.target.value)}
+                className="w-full mt-1 border border-slate-300 rounded-md p-2 text-sm bg-white h-10"
                 required
               >
                 <option value="">Selecione...</option>
                 {todosFornecedores.map((f) => (
                   <option key={f.id} value={f.id}>
-                    {f.nome_fantasia || f.razao_social}
+                    {f.nome_fantasia || f.razao_social} {f.cnpj ? `(${f.cnpj})` : ""}
                   </option>
                 ))}
               </select>
             </div>
-            <DialogFooter className="mt-4 flex gap-2 justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsVincularFornecedorOpen(false)}
-              >
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsVincularFornecedorOpen(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
-                Vincular
-              </Button>
+              <Button type="submit" disabled={saving}>Vincular</Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-    <Dialog open={isPrecosOpen} onOpenChange={setIsPrecosOpen}>
-        <DialogContent className="sm:max-w-2xl bg-white max-h-[90vh] overflow-y-auto">
+      {/* Modal Editar Preços */}
+      <Dialog open={isPrecosOpen} onOpenChange={setIsPrecosOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Informar Preços</DialogTitle>
+            <DialogTitle>
+              Preços do Fornecedor:{" "}
+              {fornecedorPrecoAtivo?.fornecedores?.nome_fantasia ||
+                fornecedorPrecoAtivo?.fornecedores?.razao_social}
+            </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSalvarPrecos} className="space-y-4 mt-2">
+          <form onSubmit={handleSalvarPrecos} className="space-y-4">
             <div className="space-y-3">
               {itens.map((item) => (
-                <div
-                  key={item.id}
-                  className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center bg-slate-50 p-3 rounded-lg border border-slate-200"
-                >
-                  <div className="md:col-span-6 text-sm">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-mono font-bold bg-slate-200 px-1.5 py-0.5 rounded text-slate-700">
-                        {item.codigo || "SEM CÓD."}
-                      </span>
-                      <span className="text-xs text-slate-500">
-                        Qtd: {item.quantidade} {item.unidade}
-                      </span>
+                <div key={item.id} className="p-3 border rounded-lg bg-slate-50 space-y-2">
+                  <div className="font-medium text-sm text-slate-800">
+                    {item.descricao} <span className="text-xs text-slate-500">(Qtd: {item.quantidade} {item.unidade})</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs">Preço Unitário (R$)</Label>
+                      <Input
+                        type="text"
+                        placeholder="0,00"
+                        value={precosTemp[item.id]?.preco || ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setPrecosTemp((prev) => ({
+                            ...prev,
+                            [item.id]: { ...prev[item.id], preco: val },
+                          }));
+                        }}
+                      />
                     </div>
-                    <span className="font-semibold text-slate-800 block">{item.descricao}</span>
-                  </div>
-                  <div className="md:col-span-3">
-                    <Input
-                      placeholder="Preço (R$)"
-                      value={precosTemp[item.id]?.preco || ""}
-                      onChange={(e) =>
-                        setPrecosTemp({
-                          ...precosTemp,
-                          [item.id]: { ...precosTemp[item.id], preco: e.target.value },
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="md:col-span-3">
-                    <Input
-                      placeholder="Marca"
-                      value={precosTemp[item.id]?.marca || ""}
-                      onChange={(e) =>
-                        setPrecosTemp({
-                          ...precosTemp,
-                          [item.id]: { ...precosTemp[item.id], marca: e.target.value },
-                        })
-                      }
-                    />
+                    <div>
+                      <Label className="text-xs">Marca / Obs</Label>
+                      <Input
+                        type="text"
+                        placeholder="Ex: HPARTS"
+                        value={precosTemp[item.id]?.marca || ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setPrecosTemp((prev) => ({
+                            ...prev,
+                            [item.id]: { ...prev[item.id], marca: val },
+                          }));
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
-            <DialogFooter className="mt-4 flex gap-2 justify-end">
+            <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsPrecosOpen(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
-                Salvar Preços
-              </Button>
+              <Button type="submit" disabled={saving}>Salvar Preços</Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Enviar Orçamento */}
+      <Dialog open={isOrcamentoOpen} onOpenChange={setIsOrcamentoOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Solicitação de Orçamento</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-xs">Texto gerado para envio:</Label>
+              <textarea
+                readOnly
+                rows={8}
+                className="w-full mt-1 border rounded-md p-2 text-xs font-mono bg-slate-50"
+                value={gerarTextoOrcamento()}
+              />
+            </div>
+            <div className="flex flex-wrap gap-2 justify-between items-center pt-2">
+              <div className="flex gap-2">
+                <Button onClick={enviarPorWhatsApp} className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2">
+                  <MessageCircle className="w-4 h-4" /> WhatsApp
+                </Button>
+                <Button onClick={enviarPorEmail} variant="outline" className="gap-2">
+                  <Mail className="w-4 h-4" /> E-mail
+                </Button>
+              </div>
+              <Button variant="ghost" onClick={() => setIsOrcamentoOpen(false)}>
+                Fechar
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
