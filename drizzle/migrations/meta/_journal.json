@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1790168935685,
+      "tag": "0000_restrict_contract_deletion_to_admins",
+      "breakpoints": true
+    }
+  ]
+}
