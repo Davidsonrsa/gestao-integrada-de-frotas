@@ -15,6 +15,7 @@ import {
 import {
   ArrowLeft,
   Plus,
+  Pencil,
   Trash2,
   Printer,
   Loader2,
@@ -122,6 +123,7 @@ export default function DetalheCotacaoPage() {
   const [descricaoItem, setDescricaoItem] = useState("");
   const [quantidadeItem, setQuantidadeItem] = useState("1");
   const [unidadeItem, setUnidadeItem] = useState("UN");
+  const [itemEditando, setItemEditando] = useState<ItemCotacao | null>(null);
 
   // Vinculação de Fornecedor
   const [fornecedorIdSelecionado, setFornecedorIdSelecionado] = useState("");
@@ -383,31 +385,51 @@ if (cotData?.solicitante_id) {
     atualizarTotalCotacao();
   }, [id, valorTotalOtimo, itens.length]);
 
-  async function handleAddItem(e: React.FormEvent) {
+  function limparFormularioItem() {
+    setCodigoItem("");
+    setDescricaoItem("");
+    setQuantidadeItem("1");
+    setUnidadeItem("UN");
+    setItemEditando(null);
+  }
+
+  function abrirEdicaoItem(item: ItemCotacao) {
+    setItemEditando(item);
+    setCodigoItem(item.codigo ?? "");
+    setDescricaoItem(item.descricao);
+    setQuantidadeItem(String(item.quantidade));
+    setUnidadeItem(item.unidade);
+    setIsNovoItemOpen(true);
+  }
+
+  async function handleSalvarItem(e: React.FormEvent) {
     e.preventDefault();
     if (!descricaoItem.trim()) return toast.error("Informe a descrição do item.");
+    const quantidade = Number.parseFloat(quantidadeItem.replace(",", "."));
+    if (!Number.isFinite(quantidade) || quantidade <= 0) {
+      return toast.error("Informe uma quantidade válida maior que zero.");
+    }
+    if (!unidadeItem.trim()) return toast.error("Informe a unidade do item.");
+
     try {
       setSaving(true);
-      const { error } = await supabase.from("cotacao_itens").insert([
-        {
-          cotacao_id: id,
-          codigo: codigoItem.trim() || null,
-          descricao: descricaoItem.trim(),
-          quantidade: parseFloat(quantidadeItem) || 1,
-          unidade: unidadeItem.trim(),
-        },
-      ]);
+      const payload = {
+        codigo: codigoItem.trim() || null,
+        descricao: descricaoItem.trim(),
+        quantidade,
+        unidade: unidadeItem.trim().toUpperCase(),
+      };
+      const { error } = itemEditando
+        ? await supabase.from("cotacao_itens").update(payload).eq("id", itemEditando.id)
+        : await supabase.from("cotacao_itens").insert([{ cotacao_id: id, ...payload }]);
       if (error) throw error;
-      toast.success("Item adicionado!");
+      toast.success(itemEditando ? "Item atualizado!" : "Item adicionado!");
       setIsNovoItemOpen(false);
-      setCodigoItem("");
-      setDescricaoItem("");
-      setQuantidadeItem("1");
-      setUnidadeItem("UN");
-      fetchData();
+      limparFormularioItem();
+      await fetchData();
     } catch (error: unknown) {
       const err = error as Error;
-      toast.error("Erro ao adicionar item: " + err.message);
+      toast.error(`Erro ao ${itemEditando ? "atualizar" : "adicionar"} item: ${err.message}`);
     } finally {
       setSaving(false);
     }
@@ -783,7 +805,10 @@ if (cotData?.solicitante_id) {
 
       <div className="flex flex-wrap gap-3 print:hidden">
         <Button
-          onClick={() => setIsNovoItemOpen(true)}
+          onClick={() => {
+            limparFormularioItem();
+            setIsNovoItemOpen(true);
+          }}
           className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
         >
           <Plus className="w-4 h-4" /> Adicionar Item / Peça
@@ -921,14 +946,28 @@ if (cotData?.solicitante_id) {
                       </td>
 
                       <td className="p-3 text-center print:hidden">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleDeleteItem(item.id)}
-                          className="text-red-600 h-8 w-8 p-0"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <div className="flex items-center justify-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => abrirEdicaoItem(item)}
+                            className="text-blue-600 h-8 w-8 p-0"
+                            aria-label={`Editar ${item.descricao}`}
+                            title="Editar item"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDeleteItem(item.id)}
+                            className="text-red-600 h-8 w-8 p-0"
+                            aria-label={`Excluir ${item.descricao}`}
+                            title="Excluir item"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -970,12 +1009,18 @@ if (cotData?.solicitante_id) {
       </div>
 
       {/* Modal Adicionar Item */}
-      <Dialog open={isNovoItemOpen} onOpenChange={setIsNovoItemOpen}>
+      <Dialog
+        open={isNovoItemOpen}
+        onOpenChange={(open) => {
+          setIsNovoItemOpen(open);
+          if (!open) limparFormularioItem();
+        }}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Adicionar Item à Cotação</DialogTitle>
+            <DialogTitle>{itemEditando ? "Editar Item da Cotação" : "Adicionar Item à Cotação"}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleAddItem} className="space-y-4">
+          <form onSubmit={handleSalvarItem} className="space-y-4">
             <div>
               <Label>Código (Opcional)</Label>
               <Input
@@ -1015,10 +1060,20 @@ if (cotData?.solicitante_id) {
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsNovoItemOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsNovoItemOpen(false);
+                  limparFormularioItem();
+                }}
+              >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={saving}>Adicionar</Button>
+              <Button type="submit" disabled={saving}>
+                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {itemEditando ? "Salvar Alterações" : "Adicionar"}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
