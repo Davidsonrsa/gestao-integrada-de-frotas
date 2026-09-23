@@ -9,4 +9,4 @@
 - [x] Botões azuis em tom mais claro com texto/ícone brancos
 - [x] Admin: listar cadastrados e permitir editar/excluir colaboradores e administradores
 
-- [ ] Frotas: mostrar data e responsável pela última atualização do horímetro
+- [x] Frotas: mostrar data e responsável pela última atualização do horímetro
