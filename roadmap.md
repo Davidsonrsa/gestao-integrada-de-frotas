@@ -1,4 +1,6 @@
 # Roadmap
 
 - [x] Restringir exclusão de contratos aos administradores
-- [x] Validar segurança e publicar a versão atual
+- [ ] Ajustar totais e assinaturas no layout de impressão das cotações
+- [ ] Validar a impressão da cotação
+- [ ] Validar segurança e publicar a versão atual
