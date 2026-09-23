@@ -34,6 +34,11 @@ function AuthenticatedLayout() {
     { to: "/admin", label: "Admin", icon: Settings },
   ];
 
+  const visibleNavItems = navItems.filter(
+    ({ to }) =>
+      isAdmin || !["/medicoes", "/custos", "/cotacoes", "/notas-fiscais", "/admin"].includes(to),
+  );
+
   return (
     <div className="min-h-screen bg-slate-50">
       <header
@@ -41,39 +46,34 @@ function AuthenticatedLayout() {
         style={{ backgroundColor: "#33859c" }}
       >
         <div
-          className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between gap-4 w-full"
+          className="max-w-7xl mx-auto px-3 py-2 md:px-4 md:py-2.5 w-full"
           style={{ backgroundColor: "#33859c" }}
         >
-          <div className="flex items-center space-x-3.5 shrink-0">
-            <img
-              src="/logo%20SPX%20MAFRA%20JHM.png"
-              alt="SPH JHM Mafra"
-              className="h-12 w-12 rounded-lg object-contain shadow-sm shrink-0 bg-white opacity-100 !opacity-100"
-            />
-            <div className="flex flex-col justify-center">
-              <h1 className="text-sm md:text-base font-extrabold tracking-tight text-black leading-tight">
-                GIF - Gestão Integrada de Frotas
-              </h1>
-              <div className="text-[11px] text-black/90 flex items-center gap-1.5 mt-0.5">
-                <span className="font-bold text-black">{fullName || "Usuário"}</span>
-                <Badge
-                  variant="outline"
-                  className="text-[9px] border-black/40 text-black bg-white/40 px-1 py-0 font-bold"
-                >
-                  {isAdmin ? "Admin" : "Colaborador"}
-                </Badge>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 md:flex md:gap-4">
+            <div className="flex min-w-0 items-center gap-2.5 md:gap-3.5 md:shrink-0">
+              <img
+                src="/logo%20SPX%20MAFRA%20JHM.png"
+                alt="SPH JHM Mafra"
+                className="h-10 w-10 md:h-12 md:w-12 rounded-lg object-contain shadow-sm shrink-0 bg-white opacity-100 !opacity-100"
+              />
+              <div className="flex min-w-0 flex-col justify-center">
+                <h1 className="truncate text-xs md:text-base font-extrabold tracking-tight text-black leading-tight">
+                  GIF - Gestão Integrada de Frotas
+                </h1>
+                <div className="text-[10px] md:text-[11px] text-black/90 flex min-w-0 items-center gap-1.5 mt-0.5">
+                  <span className="truncate font-bold text-black">{fullName || "Usuário"}</span>
+                  <Badge
+                    variant="outline"
+                    className="shrink-0 text-[9px] border-black/40 text-black bg-white/40 px-1 py-0 font-bold"
+                  >
+                    {isAdmin ? "Admin" : "Colaborador"}
+                  </Badge>
+                </div>
               </div>
             </div>
-          </div>
 
-          <nav className="flex items-center gap-1.5 overflow-x-auto py-1 bg-transparent">
-            {navItems
-              .filter(
-                ({ to }) =>
-                  isAdmin ||
-                  !["/medicoes", "/custos", "/cotacoes", "/notas-fiscais", "/admin"].includes(to),
-              )
-              .map(({ to, label, icon: Icon }) => (
+            <nav className="hidden md:flex flex-1 items-center justify-end gap-1.5 overflow-x-auto py-1 bg-transparent">
+              {visibleNavItems.map(({ to, label, icon: Icon }) => (
                 <Link
                   key={to}
                   to={to}
@@ -83,9 +83,8 @@ function AuthenticatedLayout() {
                   <span>{label}</span>
                 </Link>
               ))}
-          </nav>
+            </nav>
 
-          <div className="shrink-0">
             <Button
               size="sm"
               variant="ghost"
@@ -96,10 +95,23 @@ function AuthenticatedLayout() {
               <span className="hidden sm:inline">Sair</span>
             </Button>
           </div>
+
+          <nav className="mt-2 grid grid-cols-3 gap-1 md:hidden" aria-label="Navegação principal">
+            {visibleNavItems.map(({ to, label, icon: Icon }) => (
+              <Link
+                key={to}
+                to={to}
+                className="flex h-9 min-w-0 items-center justify-center gap-1 rounded-md px-1 text-[10px] font-bold leading-tight text-black transition-colors hover:bg-black/10 [&.active]:bg-black/25"
+              >
+                <Icon className="h-3.5 w-3.5 shrink-0 text-black" />
+                <span className="min-w-0 text-center">{label}</span>
+              </Link>
+            ))}
+          </nav>
         </div>
       </header>
 
-      <main className="pt-20">
+      <main className={isAdmin ? "pt-36 md:pt-20" : "pt-24 md:pt-20"}>
         <Outlet />
       </main>
     </div>
