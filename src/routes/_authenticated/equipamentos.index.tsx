@@ -55,7 +55,18 @@ type Equip = {
   status: string | null;
   cl: string | null;
   cover_storage_path: string | null;
+  updated_by: string | null;
 };
+
+function formatarDataHorimetro(data: string | null) {
+  if (!data) return "";
+  const [ano, mes, dia] = data.split("-");
+  return ano && mes && dia ? `${dia}/${mes}/${ano}` : data;
+}
+
+function primeiroNome(nome: string | undefined) {
+  return nome?.trim().split(/\s+/)[0] ?? "";
+}
 
 function calcularDiasVencimento(dataVencimentoStr: string): number | null {
   if (!dataVencimentoStr) return null;
@@ -1230,7 +1241,7 @@ function BotaoPendenciasAbertas({
 }
 
 function EquipamentosList() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, userId, fullName } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [q, setQ] = useState("");
@@ -1244,12 +1255,31 @@ function EquipamentosList() {
       const { data, error } = await supabase
         .from("equipamentos")
         .select(
-          "id, numero, identificacao, placa, localizacao, operador_contato, horimetro_atual, h_revisao, limite_revisao, proxima_revisao_horimetro, data_horimetro_atual, status, cl, cover_storage_path",
+          "id, numero, identificacao, placa, localizacao, operador_contato, horimetro_atual, h_revisao, limite_revisao, proxima_revisao_horimetro, data_horimetro_atual, status, cl, cover_storage_path, updated_by",
         )
         .order("numero", { ascending: true });
 
       if (error) throw error;
       return (data ?? []) as Equip[];
+    },
+  });
+
+  const responsaveisIds = useMemo(
+    () => Array.from(new Set((data ?? []).map((e) => e.updated_by).filter((id): id is string => Boolean(id)))).sort(),
+    [data],
+  );
+
+  const { data: nomesResponsaveis = {} } = useQuery({
+    queryKey: ["horimetro-responsaveis", responsaveisIds],
+    enabled: responsaveisIds.length > 0,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data: perfis, error } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", responsaveisIds);
+      if (error) throw error;
+      return Object.fromEntries((perfis ?? []).map((perfil) => [perfil.id, perfil.full_name]));
     },
   });
 
@@ -1344,21 +1374,32 @@ function EquipamentosList() {
   async function handleHorimetroChange(equipamentoId: string, value: string) {
     const horimetro = value === "" ? null : Number(value);
     if (horimetro !== null && !Number.isFinite(horimetro)) return;
+    const previous = data?.find((equipamento) => equipamento.id === equipamentoId)?.horimetro_atual;
+    if ((previous ?? null) === horimetro) return;
+
     const hoje = new Date();
     const dataHorimetro = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}-${String(hoje.getDate()).padStart(2, "0")}`;
 
-    const previous = data?.find((equipamento) => equipamento.id === equipamentoId)?.horimetro_atual;
     queryClient.setQueryData<Equip[]>(["equipamentos"], (equipamentos) =>
       equipamentos?.map((equipamento) =>
         equipamento.id === equipamentoId
-          ? { ...equipamento, horimetro_atual: horimetro, data_horimetro_atual: dataHorimetro }
+          ? {
+              ...equipamento,
+              horimetro_atual: horimetro,
+              data_horimetro_atual: dataHorimetro,
+              updated_by: userId,
+            }
           : equipamento,
       ),
     );
 
     const { error } = await supabase
       .from("equipamentos")
-      .update({ horimetro_atual: horimetro, data_horimetro_atual: dataHorimetro })
+      .update({
+        horimetro_atual: horimetro,
+        data_horimetro_atual: dataHorimetro,
+        updated_by: userId,
+      })
       .eq("id", equipamentoId);
 
     if (error) {
@@ -1625,6 +1666,16 @@ function EquipamentosList() {
                       limite: {limite}h
                     </span>
                   </div>
+                  {e.data_horimetro_atual && (
+                    <p className="text-[11px] text-slate-500">
+                      Atualizado em {formatarDataHorimetro(e.data_horimetro_atual)}
+                      {primeiroNome(
+                        e.updated_by === userId ? fullName : nomesResponsaveis[e.updated_by ?? ""],
+                      )
+                        ? ` por ${primeiroNome(e.updated_by === userId ? fullName : nomesResponsaveis[e.updated_by ?? ""])}`
+                        : ""}
+                    </p>
+                  )}
                 </div>
               </Card>
             </Link>
