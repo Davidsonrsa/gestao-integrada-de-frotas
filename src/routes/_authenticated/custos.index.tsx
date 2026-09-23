@@ -277,22 +277,40 @@ function CustosPage() {
 
   const totalMedicoesPeriodo = useMemo(() => {
     const contrato = contratos.find((item) => item.nome === filtroContrato);
+    const contratoCasan = filtroContrato.toUpperCase().includes("CASAN");
     const mesReferencia = date.substring(0, 7);
     const dataInicialEfetiva = filtroDataInicial || `${mesReferencia}-01`;
     const dataFinalEfetiva =
       filtroDataFinal ||
       `${mesReferencia}-${String(new Date(Number(mesReferencia.substring(0, 4)), Number(mesReferencia.substring(5, 7)), 0).getDate()).padStart(2, "0")}`;
-    return medicoes.reduce((total, medicao) => {
+    const medicoesDoPeriodo = medicoes.filter((medicao) => {
       const mesmoContrato = contrato
         ? medicao.contrato_id === contrato.id ||
           medicao.contrato.trim().toLowerCase() === contrato.nome.trim().toLowerCase()
         : medicao.contrato.trim().toLowerCase() === filtroContrato.trim().toLowerCase();
-      const dentroDoPeriodo =
+      return (
         mesmoContrato &&
         medicao.data >= dataInicialEfetiva &&
-        medicao.data <= dataFinalEfetiva;
-      if (!dentroDoPeriodo) return total;
+        medicao.data <= dataFinalEfetiva
+      );
+    });
 
+    if (contratoCasan) {
+      const valoresMensaisPorEquipamento = new Map<string, number>();
+      medicoesDoPeriodo.forEach((medicao) => {
+        const mes = medicao.data.substring(0, 7);
+        valoresMensaisPorEquipamento.set(
+          `${mes}|${medicao.equipamento.trim().toLowerCase()}`,
+          medicao.valor_hora,
+        );
+      });
+      return Array.from(valoresMensaisPorEquipamento.values()).reduce(
+        (total, valorMensal) => total + valorMensal,
+        0,
+      );
+    }
+
+    return medicoesDoPeriodo.reduce((total, medicao) => {
       const horasManha =
         medicao.manha_inicio != null && medicao.manha_final != null
           ? Math.max(0, medicao.manha_final - medicao.manha_inicio)
