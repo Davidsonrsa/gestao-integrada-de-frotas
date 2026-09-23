@@ -7,3 +7,4 @@
 - [x] Exibir todos os acessos administrativos no menu do celular
 - [x] Restringir cadastro, edição e exclusão de usuários ao administrador MAT 0001
 - [x] Corrigir receita bruta da CASAN para usar o valor mensal real das medições
+- [x] Corrigir exclusão de mês e clonar equipamentos do período anterior

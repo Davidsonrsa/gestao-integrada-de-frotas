@@ -438,6 +438,96 @@ export function MedicoesPage() {
     setTimeout(() => setMensagemSucesso(""), 3000);
   };
 
+  const handleAdicionarMes = () => {
+    if (!contratoSelecionado) return;
+
+    const nomeMes = prompt("Nome do Mês (Ex: Outubro):");
+    const anoStr = prompt("Ano (Ex: 2026):", String(new Date().getFullYear()));
+    const mesIdxStr = prompt("Número do Mês de 1 a 12 (Ex: 10 para Outubro):");
+    if (!nomeMes || !anoStr || !mesIdxStr) return;
+
+    const ano = Number(anoStr);
+    const mesIndex = Number(mesIdxStr) - 1;
+    if (!Number.isInteger(ano) || !Number.isInteger(mesIndex) || mesIndex < 0 || mesIndex > 11) {
+      toast.error("Informe um ano e um mês válidos.");
+      return;
+    }
+
+    const mesDuplicado = meses.some(
+      (mes) =>
+        mes.contratoId === contratoSelecionado.id &&
+        mes.ano === ano &&
+        mes.mesIndex === mesIndex,
+    );
+    if (mesDuplicado) {
+      toast.error("Este mês já está cadastrado para o contrato.");
+      return;
+    }
+
+    const novoMesId = crypto.randomUUID();
+    const novoMes: MesAno = {
+      id: novoMesId,
+      contratoId: contratoSelecionado.id,
+      nome: nomeMes.trim(),
+      ano,
+      mesIndex,
+    };
+    const referenciaNovoMes = ano * 12 + mesIndex;
+    const mesAnterior = meses
+      .filter(
+        (mes) =>
+          mes.contratoId === contratoSelecionado.id &&
+          mes.ano * 12 + mes.mesIndex < referenciaNovoMes,
+      )
+      .sort((a, b) => b.ano * 12 + b.mesIndex - (a.ano * 12 + a.mesIndex))[0];
+    const equipamentosAnteriores = mesAnterior
+      ? maquinas.filter((maquina) => maquina.mesId === mesAnterior.id)
+      : [];
+    const equipamentosClonados = equipamentosAnteriores.map((maquina) => ({
+      ...maquina,
+      id: crypto.randomUUID(),
+      mesId: novoMesId,
+      dataAprovacao: "",
+      assinaturaResponsavel: "",
+      assinaturaContratante: "",
+      dias: gerarDiasDoMesEmBranco(ano, mesIndex),
+    }));
+
+    setMeses((mesesAtuais) => [...mesesAtuais, novoMes]);
+    setMaquinas((maquinasAtuais) => [...maquinasAtuais, ...equipamentosClonados]);
+    toast.success(
+      equipamentosClonados.length > 0
+        ? `Mês criado com ${equipamentosClonados.length} equipamento(s) do período anterior.`
+        : "Mês criado com sucesso.",
+    );
+  };
+
+  const handleExcluirMes = async (mes: MesAno) => {
+    if (!contratoSelecionado) return;
+    if (!confirm(`Deseja realmente excluir ${mes.nome}/${mes.ano} e suas medições?`)) return;
+
+    const dataInicial = `${mes.ano}-${String(mes.mesIndex + 1).padStart(2, "0")}-01`;
+    const ultimoDia = new Date(mes.ano, mes.mesIndex + 1, 0).getDate();
+    const dataFinal = `${mes.ano}-${String(mes.mesIndex + 1).padStart(2, "0")}-${String(ultimoDia).padStart(2, "0")}`;
+    const { error } = await supabase
+      .from("medicoes_diarias")
+      .delete()
+      .eq("contrato_id", contratoSelecionado.id)
+      .gte("data", dataInicial)
+      .lte("data", dataFinal);
+
+    if (error) {
+      console.error("Erro ao excluir mês de medição:", error);
+      toast.error(`Erro ao excluir: ${error.message}`);
+      return;
+    }
+
+    setMeses((mesesAtuais) => mesesAtuais.filter((item) => item.id !== mes.id));
+    setMaquinas((maquinasAtuais) => maquinasAtuais.filter((item) => item.mesId !== mes.id));
+    if (mesSelecionado?.id === mes.id) setMesSelecionado(null);
+    toast.success("Mês e medições excluídos com sucesso!");
+  };
+
   const calcularSubtotal = (inicio: string, fim: string) => {
     if (!inicio || !fim) return 0;
     const partesIn = inicio.split(":");
@@ -699,26 +789,7 @@ const calcularTotalMes = (mesId: string) => {
               </h2>
             </div>
             <button
-              onClick={() => {
-                const nomeMes = prompt("Nome do Mês (Ex: Outubro):");
-                const anoStr = prompt("Ano (Ex: 2026):", "2026");
-                const mesIdxStr = prompt("Número do Mês de 1 a 12 (Ex: 10 para Outubro):", "10");
-                if (nomeMes && anoStr && mesIdxStr) {
-                  const ano = Number(anoStr);
-                  const mesIndex = Number(mesIdxStr) - 1;
-                  const novoMesId = String(Date.now());
-                  setMeses([
-                    ...meses,
-                    {
-                      id: novoMesId,
-                      contratoId: contratoSelecionado.id,
-                      nome: nomeMes,
-                      ano,
-                      mesIndex,
-                    },
-                  ]);
-                }
-              }}
+              onClick={handleAdicionarMes}
               className="bg-orange-600 text-white px-3 py-1.5 rounded-lg text-sm flex items-center gap-1"
             >
               <Calendar size={16} /> Adicionar Mês
@@ -750,29 +821,10 @@ const calcularTotalMes = (mesId: string) => {
                         </div>
                       </div>
                       <button
-                       onClick={async (e) => {
-  e.stopPropagation();
-  if (confirm("Deseja realmente excluir este mês/contrato?")) {
-    try {
-      // 1. Apaga no banco de dados do Supabase (verifique se o nome da tabela é 'medicoes' ou 'contratos')
-      const { error } = await supabase
-        .from("contratos") 
-        .delete()
-        .eq("id", m.id);
-
-      if (error) throw error;
-
-      // 2. Se der certo no banco, remove da tela
-      setMeses((mesesAtuais) => mesesAtuais.filter((x) => x.id !== m.id));
-      toast.success("Excluído com sucesso!");
-    } catch (error: unknown) {
-      const err = error as Error;
-      console.error("Erro detalhado do Supabase:", err);
-      toast.error("Erro ao excluir: " + (err.message || "Erro desconhecido"));
-      alert("Erro detalhado do banco: " + JSON.stringify(err, null, 2));
-    }
-  }
-}}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void handleExcluirMes(m);
+                        }}
                         className="rounded-md bg-red-600 p-1.5 text-white hover:bg-red-700"
                       >
                         <Trash2 size={16} />
