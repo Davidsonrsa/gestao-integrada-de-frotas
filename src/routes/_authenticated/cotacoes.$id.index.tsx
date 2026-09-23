@@ -349,6 +349,23 @@ if (cotData?.solicitante_id) {
     return { menoresPrecosPorItem: menoresMap, valorTotalOtimo: totalOtimo };
   }, [itens, fornecedoresCotacao, respostas]);
 
+  const totaisPorFornecedor = useMemo(
+    () =>
+      fornecedoresCotacao.map((fc) => {
+        const fornecedorId = fc.fornecedor_id || fc.fornecedores?.id || "";
+        return itens.reduce((total, item) => {
+          const resposta = respostas.find(
+            (registro) =>
+              String(registro.fornecedor_id).trim() === String(fornecedorId).trim() &&
+              String(registro.cotacao_item_id).trim() === String(item.id).trim(),
+          );
+          const preco = resposta?.preco ?? 0;
+          return total + (preco > 0 ? preco * (item.quantidade || 1) : 0);
+        }, 0);
+      }),
+    [fornecedoresCotacao, itens, respostas],
+  );
+
   useEffect(() => {
     async function atualizarTotalCotacao() {
       if (id === "nova" || !id || itens.length === 0) return;
@@ -718,6 +735,10 @@ if (cotData?.solicitante_id) {
             box-shadow: none !important;
             border: none !important;
           }
+          .cotacao-assinaturas {
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
         }
       `}</style>
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
@@ -914,8 +935,38 @@ if (cotData?.solicitante_id) {
                 })
               )}
             </tbody>
+            {itens.length > 0 && (
+              <tfoot>
+                <tr className="border-t-2 border-slate-400 bg-slate-100 font-bold text-slate-900">
+                  <td className="p-3 text-right" colSpan={4}>
+                    TOTAL
+                  </td>
+                  {totaisPorFornecedor.map((total, index) => (
+                    <td key={fornecedoresCotacao[index]?.id ?? index} className="p-3 text-right">
+                      {brl(total)}
+                    </td>
+                  ))}
+                  <td className="p-3 text-right bg-emerald-100 text-emerald-900">
+                    {brl(valorTotalOtimo)}
+                  </td>
+                  <td className="print:hidden" />
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
+      </div>
+
+      <div className="cotacao-assinaturas grid grid-cols-3 gap-8 pt-14 pb-4 px-4 bg-white">
+        {[
+          "Responsável Técnico / Compras",
+          "Gerência de Manutenção",
+          "Diretoria / Financeiro",
+        ].map((titulo) => (
+          <div key={titulo} className="pt-8 border-t border-slate-700 text-center">
+            <span className="text-xs font-semibold text-slate-800">{titulo}</span>
+          </div>
+        ))}
       </div>
 
       {/* Modal Adicionar Item */}
