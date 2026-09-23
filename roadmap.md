@@ -4,3 +4,4 @@
 - [x] Ajustar totais e assinaturas no layout de impressão das cotações
 - [x] Validar a impressão da cotação
 - [x] Validar segurança e publicar a versão atual
+- [x] Exibir todos os acessos administrativos no menu do celular
