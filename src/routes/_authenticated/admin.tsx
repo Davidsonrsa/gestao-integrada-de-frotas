@@ -41,7 +41,9 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 function AdminPage() {
   const { isAdmin, session } = useAuth();
-  const canManageUsers = session?.user.email?.toLowerCase() === "mat-001@sphjhm.app";
+  const adminEmail = session?.user.email?.toLowerCase();
+  const canManageUsers =
+    adminEmail === "mat-0001@sphjhm.app" || adminEmail === "mat-001@sphjhm.app";
   if (!isAdmin) {
     return (
       <div className="p-6 text-center text-sm text-muted-foreground">
