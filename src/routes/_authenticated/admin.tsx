@@ -40,7 +40,8 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 function AdminPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, session } = useAuth();
+  const canManageUsers = session?.user.email?.toLowerCase() === "mat-001@sphjhm.app";
   if (!isAdmin) {
     return (
       <div className="p-6 text-center text-sm text-muted-foreground">
@@ -51,17 +52,19 @@ function AdminPage() {
   return (
     <div className="px-3 py-3 md:px-6 md:py-6 max-w-md md:max-w-5xl mx-auto w-full">
       <Tabs defaultValue="equipamentos">
-        <TabsList className="grid grid-cols-2 w-full mb-3">
+        <TabsList className={`grid w-full mb-3 ${canManageUsers ? "grid-cols-2" : "grid-cols-1"}`}>
           <TabsTrigger value="equipamentos">Equipamentos</TabsTrigger>
-          <TabsTrigger value="usuarios">Usuários</TabsTrigger>
+          {canManageUsers && <TabsTrigger value="usuarios">Usuários</TabsTrigger>}
         </TabsList>
         <TabsContent value="equipamentos" className="space-y-3">
           <ImportEquipamentos />
           <NewEquipamento />
         </TabsContent>
-        <TabsContent value="usuarios">
-          <Usuarios />
-        </TabsContent>
+        {canManageUsers && (
+          <TabsContent value="usuarios">
+            <Usuarios />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
@@ -179,20 +182,20 @@ function Usuarios() {
     fullName: "",
     phone: "",
     password: "",
-    role: "colaborador" as "admin" | "colaborador",
   });
 
   const u = useMutation({
-    mutationFn: () =>
-      update({
+    mutationFn: () => {
+      if (!editId) throw new Error("Selecione um usuário para editar.");
+      return update({
         data: {
-          userId: editId!,
+          userId: editId,
           fullName: edit.fullName,
           phone: edit.phone || null,
-          role: edit.role,
           password: edit.password ? edit.password : null,
         },
-      }),
+      });
+    },
     onSuccess: () => {
       toast.success("Usuário atualizado");
       setEditId(null);
@@ -207,7 +210,6 @@ function Usuarios() {
     password: "",
     fullName: "",
     phone: "",
-    role: "colaborador" as "admin" | "colaborador",
   });
 
   const m = useMutation({
@@ -218,20 +220,16 @@ function Usuarios() {
           password: f.password,
           fullName: f.fullName,
           phone: f.phone || null,
-          role: f.role,
         },
       }),
     onSuccess: () => {
-      toast.success(
-        f.role === "admin" ? "Administrador criado com sucesso" : "Colaborador criado com sucesso",
-      );
+      toast.success("Colaborador criado com sucesso");
 
       setF({
         matricula: "",
         password: "",
         fullName: "",
         phone: "",
-        role: "colaborador",
       });
 
       qc.invalidateQueries({ queryKey: ["admin-users"] });
@@ -282,23 +280,6 @@ function Usuarios() {
             placeholder="mín. 8 caracteres"
           />
         </div>
-        <div>
-          <Label className="text-xs">Perfil *</Label>
-          <select
-            value={f.role}
-            onChange={(e) =>
-              setF({
-                ...f,
-                role: e.target.value as "admin" | "colaborador",
-              })
-            }
-            className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
-          >
-            <option value="colaborador">Colaborador</option>
-            <option value="admin">Administrador</option>
-          </select>
-        </div>
-
         <div className="pt-2">
           <Button
             type="button"
@@ -306,17 +287,12 @@ function Usuarios() {
             disabled={m.isPending}
             className="w-full font-semibold"
           >
-            {m.isPending
-              ? "Criando..."
-              : f.role === "admin"
-                ? "Criar administrador"
-                : "Criar colaborador"}
+            {m.isPending ? "Criando..." : "Criar colaborador"}
           </Button>
         </div>
 
         <p className="text-[11px] text-muted-foreground">
-          O usuário fará login com a <b>matrícula</b> e a senha definida aqui. Administradores terão
-          acesso ao painel administrativo.
+          O colaborador fará login com a <b>matrícula</b> e a senha definida aqui.
         </p>
       </Card>
 
@@ -368,13 +344,12 @@ function Usuarios() {
                       fullName: usr.full_name || "",
                       phone: usr.phone || "",
                       password: "",
-                      role: usr.isAdmin ? "admin" : "colaborador",
                     });
                   }}
                 >
                   <Pencil className="w-4 h-4 text-sky-600" />
                 </Button>
-                {usr.id !== userId && (
+                {usr.id !== userId && emailToMat(usr.email) !== "0001" && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button size="icon" variant="ghost" className="h-8 w-8">
@@ -427,22 +402,6 @@ function Usuarios() {
                         placeholder="mín. 8 caracteres"
                       />
                     </div>
-                  </div>
-                  <div>
-                    <Label className="text-xs">Perfil</Label>
-                    <select
-                      value={edit.role}
-                      onChange={(e) =>
-                        setEdit({
-                          ...edit,
-                          role: e.target.value as "admin" | "colaborador",
-                        })
-                      }
-                      className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
-                    >
-                      <option value="colaborador">Colaborador</option>
-                      <option value="admin">Administrador</option>
-                    </select>
                   </div>
                   <div className="flex gap-2">
                     <Button

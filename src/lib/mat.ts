@@ -7,6 +7,11 @@ export function normalizeMat(mat: string): string {
 export function matToEmail(mat: string): string {
   const m = normalizeMat(mat);
 
+  // O administrador principal usa MAT 0001 na interface, mantendo o cadastro legado MAT 001.
+  if (m === "0001") {
+    return "mat-001@" + DOMAIN;
+  }
+
   if (m.startsWith("mat-")) {
     return m + "@" + DOMAIN;
   }
@@ -19,5 +24,6 @@ export function emailToMat(email: string | null | undefined): string {
 
   const m = email.match(/^mat-([a-z0-9]+)@/i);
 
-  return m ? m[1].toUpperCase() : email;
+  if (!m) return email;
+  return m[1] === "001" ? "0001" : m[1].toUpperCase();
 }
