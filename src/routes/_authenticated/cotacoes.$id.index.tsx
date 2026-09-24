@@ -19,10 +19,10 @@ import {
   Trash2,
   Printer,
   Loader2,
-  CheckCircle2,
-  FileText,
   MessageCircle,
   Mail,
+  ShoppingCart,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -51,7 +51,7 @@ interface Cotacao {
   data_cotacao?: string | null;
   observacoes?: string | null;
   status?: string | null;
-  solicitante_id?: string | null; // ALTERADO DE CRIADO POR PARA SOLICITANTE
+  solicitante_id?: string | null;
 }
 
 interface ItemCotacao {
@@ -70,6 +70,9 @@ interface Fornecedor {
   cnpj?: string | null;
   telefone?: string | null;
   email?: string | null;
+  endereco?: string | null;
+  cidade?: string | null;
+  estado?: string | null;
 }
 
 interface CotacaoFornecedor {
@@ -102,7 +105,7 @@ export default function DetalheCotacaoPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Estados para o formulário de NOVA COTAÇÃO (caso id === "nova")
+  // Estados para nova cotação
   const [novaNumero, setNovaNumero] = useState("");
   const [novaPatrimonio, setNovaPatrimonio] = useState("");
   const [novaSetor, setNovaSetor] = useState("");
@@ -118,6 +121,10 @@ export default function DetalheCotacaoPage() {
   const [fornecedorOrcamentoAtivo, setFornecedorOrcamentoAtivo] =
     useState<CotacaoFornecedor | null>(null);
 
+  // Estados do Modal de Envio (Orçamento vs Compra e Itens Selecionados)
+  const [tipoEnvio, setTipoEnvio] = useState<"orcamento" | "compra">("orcamento");
+  const [itensCompraSelecionados, setItensCompraSelecionados] = useState<{ [itemId: string]: boolean }>({});
+
   // Form Item
   const [codigoItem, setCodigoItem] = useState("");
   const [descricaoItem, setDescricaoItem] = useState("");
@@ -125,10 +132,10 @@ export default function DetalheCotacaoPage() {
   const [unidadeItem, setUnidadeItem] = useState("UN");
   const [itemEditando, setItemEditando] = useState<ItemCotacao | null>(null);
 
-  // Vinculação de Fornecedor
+  // Vinculação
   const [fornecedorIdSelecionado, setFornecedorIdSelecionado] = useState("");
 
-  // Inserção/Edição de Preços
+  // Preços
   const [fornecedorPrecoAtivo, setFornecedorPrecoAtivo] = useState<CotacaoFornecedor | null>(null);
   const [precosTemp, setPrecosTemp] = useState<{
     [itemId: string]: { preco: string; marca: string };
@@ -138,7 +145,6 @@ export default function DetalheCotacaoPage() {
     try {
       setLoading(true);
 
-      // Buscar usuário logado atual (usado no envio de orçamento ou fallback)
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -195,7 +201,8 @@ export default function DetalheCotacaoPage() {
         .single();
       if (cotErr) throw cotErr;
       setCotacao(cotData);
-if (cotData?.solicitante_id) {
+
+      if (cotData?.solicitante_id) {
         const { data: profileData } = await supabase
           .from("profiles")
           .select("full_name")
@@ -208,6 +215,7 @@ if (cotData?.solicitante_id) {
           setNomeSolicitanteFixo("Administrador");
         }
       }
+
       const { data: itensData, error: itensErr } = await supabase
         .from("cotacao_itens")
         .select("*")
@@ -254,24 +262,7 @@ if (cotData?.solicitante_id) {
 
     try {
       setSaving(true);
-
-      // Obtém o usuário criador logado no momento exato da criação
       const { data: { user } } = await supabase.auth.getUser();
-      let nomeCriador = "Administrador";
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("id", user.id)
-          .single();
-        if (profile?.full_name) {
-          nomeCriador = profile.full_name;
-        } else if (user.user_metadata?.name) {
-          nomeCriador = user.user_metadata.name;
-        } else if (user.email) {
-          nomeCriador = user.email.split("@")[0].toUpperCase();
-        }
-      }
 
       const { data, error } = await supabase
         .from("cotacoes")
@@ -284,7 +275,7 @@ if (cotData?.solicitante_id) {
             observacoes: novaObs.trim() || null,
             status: "aberto",
             valor_total: 0,
-            solicitante_id: user?.id || null, //Salva o ID fixo do criador no banc
+            solicitante_id: user?.id || null,
           },
         ])
         .select()
@@ -301,16 +292,36 @@ if (cotData?.solicitante_id) {
     }
   }
 
-  const { menoresPrecosPorItem, valorTotalOtimo } = useMemo(() => {
+  // Cálculo dos totais por fornecedor e menor preço global
+  const { totaisPorFornecedor, menoresPrecosPorItem, valorTotalOtimo } = useMemo(() => {
+    const totaisMap: { [fornId: string]: number } = {};
     const menoresMap: {
       [itemId: string]: {
         menorTotal: number;
         menorUnitario: number;
-        fornecedorNome: string;
+        fornecedorName: string;
         marca: string;
       };
     } = {};
     let totalOtimo = 0;
+
+    fornecedoresCotacao.forEach((fc) => {
+      const fornId = fc.fornecedor_id || (fc as any).fornecedores?.id;
+      let somaForn = 0;
+
+      itens.forEach((item) => {
+        const resp = respostas.find(
+          (r) =>
+            String(r.fornecedor_id).trim() === String(fornId).trim() &&
+            String(r.cotacao_item_id).trim() === String(item.id).trim(),
+        );
+
+        if (resp && typeof resp.preco === "number" && resp.preco > 0) {
+          somaForn += resp.preco * (item.quantidade || 1);
+        }
+      });
+      totaisMap[fornId] = somaForn;
+    });
 
     itens.forEach((item) => {
       let menorUnit: number | null = null;
@@ -341,32 +352,15 @@ if (cotData?.solicitante_id) {
         menoresMap[item.id] = {
           menorTotal: subtotalItem,
           menorUnitario: menorUnit,
-          fornecedorNome: fornNome,
+          fornecedorName: fornNome,
           marca: marcaStr,
         };
         totalOtimo += subtotalItem;
       }
     });
 
-    return { menoresPrecosPorItem: menoresMap, valorTotalOtimo: totalOtimo };
+    return { totaisPorFornecedor: totaisMap, menoresPrecosPorItem: menoresMap, valorTotalOtimo: totalOtimo };
   }, [itens, fornecedoresCotacao, respostas]);
-
-  const totaisPorFornecedor = useMemo(
-    () =>
-      fornecedoresCotacao.map((fc) => {
-        const fornecedorId = fc.fornecedor_id || fc.fornecedores?.id || "";
-        return itens.reduce((total, item) => {
-          const resposta = respostas.find(
-            (registro) =>
-              String(registro.fornecedor_id).trim() === String(fornecedorId).trim() &&
-              String(registro.cotacao_item_id).trim() === String(item.id).trim(),
-          );
-          const preco = resposta?.preco ?? 0;
-          return total + (preco > 0 ? preco * (item.quantidade || 1) : 0);
-        }, 0);
-      }),
-    [fornecedoresCotacao, itens, respostas],
-  );
 
   useEffect(() => {
     async function atualizarTotalCotacao() {
@@ -374,9 +368,7 @@ if (cotData?.solicitante_id) {
       try {
         await supabase
           .from("cotacoes")
-          .update({
-            valor_total: valorTotalOtimo,
-          })
+          .update({ valor_total: valorTotalOtimo })
           .eq("id", id);
       } catch (e) {
         console.error("Erro ao atualizar total da cotação", e);
@@ -516,6 +508,13 @@ if (cotData?.solicitante_id) {
 
   function abrirModalOrcamento(fc: CotacaoFornecedor) {
     setFornecedorOrcamentoAtivo(fc);
+    setTipoEnvio("orcamento");
+    const selMap: { [itemId: string]: boolean } = {};
+    itens.forEach((it) => {
+      selMap[it.id] = true;
+    });
+    setItensCompraSelecionados(selMap);
+
     setStatusOrcamento(
       fc.status === "RASCUNHO"
         ? "aberto"
@@ -526,32 +525,86 @@ if (cotData?.solicitante_id) {
     setIsOrcamentoOpen(true);
   }
 
-  function gerarTextoOrcamento() {
+  function gerarTextoMensagem() {
     const fornNome =
       fornecedorOrcamentoAtivo?.fornecedores?.nome_fantasia ||
       fornecedorOrcamentoAtivo?.fornecedores?.razao_social ||
       "Prezado Fornecedor";
-    let texto = `*SOLICITAÇÃO DE ORÇAMENTO - COTAÇÃO Nº ${cotacao?.numero}*\n`;
-    texto += `*Fornecedor:* ${fornNome}\n`;
-    texto += `*Solicitante:* ${nomeSolicitanteFixo}\n`;
-    texto += `*Equipamento/Patrimônio:* ${cotacao?.patrimonio || "—"}\n`;
-    texto += `*Setor:* ${cotacao?.setor || "—"} | *Data:* ${formatarData(cotacao?.data_cotacao)}\n\n`;
-    texto += `*ITENS SOLICITADOS:*\n`;
+    const fornId = fornecedorOrcamentoAtivo?.fornecedor_id || (fornecedorOrcamentoAtivo as any)?.fornecedores?.id;
 
-    itens.forEach((item, index) => {
-      texto += `${index + 1}. *${item.descricao}* (Cód: ${item.codigo || "N/D"}) - Qtd: ${item.quantidade} ${item.unidade}\n`;
-    });
+    if (tipoEnvio === "compra") {
+      let texto = `*PEDIDO / SOLICITAÇÃO DE COMPRA - COTAÇÃO Nº ${cotacao?.numero}*\n`;
+      texto += `*Fornecedor:* ${fornNome}\n`;
+      texto += `*Solicitante:* ${nomeSolicitanteFixo}\n`;
+      texto += `*Equipamento/Patrimônio:* ${cotacao?.patrimonio || "—"}\n`;
+      texto += `*Setor:* ${cotacao?.setor || "—"} | *Data:* ${formatarData(cotacao?.data_cotacao)}\n\n`;
+      texto += `*ITENS DO PEDIDO DE COMPRA:*\n`;
 
-    if (cotacao?.observacoes) {
-      texto += `\n*Obs:* ${cotacao.observacoes}\n`;
+      let totalPedido = 0;
+      let contador = 1;
+
+      itens.forEach((item) => {
+        if (!itensCompraSelecionados[item.id]) return;
+
+        const resp = respostas.find(
+          (r) =>
+            String(r.fornecedor_id).trim() === String(fornId).trim() &&
+            String(r.cotacao_item_id).trim() === String(item.id).trim(),
+        );
+
+        const precoUnit = resp && typeof resp.preco === "number" ? resp.preco : 0;
+        const subtotal = precoUnit * (item.quantidade || 1);
+        totalPedido += subtotal;
+
+        texto += `${contador}. *${item.descricao}* (Cód: ${item.codigo || "N/D"})\n`;
+        texto += `   ↳ Qtd: ${item.quantidade} ${item.unidade} | Preço Unit.: ${brl(precoUnit)} | Subtotal: ${brl(subtotal)}`;
+        if (resp?.marca) {
+          texto += ` | Marca: ${resp.marca}`;
+        }
+        texto += `\n`;
+        contador++;
+      });
+
+      texto += `\n*VALOR TOTAL DO PEDIDO:* *${brl(totalPedido)}*\n`;
+      if (cotacao?.observacoes) {
+        texto += `\n*Obs:* ${cotacao.observacoes}\n`;
+      }
+      texto += `\nFavor confirmar o recebimento deste pedido e previsão de entrega. Obrigado!`;
+      return texto;
+    } else {
+      let texto = `*SOLICITAÇÃO DE ORÇAMENTO - COTAÇÃO Nº ${cotacao?.numero}*\n`;
+      texto += `*Fornecedor:* ${fornNome}\n`;
+      texto += `*Solicitante:* ${nomeSolicitanteFixo}\n`;
+      texto += `*Equipamento/Patrimônio:* ${cotacao?.patrimonio || "—"}\n`;
+      texto += `*Setor:* ${cotacao?.setor || "—"} | *Data:* ${formatarData(cotacao?.data_cotacao)}\n\n`;
+      texto += `*ITENS SOLICITADOS:*\n`;
+
+      itens.forEach((item, index) => {
+        texto += `${index + 1}. *${item.descricao}* (Cód: ${item.codigo || "N/D"}) - Qtd: ${item.quantidade} ${item.unidade}`;
+        
+        const resp = respostas.find(
+          (r) =>
+            String(r.fornecedor_id).trim() === String(fornId).trim() &&
+            String(r.cotacao_item_id).trim() === String(item.id).trim(),
+        );
+
+        if (resp && typeof resp.preco === "number" && resp.preco > 0) {
+          texto += `\n   ↳ *Preço Unit.:* ${brl(resp.preco)} | *Marca:* ${resp.marca || "—"} | *Subtotal:* ${brl(resp.preco * (item.quantidade || 1))}`;
+        }
+        texto += `\n`;
+      });
+
+      if (cotacao?.observacoes) {
+        texto += `\n*Obs:* ${cotacao.observacoes}\n`;
+      }
+      texto += `\nPor gentileza, retornar com os preços unitários e marcas dos itens acima. Obrigado!`;
+      return texto;
     }
-    texto += `\nPor gentileza, retornar com os preços unitários e marcas dos itens acima. Obrigado!`;
-    return texto;
   }
 
   function enviarPorWhatsApp() {
     const telefone = fornecedorOrcamentoAtivo?.fornecedores?.telefone?.replace(/\D/g, "") || "";
-    const texto = encodeURIComponent(gerarTextoOrcamento());
+    const texto = encodeURIComponent(gerarTextoMensagem());
     const url = telefone
       ? `https://wa.me/55${telefone}?text=${texto}`
       : `https://wa.me/?text=${texto}`;
@@ -560,10 +613,145 @@ if (cotData?.solicitante_id) {
 
   function enviarPorEmail() {
     const email = fornecedorOrcamentoAtivo?.fornecedores?.email || "";
-    const assunto = encodeURIComponent(`Solicitação de Orçamento - Cotação Nº ${cotacao?.numero}`);
-    const corpo = encodeURIComponent(gerarTextoOrcamento().replace(/\*/g, ""));
+    const assunto = encodeURIComponent(
+      tipoEnvio === "compra"
+        ? `Pedido / Solicitação de Compra - Cotação Nº ${cotacao?.numero}`
+        : `Solicitação de Orçamento - Cotação Nº ${cotacao?.numero}`
+    );
+    const corpo = encodeURIComponent(gerarTextoMensagem().replace(/\*/g, ""));
     const url = `mailto:${email}?subject=${assunto}&body=${corpo}`;
     window.open(url, "_blank");
+  }
+
+  function imprimirDocumentoFornecedor() {
+    const forn = fornecedorOrcamentoAtivo?.fornecedores;
+    const fornNome = forn?.nome_fantasia || forn?.razao_social || "Prezado Fornecedor";
+    const fornId = fornecedorOrcamentoAtivo?.fornecedor_id || (fornecedorOrcamentoAtivo as any)?.fornecedores?.id;
+
+    let itensHtml = "";
+    let totalGeral = 0;
+    let contador = 1;
+
+    itens.forEach((item) => {
+      if (tipoEnvio === "compra" && !itensCompraSelecionados[item.id]) return;
+
+      const resp = respostas.find(
+        (r) =>
+          String(r.fornecedor_id).trim() === String(fornId).trim() &&
+          String(r.cotacao_item_id).trim() === String(item.id).trim(),
+      );
+
+      const precoUnit = resp && typeof resp.preco === "number" ? resp.preco : 0;
+      const subtotal = precoUnit * (item.quantidade || 1);
+      totalGeral += subtotal;
+
+      itensHtml += `
+        <tr>
+          <td style="padding: 8px; border-bottom: 1px solid #cbd5e1; text-align: center;">${contador}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #cbd5e1; font-family: monospace;">${item.codigo || "—"}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #cbd5e1; font-weight: 500;">${item.descricao}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #cbd5e1; text-align: center;">${item.quantidade} ${item.unidade}</td>
+          ${tipoEnvio === "compra" ? `
+            <td style="padding: 8px; border-bottom: 1px solid #cbd5e1; text-align: right;">${brl(precoUnit)}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #cbd5e1; text-align: right; font-weight: bold;">${brl(subtotal)}</td>
+          ` : `
+            <td style="padding: 8px; border-bottom: 1px solid #cbd5e1; text-align: right;">${precoUnit > 0 ? brl(precoUnit) : "—"}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #cbd5e1; text-align: center;">${resp?.marca || "—"}</td>
+          `}
+        </tr>
+      `;
+      contador++;
+    });
+
+    const janelaPrint = window.open("", "_blank");
+    if (!janelaPrint) return toast.error("Permita pop-ups no navegador para imprimir.");
+
+    janelaPrint.document.write(`
+      <html>
+        <head>
+          <title>${tipoEnvio === "compra" ? "Pedido de Compra" : "Solicitação de Orçamento"} - ${cotacao?.numero}</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #1e293b; margin: 20px; font-size: 14px; }
+            .header { border-bottom: 2px solid #334155; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start; }
+            .title { font-size: 20px; font-weight: bold; color: #0f172a; text-transform: uppercase; }
+            .info-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 6px; margin-bottom: 20px; }
+            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; }
+            th { background: #f1f5f9; padding: 10px; border-bottom: 2px solid #cbd5e1; text-align: left; font-size: 12px; text-transform: uppercase; }
+            .total-row { font-weight: bold; text-align: right; font-size: 16px; padding: 10px; background: #f8fafc; }
+            .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #cbd5e1; padding-top: 15px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <div class="title">${tipoEnvio === "compra" ? "Pedido / Solicitação de Compra" : "Solicitação de Orçamento"}</div>
+              <div style="font-size: 14px; color: #475569; margin-top: 4px;">Cotação Nº <strong>${cotacao?.numero}</strong></div>
+            </div>
+            <div style="text-align: right; font-size: 12px; color: #475569;">
+              Data: ${formatarData(cotacao?.data_cotacao)}<br/>
+              Solicitante: ${nomeSolicitanteFixo}
+            </div>
+          </div>
+
+          <div class="info-box">
+            <div style="font-weight: bold; margin-bottom: 6px; color: #334155; font-size: 13px; text-transform: uppercase;">Dados do Fornecedor</div>
+            <div style="font-size: 14px; font-weight: bold;">${fornNome}</div>
+            <div style="font-size: 12px; color: #475569; margin-top: 2px;">
+              ${forn?.cnpj ? `CNPJ: ${forn.cnpj} | ` : ""}
+              ${forn?.telefone ? `Tel: ${forn.telefone} | ` : ""}
+              ${forn?.email ? `E-mail: ${forn.email}` : ""}
+            </div>
+          </div>
+
+          <div style="margin-bottom: 10px; font-size: 13px;">
+            <strong>Patrimônio / Equipamento:</strong> ${cotacao?.patrimonio || "—"} &nbsp;|&nbsp; <strong>Setor:</strong> ${cotacao?.setor || "—"}
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 40px; text-align: center;">Item</th>
+                <th style="width: 100px;">Código</th>
+                <th>Descrição do Produto / Peça</th>
+                <th style="width: 80px; text-align: center;">Qtd</th>
+                ${tipoEnvio === "compra" ? `
+                  <th style="width: 100px; text-align: right;">Preço Unit.</th>
+                  <th style="width: 110px; text-align: right;">Subtotal</th>
+                ` : `
+                  <th style="width: 100px; text-align: right;">Preço Unit.</th>
+                  <th style="width: 120px; text-align: center;">Marca</th>
+                `}
+              </tr>
+            </thead>
+            <tbody>
+              ${itensHtml}
+            </tbody>
+          </table>
+
+          ${tipoEnvio === "compra" ? `
+            <div class="total-row">
+              Valor Total do Pedido: ${brl(totalGeral)}
+            </div>
+          ` : ""}
+
+          ${cotacao?.observacoes ? `
+            <div style="margin-top: 20px; padding: 10px; background: #fef9c3; border: 1px solid #fde047; border-radius: 4px; font-size: 13px;">
+              <strong>Observações:</strong> ${cotacao.observacoes}
+            </div>
+          ` : ""}
+
+          <div class="footer">
+            Documento gerado pelo sistema de cotações de manutenção. Favor conferir os dados acima.
+          </div>
+
+          <script>
+            window.onload = function() { window.print(); window.close(); }
+          </script>
+        </body>
+      </html>
+    `);
+    janelaPrint.document.close();
   }
 
   async function salvarStatusOrcamento() {
@@ -586,7 +774,7 @@ if (cotData?.solicitante_id) {
       setFornecedorOrcamentoAtivo((fornecedor) =>
         fornecedor ? { ...fornecedor, status: data.status } : fornecedor,
       );
-      toast.success("Status do orçamento atualizado!");
+      toast.success("Status atualizado!");
     } catch (error: unknown) {
       const err = error as Error;
       toast.error("Erro ao atualizar status: " + err.message);
@@ -850,7 +1038,7 @@ if (cotData?.solicitante_id) {
                           onClick={() => abrirModalOrcamento(fc)}
                           className="text-emerald-700 hover:underline font-semibold"
                         >
-                          Orçamento
+                          Orçamento / Compra
                         </button>
                         <span>|</span>
                         <button
@@ -906,64 +1094,57 @@ if (cotData?.solicitante_id) {
                             String(r.cotacao_item_id).trim() === String(item.id).trim(),
                         );
                         const precoResp = resp?.preco ?? 0;
-                        const subtotalForn = precoResp > 0 ? precoResp * (item.quantidade || 1) : 0;
-                        const isMenor = menorInfo && resp && precoResp === menorInfo.menorUnitario;
-
                         return (
-                          <td
-                            key={fornId}
-                            className={`p-3 text-right ${isMenor ? "bg-green-50 font-bold text-green-700" : "text-slate-700"}`}
-                          >
-                            {subtotalForn > 0 ? (
+                          <td key={fornId} className="p-3 text-right">
+                            {precoResp > 0 ? (
                               <div>
-                                <div>{brl(subtotalForn)}</div>
-                                <div className="text-[10px] text-slate-500 font-normal">
-                                  Unit: {brl(precoResp)} {resp?.marca ? `(${resp.marca})` : ""}
+                                <div className="font-semibold text-slate-800">{brl(precoResp)}</div>
+                                <div className="text-[10px] text-slate-500">
+                                  Marca: {resp?.marca || "—"}
+                                </div>
+                                <div className="text-[10px] text-emerald-600 font-medium">
+                                  Total: {brl(precoResp * (item.quantidade || 1))}
                                 </div>
                               </div>
                             ) : (
-                              <span className="text-slate-300">—</span>
+                              <span className="text-xs text-slate-400">—</span>
                             )}
                           </td>
                         );
                       })}
 
-                      <td className="p-3 text-right bg-emerald-50/60 font-semibold text-emerald-800">
+                      <td className="p-3 text-right bg-emerald-50/50">
                         {menorInfo ? (
                           <div>
-                            <div className="flex items-center justify-end gap-1">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <div className="font-bold text-emerald-700">
                               {brl(menorInfo.menorTotal)}
                             </div>
-                            <div className="text-[10px] text-slate-600 font-normal">
-                              {menorInfo.fornecedorNome}{" "}
-                              {menorInfo.marca !== "—" ? `(${menorInfo.marca})` : ""}
+                            <div className="text-[10px] text-slate-600">
+                              Unit: {brl(menorInfo.menorUnitario)} ({menorInfo.fornecedorName})
+                            </div>
+                            <div className="text-[10px] text-slate-500">
+                              Marca: {menorInfo.marca}
                             </div>
                           </div>
                         ) : (
-                          <span className="text-slate-400 font-normal">Sem cotação</span>
+                          <span className="text-xs text-slate-400">—</span>
                         )}
                       </td>
-
                       <td className="p-3 text-center print:hidden">
                         <div className="flex items-center justify-center gap-1">
                           <Button
-                            size="sm"
                             variant="ghost"
+                            size="icon"
                             onClick={() => abrirEdicaoItem(item)}
-                            className="text-blue-600 h-8 w-8 p-0"
-                            aria-label={`Editar ${item.descricao}`}
-                            title="Editar item"
+                            className="h-8 w-8 text-blue-600 hover:text-blue-800"
                           >
                             <Pencil className="w-4 h-4" />
                           </Button>
                           <Button
-                            size="sm"
                             variant="ghost"
+                            size="icon"
                             onClick={() => handleDeleteItem(item.id)}
-                            className="text-red-600 h-8 w-8 p-0"
-                            aria-label={`Excluir ${item.descricao}`}
-                            title="Excluir item"
+                            className="h-8 w-8 text-red-600 hover:text-red-800"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -974,233 +1155,372 @@ if (cotData?.solicitante_id) {
                 })
               )}
             </tbody>
-            {itens.length > 0 && (
-              <tfoot>
-                <tr className="border-t-2 border-slate-400 bg-slate-100 font-bold text-slate-900">
-                  <td className="p-3 text-right" colSpan={4}>
-                    TOTAL
-                  </td>
-                  {totaisPorFornecedor.map((total, index) => (
-                    <td key={fornecedoresCotacao[index]?.id ?? index} className="p-3 text-right">
-                      {brl(total)}
+            <tfoot className="bg-slate-50 font-bold text-slate-800 border-t-2 border-slate-200">
+              <tr>
+                <td colSpan={4} className="p-3 text-right uppercase text-xs">
+                  Total
+                </td>
+                {fornecedoresCotacao.map((fc) => {
+                  const fornId = fc.fornecedor_id || (fc as any).fornecedores?.id;
+                  const totalForn = totaisPorFornecedor[fornId] || 0;
+                  return (
+                    <td key={fornId} className="p-3 text-right">
+                      {totalForn > 0 ? brl(totalForn) : "—"}
                     </td>
-                  ))}
-                  <td className="p-3 text-right bg-emerald-100 text-emerald-900">
-                    {brl(valorTotalOtimo)}
-                  </td>
-                  <td className="print:hidden" />
-                </tr>
-              </tfoot>
-            )}
+                  );
+                })}
+                <td className="p-3 text-right bg-emerald-100 text-emerald-900">
+                  {brl(valorTotalOtimo)}
+                </td>
+                <td className="print:hidden"></td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>
 
-      <div className="cotacao-assinaturas grid grid-cols-3 gap-8 pt-14 pb-4 px-4 bg-white">
-        {[
-          "Responsável Técnico / Compras",
-          "Gerência de Manutenção",
-          "Diretoria / Financeiro",
-        ].map((titulo) => (
-          <div key={titulo} className="pt-8 border-t border-slate-700 text-center">
-            <span className="text-xs font-semibold text-slate-800">{titulo}</span>
-          </div>
-        ))}
+      <div className="cotacao-assinaturas mt-12 pt-12 grid grid-cols-3 gap-8 text-center text-xs text-slate-600">
+        <div className="border-t border-slate-400 pt-2">
+          <p className="font-semibold text-slate-800">Responsável Técnico / Compras</p>
+        </div>
+        <div className="border-t border-slate-400 pt-2">
+          <p className="font-semibold text-slate-800">Gerência de Manutenção</p>
+        </div>
+        <div className="border-t border-slate-400 pt-2">
+          <p className="font-semibold text-slate-800">Diretoria / Financeiro</p>
+        </div>
       </div>
 
-      {/* Modal Adicionar Item */}
-      <Dialog
-        open={isNovoItemOpen}
-        onOpenChange={(open) => {
-          setIsNovoItemOpen(open);
-          if (!open) limparFormularioItem();
-        }}
-      >
-        <DialogContent>
+      {/* MODAL ADICIONAR / EDITAR ITEM */}
+      <Dialog open={isNovoItemOpen} onOpenChange={setIsNovoItemOpen}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{itemEditando ? "Editar Item da Cotação" : "Adicionar Item à Cotação"}</DialogTitle>
+            <DialogTitle>{itemEditando ? "Editar Item" : "Adicionar Novo Item"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSalvarItem} className="space-y-4">
             <div>
-              <Label>Código (Opcional)</Label>
+              <Label className="text-xs font-semibold text-slate-700">Código do Produto / Peça</Label>
               <Input
+                placeholder="Ex: PEC-00123"
                 value={codigoItem}
                 onChange={(e) => setCodigoItem(e.target.value)}
-                placeholder="Ex: PEÇA-01"
+                className="mt-1 font-mono"
               />
             </div>
             <div>
-              <Label>Descrição *</Label>
+              <Label className="text-xs font-semibold text-slate-700">Descrição *</Label>
               <Input
+                placeholder="Ex: Filtro de Óleo do Motor"
                 value={descricaoItem}
                 onChange={(e) => setDescricaoItem(e.target.value)}
-                placeholder="Ex: Filtro de Óleo"
                 required
+                className="mt-1"
               />
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Quantidade</Label>
+                <Label className="text-xs font-semibold text-slate-700">Quantidade *</Label>
                 <Input
                   type="number"
                   step="any"
+                  min="0.001"
                   value={quantidadeItem}
                   onChange={(e) => setQuantidadeItem(e.target.value)}
                   required
+                  className="mt-1"
                 />
               </div>
               <div>
-                <Label>Unidade</Label>
+                <Label className="text-xs font-semibold text-slate-700">Unidade *</Label>
                 <Input
+                  placeholder="Ex: UN, PC, LT"
                   value={unidadeItem}
                   onChange={(e) => setUnidadeItem(e.target.value)}
-                  placeholder="UN, PC, JG..."
                   required
+                  className="mt-1 uppercase"
                 />
               </div>
             </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setIsNovoItemOpen(false);
-                  limparFormularioItem();
-                }}
-              >
+            <DialogFooter className="pt-4">
+              <Button type="button" variant="outline" onClick={() => setIsNovoItemOpen(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={saving}>
-                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {itemEditando ? "Salvar Alterações" : "Adicionar"}
+              <Button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white">
+                {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                Salvar Item
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Modal Vincular Fornecedor */}
+      {/* MODAL VINCULAR FORNECEDOR */}
       <Dialog open={isVincularFornecedorOpen} onOpenChange={setIsVincularFornecedorOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Vincular Fornecedor à Cotação</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleVincularFornecedor} className="space-y-4">
             <div>
-              <Label>Selecione o Fornecedor</Label>
+              <Label className="text-xs font-semibold text-slate-700">Selecione o Fornecedor *</Label>
               <select
                 value={fornecedorIdSelecionado}
                 onChange={(e) => setFornecedorIdSelecionado(e.target.value)}
-                className="w-full mt-1 border border-slate-300 rounded-md p-2 text-sm bg-white h-10"
                 required
+                className="w-full mt-1 border border-slate-300 rounded-md p-2 text-sm bg-white"
               >
                 <option value="">Selecione...</option>
                 {todosFornecedores.map((f) => (
                   <option key={f.id} value={f.id}>
-                    {f.nome_fantasia || f.razao_social} {f.cnpj ? `(${f.cnpj})` : ""}
+                    {f.nome_fantasia ? `${f.nome_fantasia} (${f.razao_social})` : f.razao_social}
                   </option>
                 ))}
               </select>
             </div>
-            <DialogFooter>
+            <DialogFooter className="pt-4">
               <Button type="button" variant="outline" onClick={() => setIsVincularFornecedorOpen(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={saving}>Vincular</Button>
+              <Button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white">
+                {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                Vincular
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Modal Editar Preços */}
+      {/* MODAL INSERIR / EDITAR PREÇOS */}
       <Dialog open={isPrecosOpen} onOpenChange={setIsPrecosOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              Preços do Fornecedor:{" "}
-              {fornecedorPrecoAtivo?.fornecedores?.nome_fantasia ||
-                fornecedorPrecoAtivo?.fornecedores?.razao_social}
+              Editar Preços - {fornecedorPrecoAtivo?.fornecedores?.nome_fantasia || fornecedorPrecoAtivo?.fornecedores?.razao_social}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSalvarPrecos} className="space-y-4">
             <div className="space-y-3">
               {itens.map((item) => (
-                <div key={item.id} className="p-3 border rounded-lg bg-slate-50 space-y-2">
-                  <div className="font-medium text-sm text-slate-800">
-                    {item.descricao} <span className="text-xs text-slate-500">(Qtd: {item.quantidade} {item.unidade})</span>
+                <div key={item.id} className="p-3 bg-slate-50 rounded-lg border border-slate-200 grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                  <div className="md:col-span-6">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded">
+                        {item.codigo || "SEM CÓD."}
+                      </span>
+                      <span className="font-medium text-slate-800 text-sm">{item.descricao}</span>
+                    </div>
+                    <span className="text-xs text-slate-500">
+                      Qtd: {item.quantidade} {item.unidade}
+                    </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label className="text-xs">Preço Unitário (R$)</Label>
-                      <Input
-                        type="text"
-                        placeholder="0,00"
-                        value={precosTemp[item.id]?.preco || ""}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setPrecosTemp((prev) => ({
-                            ...prev,
-                            [item.id]: { ...prev[item.id], preco: val },
-                          }));
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Marca / Obs</Label>
-                      <Input
-                        type="text"
-                        placeholder="Ex: HPARTS"
-                        value={precosTemp[item.id]?.marca || ""}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setPrecosTemp((prev) => ({
-                            ...prev,
-                            [item.id]: { ...prev[item.id], marca: val },
-                          }));
-                        }}
-                      />
-                    </div>
+                  <div className="md:col-span-3">
+                    <Label className="text-[10px] text-slate-600">Preço Unitário (R$)</Label>
+                    <Input
+                      type="text"
+                      placeholder="0.00"
+                      value={precosTemp[item.id]?.preco || ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setPrecosTemp((prev) => ({
+                          ...prev,
+                          [item.id]: { ...prev[item.id], preco: val },
+                        }));
+                      }}
+                      className="mt-0.5 bg-white"
+                    />
+                  </div>
+                  <div className="md:col-span-3">
+                    <Label className="text-[10px] text-slate-600">Marca</Label>
+                    <Input
+                      type="text"
+                      placeholder="Marca / Fabricante"
+                      value={precosTemp[item.id]?.marca || ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setPrecosTemp((prev) => ({
+                          ...prev,
+                          [item.id]: { ...prev[item.id], marca: val },
+                        }));
+                      }}
+                      className="mt-0.5 bg-white"
+                    />
                   </div>
                 </div>
               ))}
             </div>
-            <DialogFooter>
+            <DialogFooter className="pt-4">
               <Button type="button" variant="outline" onClick={() => setIsPrecosOpen(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={saving}>Salvar Preços</Button>
+              <Button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white">
+                {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                Salvar Preços
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Modal Enviar Orçamento */}
+      {/* MODAL ORÇAMENTO / PEDIDO DE COMPRA (TELA AMPLIADA MAX-W-4XL) */}
       <Dialog open={isOrcamentoOpen} onOpenChange={setIsOrcamentoOpen}>
-        <DialogContent className="max-w-xl">
+        <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Solicitação de Orçamento</DialogTitle>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              {tipoEnvio === "compra" ? (
+                <ShoppingCart className="w-6 h-6 text-blue-600" />
+              ) : (
+                <FileText className="w-6 h-6 text-emerald-600" />
+              )}
+              {tipoEnvio === "compra" ? "Pedido / Solicitação de Compra" : "Solicitação de Orçamento"}
+            </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label className="text-xs">Texto gerado para envio:</Label>
-              <textarea
-                readOnly
-                rows={8}
-                className="w-full mt-1 border rounded-md p-2 text-xs font-mono bg-slate-50"
-                value={gerarTextoOrcamento()}
-              />
+
+          <div className="space-y-5">
+            {/* ABAS DE SELEÇÃO: ORÇAMENTO vs COMPRA */}
+            <div className="flex rounded-lg bg-slate-100 p-1.5 border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setTipoEnvio("orcamento")}
+                className={`flex-1 py-2.5 text-sm font-bold rounded-md transition-all flex items-center justify-center gap-2 ${
+                  tipoEnvio === "orcamento"
+                    ? "bg-white text-slate-800 shadow-sm"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                <FileText className="w-4 h-4 text-emerald-600" /> Solicitação de Orçamento
+              </button>
+              <button
+                type="button"
+                onClick={() => setTipoEnvio("compra")}
+                className={`flex-1 py-2.5 text-sm font-bold rounded-md transition-all flex items-center justify-center gap-2 ${
+                  tipoEnvio === "compra"
+                    ? "bg-white text-slate-800 shadow-sm"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                <ShoppingCart className="w-4 h-4 text-blue-600" /> Pedido / Compra
+              </button>
             </div>
-            <div className="flex flex-wrap gap-2 justify-between items-center pt-2">
-              <div className="flex gap-2">
-                <Button onClick={enviarPorWhatsApp} className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2">
-                  <MessageCircle className="w-4 h-4" /> WhatsApp
-                </Button>
-                <Button onClick={enviarPorEmail} variant="outline" className="gap-2">
-                  <Mail className="w-4 h-4" /> E-mail
+
+            <div>
+              <Label className="text-xs font-semibold text-slate-700">Status do Processo</Label>
+              <div className="flex gap-2 mt-1">
+                <select
+                  value={statusOrcamento}
+                  onChange={(e) => setStatusOrcamento(e.target.value)}
+                  className="w-full border border-slate-300 rounded-md p-2.5 text-sm bg-white"
+                >
+                  <option value="aberto">Aberto / Enviado</option>
+                  <option value="respondido">Respondido</option>
+                  <option value="aprovada">Aprovado / Pedido Fechado</option>
+                  <option value="recusado">Recusado</option>
+                </select>
+                <Button type="button" onClick={salvarStatusOrcamento} disabled={saving} variant="outline" className="px-5">
+                  Atualizar
                 </Button>
               </div>
-              <Button variant="ghost" onClick={() => setIsOrcamentoOpen(false)}>
-                Fechar
+            </div>
+
+            {/* SE FOR MODO COMPRA, EXIBE SELEÇÃO DE ITENS AMPLIADA */}
+            {tipoEnvio === "compra" && (
+              <div className="bg-blue-50/70 p-4 rounded-xl border border-blue-200 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-blue-900 uppercase tracking-wide">
+                    Selecione os itens que farão parte deste pedido de compra:
+                  </span>
+                  <div className="space-x-3 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const all: { [k: string]: boolean } = {};
+                        itens.forEach((it) => (all[it.id] = true));
+                        setItensCompraSelecionados(all);
+                      }}
+                      className="text-blue-600 hover:underline font-bold"
+                    >
+                      Marcar Todos
+                    </button>
+                    <span>|</span>
+                    <button
+                      type="button"
+                      onClick={() => setItensCompraSelecionados({})}
+                      className="text-slate-600 hover:underline font-bold"
+                    >
+                      Desmarcar Todos
+                    </button>
+                  </div>
+                </div>
+
+                <div className="max-h-56 overflow-y-auto space-y-2 pr-1">
+                  {itens.map((item) => {
+                    const fornId =
+                      fornecedorOrcamentoAtivo?.fornecedor_id ||
+                      (fornecedorOrcamentoAtivo as any)?.fornecedores?.id;
+                    const resp = respostas.find(
+                      (r) =>
+                        String(r.fornecedor_id).trim() === String(fornId).trim() &&
+                        String(r.cotacao_item_id).trim() === String(item.id).trim(),
+                    );
+                    const preco = resp && resp.preco ? resp.preco : 0;
+                    const subtotal = preco * (item.quantidade || 1);
+
+                    return (
+                      <label
+                        key={item.id}
+                        className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-100 text-sm cursor-pointer hover:bg-blue-50/60 shadow-xs transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={!!itensCompraSelecionados[item.id]}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setItensCompraSelecionados((prev) => ({
+                                ...prev,
+                                [item.id]: checked,
+                              }));
+                            }}
+                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-5 w-5"
+                          />
+                          <div>
+                            <span className="font-semibold text-slate-800">{item.descricao}</span>
+                            <span className="text-slate-500 ml-2 text-xs">
+                              (Cód: {item.codigo || "N/D"} | Qtd: {item.quantidade} {item.unidade})
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-bold text-emerald-600 text-base">{brl(subtotal)}</span>
+                          <span className="text-xs text-slate-400 block">
+                            Unit: {brl(preco)} {resp?.marca ? `• Marca: ${resp.marca}` : ""}
+                          </span>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <Label className="text-xs font-semibold text-slate-700">Prévia da Mensagem (WhatsApp / E-mail)</Label>
+              <textarea
+                readOnly
+                value={gerarTextoMensagem()}
+                rows={10}
+                className="w-full mt-1 p-3 text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg resize-none"
+              />
+            </div>
+
+            <div className="flex flex-wrap gap-3 pt-2">
+              <Button onClick={enviarPorWhatsApp} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white gap-2 py-6 text-sm font-bold">
+                <MessageCircle className="w-5 h-5" /> Enviar WhatsApp
+              </Button>
+              <Button onClick={enviarPorEmail} variant="outline" className="flex-1 gap-2 py-6 text-sm font-bold border-slate-300">
+                <Mail className="w-5 h-5" /> Enviar E-mail
+              </Button>
+              <Button onClick={imprimirDocumentoFornecedor} variant="outline" className="flex-1 gap-2 py-6 text-sm font-bold border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-800">
+                <Printer className="w-5 h-5" /> Imprimir / PDF
               </Button>
             </div>
           </div>
