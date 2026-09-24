@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,8 @@ import {
   Phone,
   Mail,
   User,
+  ArrowLeft,
+  MapPin,
 } from "lucide-react";
 import {
   Dialog,
@@ -36,16 +38,42 @@ interface FornecedorItem {
   cnpj: string | null;
   email: string | null;
   telefone: string | null;
+  celular: string | null;
+  endereco: string | null;
+  bairro: string | null;
   cidade: string | null;
   estado: string | null;
+  cep: string | null;
   observacoes: string | null;
   banco: string | null;
   agencia: string | null;
   conta: string | null;
   pix: string | null;
+  ativo: boolean | null;
 }
 
+// Funções de Máscara
+const maskCnpj = (value: string) => {
+  return value
+    .replace(/\D/g, "")
+    .replace(/^(\d{2})(\d)/, "$1.$2")
+    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1/$2")
+    .replace(/(\d{4})(\d)/, "$1-$2")
+    .slice(0, 18);
+};
+
+const maskTelefone = (value: string) => {
+  return value
+    .replace(/\D/g, "")
+    .replace(/^(\d{2})(\d)/, "($1) $2")
+    .replace(/(\d{5})(\d{4})-(\d)/, "$1-$2")
+    .replace(/(\d{5})(\d)/, "$1-$2")
+    .slice(0, 15);
+};
+
 function FornecedoresPage() {
+  const navigate = useNavigate();
   const [fornecedores, setFornecedores] = useState<FornecedorItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [busca, setBusca] = useState("");
@@ -59,6 +87,7 @@ function FornecedoresPage() {
   const [cnpj, setCnpj] = useState("");
   const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
+  const [endereco, setEndereco] = useState("");
   const [cidade, setCidade] = useState("");
   const [estado, setEstado] = useState("");
   const [observacoes, setObservacoes] = useState("");
@@ -76,7 +105,7 @@ function FornecedoresPage() {
         .order("razao_social", { ascending: true });
 
       if (error) throw error;
-      setFornecedores(data ?? []);
+      setFornecedores((data as any[]) ?? []);
     } catch (error: any) {
       toast.error("Erro ao carregar fornecedores: " + error.message);
     } finally {
@@ -94,6 +123,7 @@ function FornecedoresPage() {
     setCnpj("");
     setEmail("");
     setTelefone("");
+    setEndereco("");
     setCidade("");
     setEstado("");
     setObservacoes("");
@@ -108,9 +138,10 @@ function FornecedoresPage() {
     setFornecedorEditando(f);
     setRazaoSocial(f.razao_social || "");
     setNomeFantasia(f.nome_fantasia || "");
-    setCnpj(f.cnpj || "");
+    setCnpj(f.cnpj ? maskCnpj(f.cnpj) : "");
     setEmail(f.email || "");
-    setTelefone(f.telefone || "");
+    setTelefone(f.telefone ? maskTelefone(f.telefone) : "");
+    setEndereco(f.endereco || "");
     setCidade(f.cidade || "");
     setEstado(f.estado || "");
     setObservacoes(f.observacoes || "");
@@ -125,12 +156,13 @@ function FornecedoresPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const payload = {
+      const payload: any = {
         razao_social: razaoSocial.trim(),
         nome_fantasia: nomeFantasia.trim() || null,
         cnpj: cnpj.trim() || null,
         email: email.trim() || null,
         telefone: telefone.trim() || null,
+        endereco: endereco.trim() || null,
         cidade: cidade.trim() || null,
         estado: estado.trim() || null,
         observacoes: observacoes.trim() || null,
@@ -184,6 +216,12 @@ function FornecedoresPage() {
 
   return (
     <div className="p-4 md:p-6 w-full max-w-7xl mx-auto space-y-4">
+      <div className="flex items-center justify-between">
+        <Button variant="outline" onClick={() => navigate({ to: "/cotacoes" })} className="gap-2">
+          <ArrowLeft className="w-4 h-4" /> Voltar às Cotações
+        </Button>
+      </div>
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
@@ -231,7 +269,7 @@ function FornecedoresPage() {
                   <Label>CNPJ</Label>
                   <Input
                     value={cnpj}
-                    onChange={(e) => setCnpj(e.target.value)}
+                    onChange={(e) => setCnpj(maskCnpj(e.target.value))}
                     placeholder="00.000.000/0000-00"
                   />
                 </div>
@@ -239,7 +277,7 @@ function FornecedoresPage() {
                   <Label>Telefone</Label>
                   <Input
                     value={telefone}
-                    onChange={(e) => setTelefone(e.target.value)}
+                    onChange={(e) => setTelefone(maskTelefone(e.target.value))}
                     placeholder="(00) 00000-0000"
                   />
                 </div>
@@ -252,6 +290,16 @@ function FornecedoresPage() {
                     placeholder="contato@fornecedor.com"
                   />
                 </div>
+              </div>
+
+              {/* Endereço, Cidade e Estado */}
+              <div>
+                <Label>Endereço</Label>
+                <Input
+                  value={endereco}
+                  onChange={(e) => setEndereco(e.target.value)}
+                  placeholder="Rua, Número, Bairro..."
+                />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
@@ -354,7 +402,7 @@ function FornecedoresPage() {
                 <th className="p-3.5">Fornecedor</th>
                 <th className="p-3.5">CNPJ</th>
                 <th className="p-3.5">Contato</th>
-                <th className="p-3.5">Localização</th>
+                <th className="p-3.5">Localização / Endereço</th>
                 <th className="p-3.5 text-center">Ações</th>
               </tr>
             </thead>
@@ -381,7 +429,7 @@ function FornecedoresPage() {
                         <div className="text-xs text-slate-500">{f.nome_fantasia}</div>
                       )}
                     </td>
-                    <td className="p-3.5 text-slate-600">{f.cnpj || "—"}</td>
+                    <td className="p-3.5 text-slate-600 font-mono text-xs">{f.cnpj || "—"}</td>
                     <td className="p-3.5 text-slate-600">
                       {f.telefone && (
                         <div className="flex items-center gap-1 text-xs">
@@ -396,9 +444,12 @@ function FornecedoresPage() {
                       {!f.telefone && !f.email && "—"}
                     </td>
                     <td className="p-3.5 text-slate-600">
-                      {f.cidade && f.estado
-                        ? `${f.cidade} - ${f.estado}`
-                        : f.cidade || f.estado || "—"}
+                      {f.endereco && <div className="font-medium text-xs">{f.endereco}</div>}
+                      <div className="text-xs text-slate-500">
+                        {f.cidade && f.estado
+                          ? `${f.cidade} - ${f.estado}`
+                          : f.cidade || f.estado || (!f.endereco ? "—" : "")}
+                      </div>
                     </td>
                     <td className="p-3.5 text-center">
                       <div className="flex items-center justify-center gap-1">
