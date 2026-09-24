@@ -12,12 +12,9 @@ import {
   Pencil,
   Trash2,
   Loader2,
-  Building2,
   Phone,
   Mail,
-  User,
   ArrowLeft,
-  MapPin,
 } from "lucide-react";
 import {
   Dialog,
@@ -39,7 +36,6 @@ interface FornecedorItem {
   email: string | null;
   telefone: string | null;
   celular: string | null;
-  endereco: string | null;
   bairro: string | null;
   cidade: string | null;
   estado: string | null;
@@ -87,7 +83,6 @@ function FornecedoresPage() {
   const [cnpj, setCnpj] = useState("");
   const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
-  const [endereco, setEndereco] = useState("");
   const [cidade, setCidade] = useState("");
   const [estado, setEstado] = useState("");
   const [observacoes, setObservacoes] = useState("");
@@ -123,7 +118,6 @@ function FornecedoresPage() {
     setCnpj("");
     setEmail("");
     setTelefone("");
-    setEndereco("");
     setCidade("");
     setEstado("");
     setObservacoes("");
@@ -141,7 +135,6 @@ function FornecedoresPage() {
     setCnpj(f.cnpj ? maskCnpj(f.cnpj) : "");
     setEmail(f.email || "");
     setTelefone(f.telefone ? maskTelefone(f.telefone) : "");
-    setEndereco(f.endereco || "");
     setCidade(f.cidade || "");
     setEstado(f.estado || "");
     setObservacoes(f.observacoes || "");
@@ -162,7 +155,6 @@ function FornecedoresPage() {
         cnpj: cnpj.trim() || null,
         email: email.trim() || null,
         telefone: telefone.trim() || null,
-        endereco: endereco.trim() || null,
         cidade: cidade.trim() || null,
         estado: estado.trim() || null,
         observacoes: observacoes.trim() || null,
@@ -292,15 +284,7 @@ function FornecedoresPage() {
                 </div>
               </div>
 
-              {/* Endereço, Cidade e Estado */}
-              <div>
-                <Label>Endereço</Label>
-                <Input
-                  value={endereco}
-                  onChange={(e) => setEndereco(e.target.value)}
-                  placeholder="Rua, Número, Bairro..."
-                />
-              </div>
+              {/* Cidade e Estado */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <Label>Cidade</Label>
@@ -402,7 +386,7 @@ function FornecedoresPage() {
                 <th className="p-3.5">Fornecedor</th>
                 <th className="p-3.5">CNPJ</th>
                 <th className="p-3.5">Contato</th>
-                <th className="p-3.5">Localização / Endereço</th>
+                <th className="p-3.5">Localização</th>
                 <th className="p-3.5 text-center">Ações</th>
               </tr>
             </thead>
@@ -444,12 +428,9 @@ function FornecedoresPage() {
                       {!f.telefone && !f.email && "—"}
                     </td>
                     <td className="p-3.5 text-slate-600">
-                      {f.endereco && <div className="font-medium text-xs">{f.endereco}</div>}
-                      <div className="text-xs text-slate-500">
-                        {f.cidade && f.estado
-                          ? `${f.cidade} - ${f.estado}`
-                          : f.cidade || f.estado || (!f.endereco ? "—" : "")}
-                      </div>
+                      {f.cidade && f.estado
+                        ? `${f.cidade} - ${f.estado}`
+                        : f.cidade || f.estado || "—"}
                     </td>
                     <td className="p-3.5 text-center">
                       <div className="flex items-center justify-center gap-1">
