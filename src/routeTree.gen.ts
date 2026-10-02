@@ -14,12 +14,25 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedMedicoesRouteImport } from './routes/_authenticated/medicoes'
 import { Route as AuthenticatedFornecedoresRouteImport } from './routes/_authenticated/fornecedores'
+import { Route as AuthenticatedEstoqueRouteImport } from './routes/_authenticated/estoque'
 import { Route as AuthenticatedCotacoesRouteImport } from './routes/_authenticated/cotacoes'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedNotasFiscaisIndexRouteImport } from './routes/_authenticated/notas-fiscais.index'
+import { Route as AuthenticatedEstoqueIndexRouteImport } from './routes/_authenticated/estoque/index'
 import { Route as AuthenticatedEquipamentosIndexRouteImport } from './routes/_authenticated/equipamentos.index'
 import { Route as AuthenticatedCustosIndexRouteImport } from './routes/_authenticated/custos.index'
 import { Route as AuthenticatedCotacoesIndexRouteImport } from './routes/_authenticated/cotacoes.index'
+import { Route as AuthenticatedEstoqueTransferenciasRouteImport } from './routes/_authenticated/estoque/transferencias'
+import { Route as AuthenticatedEstoqueSaidasRouteImport } from './routes/_authenticated/estoque/saidas'
+import { Route as AuthenticatedEstoqueRelatoriosRouteImport } from './routes/_authenticated/estoque/relatorios'
+import { Route as AuthenticatedEstoqueProdutosRouteImport } from './routes/_authenticated/estoque/produtos'
+import { Route as AuthenticatedEstoquePneusRouteImport } from './routes/_authenticated/estoque/pneus'
+import { Route as AuthenticatedEstoqueMovimentacoesRouteImport } from './routes/_authenticated/estoque/movimentacoes'
+import { Route as AuthenticatedEstoqueInventarioRouteImport } from './routes/_authenticated/estoque/inventario'
+import { Route as AuthenticatedEstoqueFornecedoresRouteImport } from './routes/_authenticated/estoque/fornecedores'
+import { Route as AuthenticatedEstoqueEntradasRouteImport } from './routes/_authenticated/estoque/entradas'
+import { Route as AuthenticatedEstoqueCategoriasRouteImport } from './routes/_authenticated/estoque/categorias'
+import { Route as AuthenticatedEstoqueAlertasRouteImport } from './routes/_authenticated/estoque/alertas'
 import { Route as AuthenticatedEquipamentosIdRouteImport } from './routes/_authenticated/equipamentos.$id'
 import { Route as AuthenticatedNotasFiscaisIdIndexRouteImport } from './routes/_authenticated/notas-fiscais.$id.index'
 import { Route as AuthenticatedEquipamentosIdIndexRouteImport } from './routes/_authenticated/equipamentos.$id.index'
@@ -54,6 +67,11 @@ const AuthenticatedFornecedoresRoute =
     path: '/fornecedores',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedEstoqueRoute = AuthenticatedEstoqueRouteImport.update({
+  id: '/estoque',
+  path: '/estoque',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCotacoesRoute = AuthenticatedCotacoesRouteImport.update({
   id: '/cotacoes',
   path: '/cotacoes',
@@ -69,6 +87,12 @@ const AuthenticatedNotasFiscaisIndexRoute =
     id: '/notas-fiscais/',
     path: '/notas-fiscais/',
     getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedEstoqueIndexRoute =
+  AuthenticatedEstoqueIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedEstoqueRoute,
   } as any)
 const AuthenticatedEquipamentosIndexRoute =
   AuthenticatedEquipamentosIndexRouteImport.update({
@@ -87,6 +111,72 @@ const AuthenticatedCotacoesIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedCotacoesRoute,
+  } as any)
+const AuthenticatedEstoqueTransferenciasRoute =
+  AuthenticatedEstoqueTransferenciasRouteImport.update({
+    id: '/transferencias',
+    path: '/transferencias',
+    getParentRoute: () => AuthenticatedEstoqueRoute,
+  } as any)
+const AuthenticatedEstoqueSaidasRoute =
+  AuthenticatedEstoqueSaidasRouteImport.update({
+    id: '/saidas',
+    path: '/saidas',
+    getParentRoute: () => AuthenticatedEstoqueRoute,
+  } as any)
+const AuthenticatedEstoqueRelatoriosRoute =
+  AuthenticatedEstoqueRelatoriosRouteImport.update({
+    id: '/relatorios',
+    path: '/relatorios',
+    getParentRoute: () => AuthenticatedEstoqueRoute,
+  } as any)
+const AuthenticatedEstoqueProdutosRoute =
+  AuthenticatedEstoqueProdutosRouteImport.update({
+    id: '/produtos',
+    path: '/produtos',
+    getParentRoute: () => AuthenticatedEstoqueRoute,
+  } as any)
+const AuthenticatedEstoquePneusRoute =
+  AuthenticatedEstoquePneusRouteImport.update({
+    id: '/pneus',
+    path: '/pneus',
+    getParentRoute: () => AuthenticatedEstoqueRoute,
+  } as any)
+const AuthenticatedEstoqueMovimentacoesRoute =
+  AuthenticatedEstoqueMovimentacoesRouteImport.update({
+    id: '/movimentacoes',
+    path: '/movimentacoes',
+    getParentRoute: () => AuthenticatedEstoqueRoute,
+  } as any)
+const AuthenticatedEstoqueInventarioRoute =
+  AuthenticatedEstoqueInventarioRouteImport.update({
+    id: '/inventario',
+    path: '/inventario',
+    getParentRoute: () => AuthenticatedEstoqueRoute,
+  } as any)
+const AuthenticatedEstoqueFornecedoresRoute =
+  AuthenticatedEstoqueFornecedoresRouteImport.update({
+    id: '/fornecedores',
+    path: '/fornecedores',
+    getParentRoute: () => AuthenticatedEstoqueRoute,
+  } as any)
+const AuthenticatedEstoqueEntradasRoute =
+  AuthenticatedEstoqueEntradasRouteImport.update({
+    id: '/entradas',
+    path: '/entradas',
+    getParentRoute: () => AuthenticatedEstoqueRoute,
+  } as any)
+const AuthenticatedEstoqueCategoriasRoute =
+  AuthenticatedEstoqueCategoriasRouteImport.update({
+    id: '/categorias',
+    path: '/categorias',
+    getParentRoute: () => AuthenticatedEstoqueRoute,
+  } as any)
+const AuthenticatedEstoqueAlertasRoute =
+  AuthenticatedEstoqueAlertasRouteImport.update({
+    id: '/alertas',
+    path: '/alertas',
+    getParentRoute: () => AuthenticatedEstoqueRoute,
   } as any)
 const AuthenticatedEquipamentosIdRoute =
   AuthenticatedEquipamentosIdRouteImport.update({
@@ -142,12 +232,25 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/cotacoes': typeof AuthenticatedCotacoesRouteWithChildren
+  '/estoque': typeof AuthenticatedEstoqueRouteWithChildren
   '/fornecedores': typeof AuthenticatedFornecedoresRoute
   '/medicoes': typeof AuthenticatedMedicoesRoute
   '/equipamentos/$id': typeof AuthenticatedEquipamentosIdRouteWithChildren
+  '/estoque/alertas': typeof AuthenticatedEstoqueAlertasRoute
+  '/estoque/categorias': typeof AuthenticatedEstoqueCategoriasRoute
+  '/estoque/entradas': typeof AuthenticatedEstoqueEntradasRoute
+  '/estoque/fornecedores': typeof AuthenticatedEstoqueFornecedoresRoute
+  '/estoque/inventario': typeof AuthenticatedEstoqueInventarioRoute
+  '/estoque/movimentacoes': typeof AuthenticatedEstoqueMovimentacoesRoute
+  '/estoque/pneus': typeof AuthenticatedEstoquePneusRoute
+  '/estoque/produtos': typeof AuthenticatedEstoqueProdutosRoute
+  '/estoque/relatorios': typeof AuthenticatedEstoqueRelatoriosRoute
+  '/estoque/saidas': typeof AuthenticatedEstoqueSaidasRoute
+  '/estoque/transferencias': typeof AuthenticatedEstoqueTransferenciasRoute
   '/cotacoes/': typeof AuthenticatedCotacoesIndexRoute
   '/custos/': typeof AuthenticatedCustosIndexRoute
   '/equipamentos/': typeof AuthenticatedEquipamentosIndexRoute
+  '/estoque/': typeof AuthenticatedEstoqueIndexRoute
   '/notas-fiscais/': typeof AuthenticatedNotasFiscaisIndexRoute
   '/equipamentos/$id/historico': typeof AuthenticatedEquipamentosIdHistoricoRouteWithChildren
   '/equipamentos/$id/manutencao': typeof AuthenticatedEquipamentosIdManutencaoRoute
@@ -163,9 +266,21 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/fornecedores': typeof AuthenticatedFornecedoresRoute
   '/medicoes': typeof AuthenticatedMedicoesRoute
+  '/estoque/alertas': typeof AuthenticatedEstoqueAlertasRoute
+  '/estoque/categorias': typeof AuthenticatedEstoqueCategoriasRoute
+  '/estoque/entradas': typeof AuthenticatedEstoqueEntradasRoute
+  '/estoque/fornecedores': typeof AuthenticatedEstoqueFornecedoresRoute
+  '/estoque/inventario': typeof AuthenticatedEstoqueInventarioRoute
+  '/estoque/movimentacoes': typeof AuthenticatedEstoqueMovimentacoesRoute
+  '/estoque/pneus': typeof AuthenticatedEstoquePneusRoute
+  '/estoque/produtos': typeof AuthenticatedEstoqueProdutosRoute
+  '/estoque/relatorios': typeof AuthenticatedEstoqueRelatoriosRoute
+  '/estoque/saidas': typeof AuthenticatedEstoqueSaidasRoute
+  '/estoque/transferencias': typeof AuthenticatedEstoqueTransferenciasRoute
   '/cotacoes': typeof AuthenticatedCotacoesIndexRoute
   '/custos': typeof AuthenticatedCustosIndexRoute
   '/equipamentos': typeof AuthenticatedEquipamentosIndexRoute
+  '/estoque': typeof AuthenticatedEstoqueIndexRoute
   '/notas-fiscais': typeof AuthenticatedNotasFiscaisIndexRoute
   '/equipamentos/$id/historico': typeof AuthenticatedEquipamentosIdHistoricoRouteWithChildren
   '/equipamentos/$id/manutencao': typeof AuthenticatedEquipamentosIdManutencaoRoute
@@ -182,12 +297,25 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/cotacoes': typeof AuthenticatedCotacoesRouteWithChildren
+  '/_authenticated/estoque': typeof AuthenticatedEstoqueRouteWithChildren
   '/_authenticated/fornecedores': typeof AuthenticatedFornecedoresRoute
   '/_authenticated/medicoes': typeof AuthenticatedMedicoesRoute
   '/_authenticated/equipamentos/$id': typeof AuthenticatedEquipamentosIdRouteWithChildren
+  '/_authenticated/estoque/alertas': typeof AuthenticatedEstoqueAlertasRoute
+  '/_authenticated/estoque/categorias': typeof AuthenticatedEstoqueCategoriasRoute
+  '/_authenticated/estoque/entradas': typeof AuthenticatedEstoqueEntradasRoute
+  '/_authenticated/estoque/fornecedores': typeof AuthenticatedEstoqueFornecedoresRoute
+  '/_authenticated/estoque/inventario': typeof AuthenticatedEstoqueInventarioRoute
+  '/_authenticated/estoque/movimentacoes': typeof AuthenticatedEstoqueMovimentacoesRoute
+  '/_authenticated/estoque/pneus': typeof AuthenticatedEstoquePneusRoute
+  '/_authenticated/estoque/produtos': typeof AuthenticatedEstoqueProdutosRoute
+  '/_authenticated/estoque/relatorios': typeof AuthenticatedEstoqueRelatoriosRoute
+  '/_authenticated/estoque/saidas': typeof AuthenticatedEstoqueSaidasRoute
+  '/_authenticated/estoque/transferencias': typeof AuthenticatedEstoqueTransferenciasRoute
   '/_authenticated/cotacoes/': typeof AuthenticatedCotacoesIndexRoute
   '/_authenticated/custos/': typeof AuthenticatedCustosIndexRoute
   '/_authenticated/equipamentos/': typeof AuthenticatedEquipamentosIndexRoute
+  '/_authenticated/estoque/': typeof AuthenticatedEstoqueIndexRoute
   '/_authenticated/notas-fiscais/': typeof AuthenticatedNotasFiscaisIndexRoute
   '/_authenticated/equipamentos/$id/historico': typeof AuthenticatedEquipamentosIdHistoricoRouteWithChildren
   '/_authenticated/equipamentos/$id/manutencao': typeof AuthenticatedEquipamentosIdManutencaoRoute
@@ -204,12 +332,25 @@ export interface FileRouteTypes {
     | '/auth'
     | '/admin'
     | '/cotacoes'
+    | '/estoque'
     | '/fornecedores'
     | '/medicoes'
     | '/equipamentos/$id'
+    | '/estoque/alertas'
+    | '/estoque/categorias'
+    | '/estoque/entradas'
+    | '/estoque/fornecedores'
+    | '/estoque/inventario'
+    | '/estoque/movimentacoes'
+    | '/estoque/pneus'
+    | '/estoque/produtos'
+    | '/estoque/relatorios'
+    | '/estoque/saidas'
+    | '/estoque/transferencias'
     | '/cotacoes/'
     | '/custos/'
     | '/equipamentos/'
+    | '/estoque/'
     | '/notas-fiscais/'
     | '/equipamentos/$id/historico'
     | '/equipamentos/$id/manutencao'
@@ -225,9 +366,21 @@ export interface FileRouteTypes {
     | '/admin'
     | '/fornecedores'
     | '/medicoes'
+    | '/estoque/alertas'
+    | '/estoque/categorias'
+    | '/estoque/entradas'
+    | '/estoque/fornecedores'
+    | '/estoque/inventario'
+    | '/estoque/movimentacoes'
+    | '/estoque/pneus'
+    | '/estoque/produtos'
+    | '/estoque/relatorios'
+    | '/estoque/saidas'
+    | '/estoque/transferencias'
     | '/cotacoes'
     | '/custos'
     | '/equipamentos'
+    | '/estoque'
     | '/notas-fiscais'
     | '/equipamentos/$id/historico'
     | '/equipamentos/$id/manutencao'
@@ -243,12 +396,25 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/admin'
     | '/_authenticated/cotacoes'
+    | '/_authenticated/estoque'
     | '/_authenticated/fornecedores'
     | '/_authenticated/medicoes'
     | '/_authenticated/equipamentos/$id'
+    | '/_authenticated/estoque/alertas'
+    | '/_authenticated/estoque/categorias'
+    | '/_authenticated/estoque/entradas'
+    | '/_authenticated/estoque/fornecedores'
+    | '/_authenticated/estoque/inventario'
+    | '/_authenticated/estoque/movimentacoes'
+    | '/_authenticated/estoque/pneus'
+    | '/_authenticated/estoque/produtos'
+    | '/_authenticated/estoque/relatorios'
+    | '/_authenticated/estoque/saidas'
+    | '/_authenticated/estoque/transferencias'
     | '/_authenticated/cotacoes/'
     | '/_authenticated/custos/'
     | '/_authenticated/equipamentos/'
+    | '/_authenticated/estoque/'
     | '/_authenticated/notas-fiscais/'
     | '/_authenticated/equipamentos/$id/historico'
     | '/_authenticated/equipamentos/$id/manutencao'
@@ -302,6 +468,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFornecedoresRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/estoque': {
+      id: '/_authenticated/estoque'
+      path: '/estoque'
+      fullPath: '/estoque'
+      preLoaderRoute: typeof AuthenticatedEstoqueRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/cotacoes': {
       id: '/_authenticated/cotacoes'
       path: '/cotacoes'
@@ -323,6 +496,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNotasFiscaisIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/estoque/': {
+      id: '/_authenticated/estoque/'
+      path: '/'
+      fullPath: '/estoque/'
+      preLoaderRoute: typeof AuthenticatedEstoqueIndexRouteImport
+      parentRoute: typeof AuthenticatedEstoqueRoute
+    }
     '/_authenticated/equipamentos/': {
       id: '/_authenticated/equipamentos/'
       path: '/equipamentos'
@@ -343,6 +523,83 @@ declare module '@tanstack/react-router' {
       fullPath: '/cotacoes/'
       preLoaderRoute: typeof AuthenticatedCotacoesIndexRouteImport
       parentRoute: typeof AuthenticatedCotacoesRoute
+    }
+    '/_authenticated/estoque/transferencias': {
+      id: '/_authenticated/estoque/transferencias'
+      path: '/transferencias'
+      fullPath: '/estoque/transferencias'
+      preLoaderRoute: typeof AuthenticatedEstoqueTransferenciasRouteImport
+      parentRoute: typeof AuthenticatedEstoqueRoute
+    }
+    '/_authenticated/estoque/saidas': {
+      id: '/_authenticated/estoque/saidas'
+      path: '/saidas'
+      fullPath: '/estoque/saidas'
+      preLoaderRoute: typeof AuthenticatedEstoqueSaidasRouteImport
+      parentRoute: typeof AuthenticatedEstoqueRoute
+    }
+    '/_authenticated/estoque/relatorios': {
+      id: '/_authenticated/estoque/relatorios'
+      path: '/relatorios'
+      fullPath: '/estoque/relatorios'
+      preLoaderRoute: typeof AuthenticatedEstoqueRelatoriosRouteImport
+      parentRoute: typeof AuthenticatedEstoqueRoute
+    }
+    '/_authenticated/estoque/produtos': {
+      id: '/_authenticated/estoque/produtos'
+      path: '/produtos'
+      fullPath: '/estoque/produtos'
+      preLoaderRoute: typeof AuthenticatedEstoqueProdutosRouteImport
+      parentRoute: typeof AuthenticatedEstoqueRoute
+    }
+    '/_authenticated/estoque/pneus': {
+      id: '/_authenticated/estoque/pneus'
+      path: '/pneus'
+      fullPath: '/estoque/pneus'
+      preLoaderRoute: typeof AuthenticatedEstoquePneusRouteImport
+      parentRoute: typeof AuthenticatedEstoqueRoute
+    }
+    '/_authenticated/estoque/movimentacoes': {
+      id: '/_authenticated/estoque/movimentacoes'
+      path: '/movimentacoes'
+      fullPath: '/estoque/movimentacoes'
+      preLoaderRoute: typeof AuthenticatedEstoqueMovimentacoesRouteImport
+      parentRoute: typeof AuthenticatedEstoqueRoute
+    }
+    '/_authenticated/estoque/inventario': {
+      id: '/_authenticated/estoque/inventario'
+      path: '/inventario'
+      fullPath: '/estoque/inventario'
+      preLoaderRoute: typeof AuthenticatedEstoqueInventarioRouteImport
+      parentRoute: typeof AuthenticatedEstoqueRoute
+    }
+    '/_authenticated/estoque/fornecedores': {
+      id: '/_authenticated/estoque/fornecedores'
+      path: '/fornecedores'
+      fullPath: '/estoque/fornecedores'
+      preLoaderRoute: typeof AuthenticatedEstoqueFornecedoresRouteImport
+      parentRoute: typeof AuthenticatedEstoqueRoute
+    }
+    '/_authenticated/estoque/entradas': {
+      id: '/_authenticated/estoque/entradas'
+      path: '/entradas'
+      fullPath: '/estoque/entradas'
+      preLoaderRoute: typeof AuthenticatedEstoqueEntradasRouteImport
+      parentRoute: typeof AuthenticatedEstoqueRoute
+    }
+    '/_authenticated/estoque/categorias': {
+      id: '/_authenticated/estoque/categorias'
+      path: '/categorias'
+      fullPath: '/estoque/categorias'
+      preLoaderRoute: typeof AuthenticatedEstoqueCategoriasRouteImport
+      parentRoute: typeof AuthenticatedEstoqueRoute
+    }
+    '/_authenticated/estoque/alertas': {
+      id: '/_authenticated/estoque/alertas'
+      path: '/alertas'
+      fullPath: '/estoque/alertas'
+      preLoaderRoute: typeof AuthenticatedEstoqueAlertasRouteImport
+      parentRoute: typeof AuthenticatedEstoqueRoute
     }
     '/_authenticated/equipamentos/$id': {
       id: '/_authenticated/equipamentos/$id'
@@ -418,6 +675,41 @@ const AuthenticatedCotacoesRouteWithChildren =
     AuthenticatedCotacoesRouteChildren,
   )
 
+interface AuthenticatedEstoqueRouteChildren {
+  AuthenticatedEstoqueAlertasRoute: typeof AuthenticatedEstoqueAlertasRoute
+  AuthenticatedEstoqueCategoriasRoute: typeof AuthenticatedEstoqueCategoriasRoute
+  AuthenticatedEstoqueEntradasRoute: typeof AuthenticatedEstoqueEntradasRoute
+  AuthenticatedEstoqueFornecedoresRoute: typeof AuthenticatedEstoqueFornecedoresRoute
+  AuthenticatedEstoqueInventarioRoute: typeof AuthenticatedEstoqueInventarioRoute
+  AuthenticatedEstoqueMovimentacoesRoute: typeof AuthenticatedEstoqueMovimentacoesRoute
+  AuthenticatedEstoquePneusRoute: typeof AuthenticatedEstoquePneusRoute
+  AuthenticatedEstoqueProdutosRoute: typeof AuthenticatedEstoqueProdutosRoute
+  AuthenticatedEstoqueRelatoriosRoute: typeof AuthenticatedEstoqueRelatoriosRoute
+  AuthenticatedEstoqueSaidasRoute: typeof AuthenticatedEstoqueSaidasRoute
+  AuthenticatedEstoqueTransferenciasRoute: typeof AuthenticatedEstoqueTransferenciasRoute
+  AuthenticatedEstoqueIndexRoute: typeof AuthenticatedEstoqueIndexRoute
+}
+
+const AuthenticatedEstoqueRouteChildren: AuthenticatedEstoqueRouteChildren = {
+  AuthenticatedEstoqueAlertasRoute: AuthenticatedEstoqueAlertasRoute,
+  AuthenticatedEstoqueCategoriasRoute: AuthenticatedEstoqueCategoriasRoute,
+  AuthenticatedEstoqueEntradasRoute: AuthenticatedEstoqueEntradasRoute,
+  AuthenticatedEstoqueFornecedoresRoute: AuthenticatedEstoqueFornecedoresRoute,
+  AuthenticatedEstoqueInventarioRoute: AuthenticatedEstoqueInventarioRoute,
+  AuthenticatedEstoqueMovimentacoesRoute:
+    AuthenticatedEstoqueMovimentacoesRoute,
+  AuthenticatedEstoquePneusRoute: AuthenticatedEstoquePneusRoute,
+  AuthenticatedEstoqueProdutosRoute: AuthenticatedEstoqueProdutosRoute,
+  AuthenticatedEstoqueRelatoriosRoute: AuthenticatedEstoqueRelatoriosRoute,
+  AuthenticatedEstoqueSaidasRoute: AuthenticatedEstoqueSaidasRoute,
+  AuthenticatedEstoqueTransferenciasRoute:
+    AuthenticatedEstoqueTransferenciasRoute,
+  AuthenticatedEstoqueIndexRoute: AuthenticatedEstoqueIndexRoute,
+}
+
+const AuthenticatedEstoqueRouteWithChildren =
+  AuthenticatedEstoqueRoute._addFileChildren(AuthenticatedEstoqueRouteChildren)
+
 interface AuthenticatedEquipamentosIdHistoricoRouteChildren {
   AuthenticatedEquipamentosIdHistoricoHistIdRoute: typeof AuthenticatedEquipamentosIdHistoricoHistIdRoute
 }
@@ -457,6 +749,7 @@ const AuthenticatedEquipamentosIdRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedCotacoesRoute: typeof AuthenticatedCotacoesRouteWithChildren
+  AuthenticatedEstoqueRoute: typeof AuthenticatedEstoqueRouteWithChildren
   AuthenticatedFornecedoresRoute: typeof AuthenticatedFornecedoresRoute
   AuthenticatedMedicoesRoute: typeof AuthenticatedMedicoesRoute
   AuthenticatedEquipamentosIdRoute: typeof AuthenticatedEquipamentosIdRouteWithChildren
@@ -470,6 +763,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedCotacoesRoute: AuthenticatedCotacoesRouteWithChildren,
+  AuthenticatedEstoqueRoute: AuthenticatedEstoqueRouteWithChildren,
   AuthenticatedFornecedoresRoute: AuthenticatedFornecedoresRoute,
   AuthenticatedMedicoesRoute: AuthenticatedMedicoesRoute,
   AuthenticatedEquipamentosIdRoute:

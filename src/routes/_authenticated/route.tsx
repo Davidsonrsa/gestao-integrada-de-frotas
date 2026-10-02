@@ -3,7 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Truck, DollarSign, FileText, Settings, LogOut, ClipboardList, Clock } from "lucide-react";
+import {
+  Truck,
+  DollarSign,
+  FileText,
+  Settings,
+  LogOut,
+  ClipboardList,
+  Clock,
+  Warehouse,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -31,6 +40,7 @@ function AuthenticatedLayout() {
     { to: "/custos", label: "Custos", icon: DollarSign },
     { to: "/cotacoes", label: "Cotações", icon: ClipboardList },
     { to: "/notas-fiscais", label: "Notas Fiscais", icon: FileText },
+    { to: "/estoque", label: "Estoque", icon: Warehouse },
     { to: "/admin", label: "Admin", icon: Settings },
   ];
 
