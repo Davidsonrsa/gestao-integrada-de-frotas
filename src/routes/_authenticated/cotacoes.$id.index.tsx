@@ -611,6 +611,76 @@ export default function DetalheCotacaoPage() {
     window.open(url, "_blank");
   }
 
+  function enviarComparativoWhatsApp() {
+    if (!cotacao) return;
+
+    const linhas = [
+      `*COTAÇÃO Nº ${cotacao.numero}*`,
+      `*Equipamento/Patrimônio:* ${cotacao.patrimonio || "—"}`,
+      `*Setor:* ${cotacao.setor || "—"} | *Data:* ${formatarData(cotacao.data_cotacao)}`,
+      `*Solicitante:* ${nomeSolicitanteFixo}`,
+      ...(cotacao.observacoes ? [`*Obs:* ${cotacao.observacoes}`] : []),
+      "",
+      "*QUADRO COMPARATIVO DE PREÇOS*",
+      "Valores em Reais (R$)",
+    ];
+
+    if (itens.length === 0) {
+      linhas.push("Nenhum item cadastrado nesta cotação.");
+    }
+
+    itens.forEach((item, index) => {
+      const menorInfo = menoresPrecosPorItem[item.id];
+      linhas.push(
+        `*${index + 1}. ITEM*`,
+        `Cód.: ${item.codigo || "—"} | ${item.descricao}`,
+        `Qtd: ${item.quantidade} | Un: ${item.unidade}`,
+      );
+
+      fornecedoresCotacao.forEach((fc) => {
+        const idFornecedor = fc.fornecedor_id || fc.fornecedores?.id;
+        const nome = fc.fornecedores?.nome_fantasia || fc.fornecedores?.razao_social || "Fornecedor";
+        const resposta = respostas.find(
+          (resposta) =>
+            String(resposta.fornecedor_id).trim() === String(idFornecedor).trim() &&
+            String(resposta.cotacao_item_id).trim() === String(item.id).trim(),
+        );
+        const preco = resposta?.preco ?? 0;
+        const menorPreco =
+          menorInfo?.fornecedorName === nome && menorInfo.menorUnitario === preco;
+        linhas.push(`*${nome}*`);
+        if (preco > 0) {
+          linhas.push(`Preço: ${brl(preco)}`);
+          linhas.push(`Marca: ${resposta?.marca || "—"}`);
+          linhas.push(`Total: ${brl(preco * (item.quantidade || 1))}`);
+        } else {
+          linhas.push("Preço: —");
+        }
+      });
+
+      linhas.push("*Menor Preço (Total)*");
+      if (menorInfo) {
+        linhas.push(brl(menorInfo.menorTotal));
+        linhas.push(`Unit.: ${brl(menorInfo.menorUnitario)} (${menorInfo.fornecedorName})`);
+        linhas.push(`Marca: ${menorInfo.marca}`);
+      } else {
+        linhas.push("—");
+      }
+      linhas.push("");
+    });
+
+    linhas.push("*TOTAIS*");
+    fornecedoresCotacao.forEach((fc) => {
+      const idFornecedor = fc.fornecedor_id || fc.fornecedores?.id;
+      const nome = fc.fornecedores?.nome_fantasia || fc.fornecedores?.razao_social || "Fornecedor";
+      const total = totaisPorFornecedor[idFornecedor] || 0;
+      linhas.push(`${nome}: ${total > 0 ? brl(total) : "—"}`);
+    });
+    linhas.push(`*Menor Preço (Total): ${brl(valorTotalOtimo)}*`);
+
+    window.open(`https://wa.me/?text=${encodeURIComponent(linhas.join("\n"))}`, "_blank");
+  }
+
   function enviarPorEmail() {
     const email = fornecedorOrcamentoAtivo?.fornecedores?.email || "";
     const assunto = encodeURIComponent(
@@ -962,10 +1032,17 @@ export default function DetalheCotacaoPage() {
           >
             <Printer className="w-4 h-4" /> Imprimir Comparativo
           </Button>
+          <Button
+            type="button"
+            onClick={enviarComparativoWhatsApp}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+          >
+            <MessageCircle className="w-4 h-4" /> Enviar via Zap
+          </Button>
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:border-none print:shadow-none">
+      <div className="bg-white p-6 print:p-0 rounded-xl shadow-sm border border-slate-200 print:border-none print:shadow-none">
         <div className="flex justify-between items-start">
           <div>
             <span className="text-xs uppercase bg-blue-100 text-blue-800 font-bold px-2 py-1 rounded">
