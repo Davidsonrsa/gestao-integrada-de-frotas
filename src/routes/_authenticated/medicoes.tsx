@@ -1,6 +1,17 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Edit, Trash2, Save, Calendar, ArrowLeft, Clock, Printer } from "lucide-react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Save,
+  Calendar,
+  ArrowLeft,
+  Clock,
+  Printer,
+  FileSpreadsheet,
+} from "lucide-react";
+import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { requireAdmin } from "@/lib/route-guards";
 import { toast } from "sonner";
@@ -687,6 +698,240 @@ const calcularTotalMes = (mesId: string) => {
     setTimeout(() => setMensagemSucesso(""), 3000);
   };
 
+  const handleExportarExcel = () => {
+    if (!contratoSelecionado || !mesSelecionado) return;
+    const maquinasDoMes = maquinas.filter((item) => item.mesId === mesSelecionado.id);
+    const maquina =
+      maquinasDoMes.find((item) => item.id === maquinaSelecionadaId) ?? maquinasDoMes[0];
+    if (!maquina) {
+      toast.error("Cadastre um equipamento antes de exportar a medição.");
+      return;
+    }
+
+    const isCasan =
+      contratoSelecionado.numero.includes("1546") ||
+      contratoSelecionado.contratante.toUpperCase().includes("CASAN");
+    const formatarMoeda = (valor: number) =>
+      `R$ ${valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const linhas: (string | number | null)[][] = [];
+    const mesAno = `${mesSelecionado.nome.toUpperCase()} / ${mesSelecionado.ano}`;
+    const equipamento = `${maquina.tipo.toUpperCase()} (${maquina.codigo})`;
+    const linhaCabecalho = 7;
+
+    if (isCasan) {
+      const valorMensal = Number(maquina.valorHora) || 0;
+      const taxa50 = Number((maquina as MaquinaMedicao & { taxa50?: number }).taxa50) || 142.72;
+      const taxa100 =
+        Number((maquina as MaquinaMedicao & { taxa100?: number }).taxa100) || 170.63;
+      let totalHoras50 = 0;
+      let totalHoras100 = 0;
+      let totalValor50 = 0;
+      let totalValor100 = 0;
+
+      linhas.push(
+        [`RESUMO DA MEDIÇÃO - CASAN - ${mesAno}`],
+        ["CONTRATANTE:", "COMPANHIA CATARINENSE DE AGUAS E SANEAMENTO - CASAN"],
+        ["CONTRATO Nº:", contratoSelecionado.numero],
+        ["EQUIPAMENTO:", equipamento],
+        ["OPERADOR:", maquina.operador.toUpperCase()],
+        ["VALOR MENSAL R$:", formatarMoeda(valorMensal), "HR 50%:", formatarMoeda(taxa50), "HR 100%:", formatarMoeda(taxa100)],
+        [],
+        [
+          "Data",
+          "DIA",
+          "HORAS NORMAIS",
+          null,
+          null,
+          "HR EXTRAS QTD",
+          null,
+          "VALORES EXTRAS",
+          null,
+          "OBSERVAÇÃO",
+        ],
+        [
+          "",
+          "",
+          "INICIO",
+          "FINAL",
+          "SUB",
+          "HR 50%",
+          "HR 100%",
+          `HR 50% (R$ ${taxa50.toFixed(2)})`,
+          `HR 100% (R$ ${taxa100.toFixed(2)})`,
+          "",
+        ],
+      );
+
+      maquina.dias.forEach((dia) => {
+        const extras = dia as DiaMedicao & { horas50?: number | string; horas100?: number | string };
+        const horas50 = Number(extras.horas50) || 0;
+        const horas100 = Number(extras.horas100) || 0;
+        const valor50 = horas50 * taxa50;
+        const valor100 = horas100 * taxa100;
+        const subtotalNormal = calcularSubtotal(dia.manhaInicio, dia.manhaFim);
+        totalHoras50 += horas50;
+        totalHoras100 += horas100;
+        totalValor50 += valor50;
+        totalValor100 += valor100;
+        linhas.push([
+          dia.dataStr,
+          dia.diaSemana,
+          dia.manhaInicio,
+          dia.manhaFim,
+          subtotalNormal > 0 ? `${subtotalNormal.toFixed(2)}:00` : "",
+          horas50 || "",
+          horas100 || "",
+          valor50 > 0 ? formatarMoeda(valor50) : "R$ -",
+          valor100 > 0 ? formatarMoeda(valor100) : "R$ -",
+          dia.observacao,
+        ]);
+      });
+
+      linhas.push([
+        "TOTAL GERAL",
+        null,
+        null,
+        null,
+        null,
+        totalHoras50 || "",
+        totalHoras100 || "",
+        formatarMoeda(totalValor50),
+        formatarMoeda(totalValor100),
+        `TOTAL: ${formatarMoeda(valorMensal + totalValor50 + totalValor100)}`,
+      ]);
+      linhas.push([], ["DATA DE APROVAÇÃO:", maquina.dataAprovacao || ""]);
+      linhas.push(["Responsável pela Medição / Executante", "Fiscal / Gestor do Contrato"]);
+    } else {
+      let totalHoras = 0;
+      let totalValor = 0;
+      const totalContrato = maquinasDoMes.reduce(
+        (totais, item) => {
+          item.dias.forEach((dia) => {
+            const horas =
+              calcularSubtotal(dia.manhaInicio, dia.manhaFim) +
+              calcularSubtotal(dia.tardeInicio, dia.tardeFim);
+            totais.horas += horas;
+            totais.valor += horas * (Number(item.valorHora) || 0);
+          });
+          return totais;
+        },
+        { horas: 0, valor: 0 },
+      );
+
+      linhas.push(
+        [`CONTROLE DE MEDIÇÃO DE HORAS - ${mesAno}`],
+        ["CONTRATANTE:", contratoSelecionado.contratante.toUpperCase()],
+        ["CONTRATO Nº:", contratoSelecionado.numero],
+        ["EQUIPAMENTO:", equipamento],
+        ["OPERADOR:", maquina.operador.toUpperCase()],
+        ["VALOR HORA (R$):", formatarMoeda(maquina.valorHora), "DATA DE APROVAÇÃO:", maquina.dataAprovacao || ""],
+        [],
+        ["Data", "Dia", "MANHÃ", null, null, "TARDE", null, null, "TOTAL", "VALOR (R$)", "OBS"],
+        ["", "", "INI", "FIM", "SUB", "INI", "FIM", "SUB", "", formatarMoeda(maquina.valorHora), ""],
+      );
+
+      maquina.dias.forEach((dia) => {
+        const subtotalManha = calcularSubtotal(dia.manhaInicio, dia.manhaFim);
+        const subtotalTarde = calcularSubtotal(dia.tardeInicio, dia.tardeFim);
+        const horasDia = subtotalManha + subtotalTarde;
+        const valorDia = horasDia * maquina.valorHora;
+        totalHoras += horasDia;
+        totalValor += valorDia;
+        linhas.push([
+          dia.dataStr,
+          dia.diaSemana,
+          dia.manhaInicio,
+          dia.manhaFim,
+          subtotalManha > 0 ? subtotalManha.toFixed(2) : "",
+          dia.tardeInicio,
+          dia.tardeFim,
+          subtotalTarde > 0 ? subtotalTarde.toFixed(2) : "",
+          horasDia > 0 ? horasDia.toFixed(2) : "",
+          valorDia > 0 ? formatarMoeda(valorDia) : "",
+          dia.observacao,
+        ]);
+      });
+
+      linhas.push([
+        "TOTAL GERAL",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        totalHoras.toFixed(2),
+        formatarMoeda(totalValor),
+        "",
+      ]);
+      linhas.push(
+        [],
+        [
+          "Total do contrato no mês:",
+          `${totalContrato.horas.toFixed(2)}h | ${formatarMoeda(totalContrato.valor)}`,
+        ],
+        [],
+        ["Responsável pela Medição / Executante", "Fiscal / Gestor do Contrato"],
+      );
+    }
+
+    const planilha = XLSX.utils.aoa_to_sheet(linhas);
+    planilha["!cols"] = isCasan
+      ? [
+          { wch: 14 },
+          { wch: 18 },
+          { wch: 12 },
+          { wch: 12 },
+          { wch: 12 },
+          { wch: 12 },
+          { wch: 12 },
+          { wch: 20 },
+          { wch: 20 },
+          { wch: 28 },
+        ]
+      : [
+          { wch: 14 },
+          { wch: 18 },
+          { wch: 12 },
+          { wch: 12 },
+          { wch: 12 },
+          { wch: 12 },
+          { wch: 12 },
+          { wch: 12 },
+          { wch: 12 },
+          { wch: 18 },
+          { wch: 28 },
+        ];
+    planilha["!merges"] = isCasan
+      ? [
+          { s: { r: 0, c: 0 }, e: { r: 0, c: 9 } },
+          { s: { r: linhaCabecalho, c: 0 }, e: { r: linhaCabecalho + 1, c: 0 } },
+          { s: { r: linhaCabecalho, c: 1 }, e: { r: linhaCabecalho + 1, c: 1 } },
+          { s: { r: linhaCabecalho, c: 2 }, e: { r: linhaCabecalho, c: 4 } },
+          { s: { r: linhaCabecalho, c: 5 }, e: { r: linhaCabecalho, c: 6 } },
+          { s: { r: linhaCabecalho, c: 7 }, e: { r: linhaCabecalho, c: 8 } },
+          { s: { r: linhaCabecalho, c: 9 }, e: { r: linhaCabecalho + 1, c: 9 } },
+        ]
+      : [
+          { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } },
+          { s: { r: linhaCabecalho, c: 0 }, e: { r: linhaCabecalho + 1, c: 0 } },
+          { s: { r: linhaCabecalho, c: 1 }, e: { r: linhaCabecalho + 1, c: 1 } },
+          { s: { r: linhaCabecalho, c: 2 }, e: { r: linhaCabecalho, c: 4 } },
+          { s: { r: linhaCabecalho, c: 5 }, e: { r: linhaCabecalho, c: 7 } },
+          { s: { r: linhaCabecalho, c: 8 }, e: { r: linhaCabecalho + 1, c: 8 } },
+          { s: { r: linhaCabecalho, c: 9 }, e: { r: linhaCabecalho + 1, c: 9 } },
+          { s: { r: linhaCabecalho, c: 10 }, e: { r: linhaCabecalho + 1, c: 10 } },
+        ];
+    const arquivo = `medicao-${contratoSelecionado.numero}-${mesSelecionado.nome}-${maquina.codigo}`
+      .replace(/[<>:"/\\|?*]/g, "-")
+      .replace(/\s+/g, "-");
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, planilha, "Medição");
+    XLSX.writeFile(workbook, `${arquivo}.xlsx`);
+    toast.success("Planilha Excel gerada.");
+  };
+
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6 print:p-0 print:m-0 print:max-w-none">
       <style>{`
@@ -951,16 +1196,23 @@ const calcularTotalMes = (mesId: string) => {
           )}
 {visao === "maquina" && mesSelecionado && contratoSelecionado && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 space-y-4 print:border-none print:p-0 print:m-0">
-          <div className="flex justify-between items-center border-b pb-3 print:hidden">
+          <div className="flex flex-wrap justify-between items-center gap-3 border-b pb-3 print:hidden">
             <h2 className="text-lg font-bold text-gray-800">
               Apontamento - {mesSelecionado.nome} de {mesSelecionado.ano}
             </h2>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap justify-end gap-2">
               <button
                 onClick={handleSalvarMedicao}
                 className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm font-semibold"
               >
                 <Save size={16} /> Salvar Medição
+              </button>
+              <button
+                onClick={handleExportarExcel}
+                disabled={!maquinas.some((item) => item.mesId === mesSelecionado.id)}
+                className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-sm disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <FileSpreadsheet size={16} /> Salvar como Excel
               </button>
               <button
                 onClick={() => {
