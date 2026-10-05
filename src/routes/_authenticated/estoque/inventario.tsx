@@ -28,7 +28,7 @@ export default function EstoqueInventarioPage() {
       if (error) throw error;
       setProdutos((data || []) as Produto[]);
       const initial = Object.fromEntries(
-        (data || []).map((item) => [item.id, Number(item.estoque_atual ?? 0)]),
+        ((data || []) as Produto[]).map((item) => [item.id, Number(item.estoque_atual ?? 0)]),
       );
       setForm(initial);
     } catch (error) {
