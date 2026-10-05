@@ -741,6 +741,7 @@ export default function DetalheCotacaoPage() {
         <head>
           <title>${tipoEnvio === "compra" ? "Pedido de Compra" : "Solicitação de Orçamento"} - ${cotacao?.numero}</title>
           <style>
+            @page { margin: 10mm; }
             body { font-family: Arial, sans-serif; color: #1e293b; margin: 20px; font-size: 14px; }
             .header { border-bottom: 2px solid #334155; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start; }
             .title { font-size: 20px; font-weight: bold; color: #0f172a; text-transform: uppercase; }
@@ -1003,6 +1004,9 @@ export default function DetalheCotacaoPage() {
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6 print:p-0">
       <style>{`
+        @page {
+          margin: 10mm;
+        }
         @media print {
           header, nav, .navbar, .top-bar, footer, button, .print\\:hidden {
             display: none !important;
