@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { estoqueDb as supabase } from "@/lib/estoque-db";
 
 export const Route = createFileRoute("/_authenticated/estoque/inventario")({
   component: EstoqueInventarioPage,
@@ -28,7 +28,7 @@ export default function EstoqueInventarioPage() {
       if (error) throw error;
       setProdutos((data || []) as Produto[]);
       const initial = Object.fromEntries(
-        (data || []).map((item) => [item.id, Number(item.estoque_atual ?? 0)]),
+        ((data || []) as Produto[]).map((item) => [item.id, Number(item.estoque_atual ?? 0)]),
       );
       setForm(initial);
     } catch (error) {

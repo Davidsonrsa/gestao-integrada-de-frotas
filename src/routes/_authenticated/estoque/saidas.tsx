@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { estoqueDb as supabase } from "@/lib/estoque-db";
 
 export const Route = createFileRoute("/_authenticated/estoque/saidas")({
   component: EstoqueSaidasPage,
@@ -13,7 +13,7 @@ type Produto = {
   unidade?: string | null;
   custo_medio?: number | null;
 };
-type Equipamento = { id: string; nome?: string | null; identificacao?: string | null };
+type Equipamento = { id: string; numero: string; identificacao?: string | null };
 
 export default function EstoqueSaidasPage() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
@@ -37,8 +37,8 @@ export default function EstoqueSaidasPage() {
         supabase.from("estoque_produtos").select("*").order("nome", { ascending: true }),
         supabase
           .from("equipamentos")
-          .select("id, nome, identificacao")
-          .order("nome", { ascending: true }),
+          .select("id, numero, identificacao")
+          .order("numero", { ascending: true }),
       ]);
 
       if (produtosRes.error) throw produtosRes.error;
@@ -208,7 +208,7 @@ export default function EstoqueSaidasPage() {
             <option value="">Equipamento</option>
             {equipamentos.map((equipamento) => (
               <option key={equipamento.id} value={equipamento.id}>
-                {equipamento.nome || equipamento.identificacao || "Equipamento"}
+                {equipamento.identificacao || equipamento.numero}
               </option>
             ))}
           </select>

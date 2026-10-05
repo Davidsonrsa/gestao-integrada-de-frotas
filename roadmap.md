@@ -9,3 +9,4 @@
 - [x] Corrigir receita bruta da CASAN para usar o valor mensal real das medições
 - [x] Corrigir exclusão de mês e clonar equipamentos do período anterior
 - [x] Permitir editar itens já lançados dentro da cotação
+- [x] Ajustar assinaturas da impressão de medições para caber na folha A4
