@@ -679,6 +679,18 @@ const calcularTotalMes = (mesId: string) => {
           .bg-gray-200 {
             background-color: #e5e7eb !important;
           }
+          .medicao-assinaturas {
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+            margin-top: 2mm !important;
+            padding: 1.5mm 2mm !important;
+          }
+          .medicao-assinaturas-linhas {
+            padding-top: 7mm !important;
+            gap: 8mm !important;
+            font-size: 7.5px !important;
+            line-height: 1.1 !important;
+          }
         }
       `}</style>
 
@@ -1306,7 +1318,7 @@ const calcularTotalMes = (mesId: string) => {
                     </table>
                   </div>
 
-                  <div className="border border-gray-800 p-2 space-y-2 bg-white text-xs print:mt-1">
+                  <div className="medicao-assinaturas border border-gray-800 p-2 space-y-2 bg-white text-xs print:mt-1">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-[10px]">DATA DE APROVAÇÃO:</span>
                       <input
@@ -1319,7 +1331,7 @@ const calcularTotalMes = (mesId: string) => {
                         className="border rounded p-0.5 text-xs print:border-none"
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-8 pt-6 text-center text-[10px]">
+                    <div className="medicao-assinaturas-linhas grid grid-cols-2 gap-8 pt-6 text-center text-[10px]">
                       <div className="border-t border-gray-800 pt-1 font-semibold">
                         Responsável pela Medição / Executante
                       </div>
@@ -1654,7 +1666,7 @@ const calcularTotalMes = (mesId: string) => {
                 </div>
 
                 {/* RODAPÉ PADRÃO DOS OUTROS CONTRATOS */}
-                <div className="border border-gray-800 p-3 space-y-4 bg-white text-xs print:mt-4">
+                <div className="medicao-assinaturas border border-gray-800 p-3 space-y-4 bg-white text-xs print:mt-4">
                   <div className="flex items-center gap-2 print:hidden">
                     <span className="font-bold">DATA DE APROVAÇÃO:</span>
                     <input
@@ -1667,7 +1679,7 @@ const calcularTotalMes = (mesId: string) => {
                       className="border rounded p-1 text-xs"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-8 pt-12 text-center">
+                  <div className="medicao-assinaturas-linhas grid grid-cols-2 gap-8 pt-12 text-center">
                     <div className="border-t border-gray-800 pt-1 font-semibold">
                       {maqAtiva.assinaturaResponsavel || "Responsável pela Medição / Executante"}
                     </div>
