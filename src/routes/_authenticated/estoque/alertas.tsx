@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, BellRing, CheckCircle2, PackageSearch } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { estoqueDb as supabase } from "@/lib/estoque-db";
 import { formatCurrency, getEstoqueStatus } from "@/lib/estoque";
 
 export const Route = createFileRoute("/_authenticated/estoque/alertas")({

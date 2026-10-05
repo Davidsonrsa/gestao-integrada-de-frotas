@@ -7,7 +7,7 @@ import {
   Boxes,
   PackageSearch,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { estoqueDb as supabase } from "@/lib/estoque-db";
 import { formatCurrency, getEstoqueStatus } from "@/lib/estoque";
 
 export const Route = createFileRoute("/_authenticated/estoque/")({
@@ -39,7 +39,7 @@ type MovimentacaoResumo = {
   responsavel?: string | null;
   observacao?: string | null;
   estoque_produtos?: { nome?: string | null } | null;
-  equipamentos?: { nome?: string | null } | null;
+  equipamentos?: { identificacao?: string | null } | null;
 };
 
 export default function EstoqueDashboardPage() {
@@ -66,7 +66,7 @@ export default function EstoqueDashboardPage() {
             .order("nome", { ascending: true }),
           supabase
             .from("estoque_movimentacoes")
-            .select("*, estoque_produtos(nome), equipamentos(nome)")
+            .select("*, estoque_produtos(nome), equipamentos(identificacao)")
             .order("created_at", { ascending: false })
             .limit(8),
         ]);
@@ -180,7 +180,7 @@ export default function EstoqueDashboardPage() {
           >
             <option value="todos">Todas as categorias</option>
             {categorias.map((categoria) => (
-              <option key={categoria} value={categoria}>
+              <option key={categoria ?? "sem-categoria"} value={categoria ?? ""}>
                 {categoria}
               </option>
             ))}
@@ -206,7 +206,7 @@ export default function EstoqueDashboardPage() {
           >
             <option value="todos">Todas as localizações</option>
             {localizacoes.map((local) => (
-              <option key={local} value={local}>
+              <option key={local ?? "sem-localizacao"} value={local ?? ""}>
                 {local}
               </option>
             ))}
@@ -310,7 +310,7 @@ export default function EstoqueDashboardPage() {
                   <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-slate-500">
                     <span>Qtd: {mov.quantidade ?? 0}</span>
                     <span>Resp.: {mov.responsavel || "—"}</span>
-                    <span>Equip.: {mov.equipamentos?.nome || "—"}</span>
+                    <span>Equip.: {mov.equipamentos?.identificacao || "—"}</span>
                     <span>
                       {new Date(mov.created_at ?? Date.now()).toLocaleDateString("pt-BR")}
                     </span>

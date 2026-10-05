@@ -9,7 +9,7 @@ import {
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { estoqueDb as supabase } from "@/lib/estoque-db";
 import { formatCurrency, getEstoqueStatus } from "@/lib/estoque";
 
 type ProdutoRelatorio = {
