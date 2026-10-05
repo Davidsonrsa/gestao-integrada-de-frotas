@@ -39,7 +39,7 @@ type MovimentacaoResumo = {
   responsavel?: string | null;
   observacao?: string | null;
   estoque_produtos?: { nome?: string | null } | null;
-  equipamentos?: { nome?: string | null } | null;
+  equipamentos?: { identificacao?: string | null } | null;
 };
 
 export default function EstoqueDashboardPage() {
@@ -66,7 +66,7 @@ export default function EstoqueDashboardPage() {
             .order("nome", { ascending: true }),
           supabase
             .from("estoque_movimentacoes")
-            .select("*, estoque_produtos(nome), equipamentos(nome)")
+            .select("*, estoque_produtos(nome), equipamentos(identificacao)")
             .order("created_at", { ascending: false })
             .limit(8),
         ]);
@@ -180,7 +180,7 @@ export default function EstoqueDashboardPage() {
           >
             <option value="todos">Todas as categorias</option>
             {categorias.map((categoria) => (
-              <option key={categoria} value={categoria}>
+              <option key={categoria ?? "sem-categoria"} value={categoria ?? ""}>
                 {categoria}
               </option>
             ))}
@@ -206,7 +206,7 @@ export default function EstoqueDashboardPage() {
           >
             <option value="todos">Todas as localizações</option>
             {localizacoes.map((local) => (
-              <option key={local} value={local}>
+              <option key={local ?? "sem-localizacao"} value={local ?? ""}>
                 {local}
               </option>
             ))}

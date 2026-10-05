@@ -1,8 +1,8 @@
 export type EstoqueStatus = "ESTOQUE NORMAL" | "ESTOQUE BAIXO" | "ESTOQUE ZERADO";
 
 export type ProdutoEstoqueResumo = {
-  estoque_atual: number | null;
-  estoque_minimo: number | null;
+  estoque_atual?: number | null;
+  estoque_minimo?: number | null;
 };
 
 export const estoqueUnidades = ["UN", "L", "KG", "M", "JOGO", "KIT", "PAR"];

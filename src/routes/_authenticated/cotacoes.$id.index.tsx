@@ -673,7 +673,7 @@ export default function DetalheCotacaoPage() {
     fornecedoresCotacao.forEach((fc) => {
       const idFornecedor = fc.fornecedor_id || fc.fornecedores?.id;
       const nome = fc.fornecedores?.nome_fantasia || fc.fornecedores?.razao_social || "Fornecedor";
-      const total = totaisPorFornecedor[idFornecedor] || 0;
+      const total = idFornecedor ? totaisPorFornecedor[idFornecedor] || 0 : 0;
       linhas.push(`${nome}: ${total > 0 ? brl(total) : "—"}`);
     });
     linhas.push(`*Menor Preço (Total): ${brl(valorTotalOtimo)}*`);

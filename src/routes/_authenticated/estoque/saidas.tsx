@@ -13,7 +13,7 @@ type Produto = {
   unidade?: string | null;
   custo_medio?: number | null;
 };
-type Equipamento = { id: string; nome?: string | null; identificacao?: string | null };
+type Equipamento = { id: string; numero: string; identificacao?: string | null };
 
 export default function EstoqueSaidasPage() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
@@ -37,8 +37,8 @@ export default function EstoqueSaidasPage() {
         supabase.from("estoque_produtos").select("*").order("nome", { ascending: true }),
         supabase
           .from("equipamentos")
-          .select("id, nome, identificacao")
-          .order("nome", { ascending: true }),
+          .select("id, numero, identificacao")
+          .order("numero", { ascending: true }),
       ]);
 
       if (produtosRes.error) throw produtosRes.error;
