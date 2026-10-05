@@ -1352,7 +1352,7 @@ const calcularTotalMes = (mesId: string) => {
                     </table>
                   </div>
 
-                  <div className="medicao-assinaturas border border-gray-800 p-2 space-y-2 bg-white text-xs print:mt-1">
+                  <div className="medicao-assinaturas border border-gray-800 p-2 space-y-2 print:space-y-0 bg-white text-xs print:mt-1">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-[10px]">DATA DE APROVAÇÃO:</span>
                       <input
@@ -1700,7 +1700,7 @@ const calcularTotalMes = (mesId: string) => {
                 </div>
 
                 {/* RODAPÉ PADRÃO DOS OUTROS CONTRATOS */}
-                <div className="medicao-assinaturas border border-gray-800 p-3 space-y-4 bg-white text-xs print:mt-4">
+                <div className="medicao-assinaturas border border-gray-800 p-3 space-y-4 print:space-y-0 bg-white text-xs print:mt-4">
                   <div className="flex items-center gap-2 print:hidden">
                     <span className="font-bold">DATA DE APROVAÇÃO:</span>
                     <input
