@@ -741,8 +741,11 @@ export default function DetalheCotacaoPage() {
         <head>
           <title>${tipoEnvio === "compra" ? "Pedido de Compra" : "Solicitação de Orçamento"} - ${cotacao?.numero}</title>
           <style>
-            @page { margin: 10mm; }
+            @page { margin: 0; }
             body { font-family: Arial, sans-serif; color: #1e293b; margin: 20px; font-size: 14px; }
+            @media print {
+              body { margin: 0; }
+            }
             .header { border-bottom: 2px solid #334155; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start; }
             .title { font-size: 20px; font-weight: bold; color: #0f172a; text-transform: uppercase; }
             .info-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 6px; margin-bottom: 20px; }
@@ -1005,7 +1008,7 @@ export default function DetalheCotacaoPage() {
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6 print:p-0">
       <style>{`
         @page {
-          margin: 10mm;
+          margin: 0;
         }
         @media print {
           header, nav, .navbar, .top-bar, footer, button, .print\\:hidden {
@@ -1013,6 +1016,7 @@ export default function DetalheCotacaoPage() {
           }
           body {
             zoom: 82%;
+            margin: 0 !important;
             background: white !important;
           }
           .shadow-sm, .shadow, .rounded-xl {
