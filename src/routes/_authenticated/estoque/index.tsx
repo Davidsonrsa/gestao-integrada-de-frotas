@@ -310,7 +310,7 @@ export default function EstoqueDashboardPage() {
                   <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-slate-500">
                     <span>Qtd: {mov.quantidade ?? 0}</span>
                     <span>Resp.: {mov.responsavel || "—"}</span>
-                    <span>Equip.: {mov.equipamentos?.nome || "—"}</span>
+                    <span>Equip.: {mov.equipamentos?.identificacao || "—"}</span>
                     <span>
                       {new Date(mov.created_at ?? Date.now()).toLocaleDateString("pt-BR")}
                     </span>

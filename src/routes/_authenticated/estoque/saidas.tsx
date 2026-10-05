@@ -208,7 +208,7 @@ export default function EstoqueSaidasPage() {
             <option value="">Equipamento</option>
             {equipamentos.map((equipamento) => (
               <option key={equipamento.id} value={equipamento.id}>
-                {equipamento.nome || equipamento.identificacao || "Equipamento"}
+                {equipamento.identificacao || equipamento.numero}
               </option>
             ))}
           </select>
