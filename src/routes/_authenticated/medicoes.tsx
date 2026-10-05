@@ -418,18 +418,52 @@ export function MedicoesPage() {
     const ultimoDia = new Date(mesSelecionado.ano, mesSelecionado.mesIndex + 1, 0).getDate();
     const dataFinal = `${mesSelecionado.ano}-${String(mesSelecionado.mesIndex + 1).padStart(2, "0")}-${String(ultimoDia).padStart(2, "0")}`;
 
-    const { error } = await supabase
+    const { data: registros, error: erroBusca } = await supabase
       .from("medicoes_diarias")
-      .delete()
-      .eq("contrato_id", contratoSelecionado.id)
+      .select("id, contrato, contrato_id")
       .eq("equipamento", maquina.codigo)
       .gte("data", dataInicial)
       .lte("data", dataFinal);
 
-    if (error) {
-      console.error("Erro ao excluir equipamento da medição:", error);
-      setMensagemSucesso(`Não foi possível excluir: ${error.message}`);
+    if (erroBusca) {
+      console.error("Erro ao localizar medições do equipamento:", erroBusca);
+      setMensagemSucesso(`Não foi possível excluir: ${erroBusca.message}`);
       return;
+    }
+
+    const normalizar = (valor: string) => (valor ?? "").trim().toLowerCase();
+    const primeiroToken = (valor: string) => normalizar(valor).split(/\s+/)[0] ?? "";
+    const idsParaExcluir = (registros ?? [])
+      .filter((registro) => {
+        let contratoId = registro.contrato_id
+          ? contratos.find((item) => item.id === String(registro.contrato_id))?.id
+          : null;
+        if (!contratoId) {
+          const porNumero = contratos.find(
+            (item) =>
+              normalizar(item.numero) === normalizar(registro.contrato) ||
+              primeiroToken(item.numero) === primeiroToken(registro.contrato),
+          );
+          contratoId =
+            porNumero?.id ?? (registro.contrato_id ? String(registro.contrato_id) : null);
+        }
+        return contratoId === contratoSelecionado.id;
+      })
+      .map((registro) => registro.id);
+
+    if (idsParaExcluir.length > 0) {
+      const { data: excluidos, error } = await supabase
+        .from("medicoes_diarias")
+        .delete()
+        .in("id", idsParaExcluir)
+        .select("id");
+
+      if (error || excluidos?.length !== idsParaExcluir.length) {
+        const mensagem = error?.message ?? "A exclusão não foi aplicada no banco de dados.";
+        console.error("Erro ao excluir equipamento da medição:", error ?? mensagem);
+        setMensagemSucesso(`Não foi possível excluir: ${mensagem}`);
+        return;
+      }
     }
 
     setMaquinas((atuais) => atuais.filter((item) => item.id !== maquina.id));
