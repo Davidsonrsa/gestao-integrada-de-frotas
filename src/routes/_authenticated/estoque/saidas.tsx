@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { estoqueDb as supabase } from "@/lib/estoque-db";
 
 export const Route = createFileRoute("/_authenticated/estoque/saidas")({
   component: EstoqueSaidasPage,
