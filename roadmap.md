@@ -11,3 +11,4 @@
 - [x] Permitir editar itens já lançados dentro da cotação
 - [x] Ajustar assinaturas da impressão de medições para caber na folha A4
 - [x] Criar tabelas do estoque para salvar cadastros de todas as telas
+- [x] Pneus: saída e exclusão
