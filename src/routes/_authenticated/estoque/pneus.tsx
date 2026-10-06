@@ -114,6 +114,7 @@ export default function EstoquePneusPage() {
       await loadData();
     } catch (error) {
       console.error("Erro ao salvar pneu:", error);
+      toast.error("Não foi possível salvar o pneu.");
     }
   }
 
