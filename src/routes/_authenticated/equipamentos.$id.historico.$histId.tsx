@@ -7,10 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { PrintOptions } from "@/components/print-options";
 import {
   ArrowLeft,
   Save,
+  Printer,
   Camera,
   Trash2,
   ImagePlus,
@@ -168,14 +168,6 @@ async function buildReportDocx(params: {
 }
 
 export const Route = createFileRoute("/_authenticated/equipamentos/$id/historico/$histId")({
-  head: () => ({ meta: [
-    { title: "Registro de Manutenção | Gestão Integrada de Frotas" },
-    { name: "description", content: "Consulta e impressão dos registros de manutenção do equipamento." },
-    { property: "og:title", content: "Registro de Manutenção | Gestão Integrada de Frotas" },
-    { property: "og:description", content: "Histórico de atividades e registros de manutenção da frota." },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary" },
-  ] }),
   component: ManutencaoFormPage,
   validateSearch: (s: Record<string, unknown>) => ({
     print: s.print === 1 || s.print === "1" ? 1 : undefined,
@@ -418,7 +410,9 @@ function ManutencaoFormPage() {
           </Button>
         </Link>
         <div className="flex gap-2 flex-wrap">
-          <PrintOptions />
+          <Button size="sm" variant="outline" onClick={() => window.print()}>
+            <Printer className="w-4 h-4 mr-1" /> Imprimir
+          </Button>
           <Button size="sm" variant="outline" onClick={exportExcel}>
             <FileSpreadsheet className="w-4 h-4 mr-1" /> Excel
           </Button>

@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { requireAdmin } from "@/lib/route-guards";
 import { Button } from "@/components/ui/button";
-import { PrintOptions, duplexPageCss, type PrintMode } from "@/components/print-options";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -18,6 +17,7 @@ import {
   Plus,
   Pencil,
   Trash2,
+  Printer,
   Loader2,
   MessageCircle,
   Mail,
@@ -701,7 +701,7 @@ export default function DetalheCotacaoPage() {
     window.open(url, "_blank");
   }
 
-  function imprimirDocumentoFornecedor(mode: PrintMode = "simplex") {
+  function imprimirDocumentoFornecedor() {
     const forn = fornecedorOrcamentoAtivo?.fornecedores;
     const fornNome = forn?.nome_fantasia || forn?.razao_social || "Prezado Fornecedor";
     const fornId = fornecedorOrcamentoAtivo?.fornecedor_id || (fornecedorOrcamentoAtivo as any)?.fornecedores?.id;
@@ -750,7 +750,6 @@ export default function DetalheCotacaoPage() {
           <title>${tipoEnvio === "compra" ? "Pedido de Compra" : "Solicitação de Orçamento"} - ${cotacao?.numero}</title>
           <style>
             @page { margin: 0; }
-            ${mode === "duplex" ? duplexPageCss : ""}
             body { font-family: Arial, sans-serif; color: #1e293b; margin: 20px; font-size: 14px; }
             @media print {
               body { margin: 0; }
@@ -1014,7 +1013,7 @@ export default function DetalheCotacaoPage() {
   if (!cotacao) return <div className="p-6 text-center">Cotação não encontrada.</div>;
 
   return (
-    <div className="cotacao-impressao p-4 md:p-6 max-w-7xl mx-auto space-y-6 print:p-0">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6 print:p-0">
       <style>{`
         @page {
           margin: 0;
@@ -1027,12 +1026,6 @@ export default function DetalheCotacaoPage() {
             zoom: 82%;
             margin: 0 !important;
             background: white !important;
-          }
-          main:has(.cotacao-impressao) {
-            padding-top: 0 !important;
-          }
-          .cotacao-cabecalho {
-            margin-top: 0 !important;
           }
           .shadow-sm, .shadow, .rounded-xl {
             box-shadow: none !important;
@@ -1049,7 +1042,12 @@ export default function DetalheCotacaoPage() {
           <ArrowLeft className="w-4 h-4" /> Voltar às Cotações
         </Button>
         <div className="flex gap-2">
-          <PrintOptions label="Imprimir Comparativo" size="default" />
+          <Button
+            onClick={() => window.print()}
+            className="bg-slate-800 hover:bg-slate-900 text-white gap-2"
+          >
+            <Printer className="w-4 h-4" /> Imprimir Comparativo
+          </Button>
           <Button
             type="button"
             onClick={enviarComparativoWhatsApp}
@@ -1060,7 +1058,7 @@ export default function DetalheCotacaoPage() {
         </div>
       </div>
 
-      <div className="cotacao-cabecalho bg-white p-6 print:p-0 rounded-xl shadow-sm border border-slate-200 print:border-none print:shadow-none">
+      <div className="bg-white p-6 print:p-0 rounded-xl shadow-sm border border-slate-200 print:border-none print:shadow-none">
         <div className="flex justify-between items-start">
           <div>
             <span className="text-xs uppercase bg-blue-100 text-blue-800 font-bold px-2 py-1 rounded">
@@ -1617,7 +1615,9 @@ export default function DetalheCotacaoPage() {
               <Button onClick={enviarPorEmail} variant="outline" className="flex-1 gap-2 py-6 text-sm font-bold border-slate-300">
                 <Mail className="w-5 h-5" /> Enviar E-mail
               </Button>
-              <PrintOptions label="Imprimir / PDF" size="default" onPrint={imprimirDocumentoFornecedor} />
+              <Button onClick={imprimirDocumentoFornecedor} variant="outline" className="flex-1 gap-2 py-6 text-sm font-bold border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-800">
+                <Printer className="w-5 h-5" /> Imprimir / PDF
+              </Button>
             </div>
           </div>
         </DialogContent>

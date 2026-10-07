@@ -13,5 +13,3 @@
 - [x] Criar tabelas do estoque para salvar cadastros de todas as telas
 - [x] Pneus: saída e exclusão
 - [x] Cotação: exibir total em destaque, unitário abaixo e menor preço em verde
-- [x] Oferecer impressão frente e verso nas cotações e planos de manutenção
-- [x] Retirar espaço em branco acima do cabeçalho na impressão das cotações

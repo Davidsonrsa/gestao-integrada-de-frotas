@@ -34,7 +34,6 @@ Não há script de testes automatizados no `package.json`; para mudanças de com
 
 ## Convenções de implementação
 
-- Use the shared PrintOptions control for quotation and maintenance printing; browsers cannot force duplex, so show printer guidance and mirror binding margins without changing document data.
 - Reutilize componentes existentes em `src/components/ui/` e ícones de `lucide-react` antes de criar equivalentes.
 - Preserve a separação entre componentes de UI, hooks, integrações Supabase e funções server-side em seus diretórios atuais.
 - Mantenha textos voltados ao usuário em português do Brasil e preserve o comportamento responsivo do aplicativo móvel.
