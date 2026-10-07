@@ -12,3 +12,4 @@
 - [x] Ajustar assinaturas da impressão de medições para caber na folha A4
 - [x] Criar tabelas do estoque para salvar cadastros de todas as telas
 - [x] Pneus: saída e exclusão
+- [x] Cotação: exibir total em destaque, unitário abaixo e menor preço em verde
