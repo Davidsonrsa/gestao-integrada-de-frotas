@@ -1014,7 +1014,7 @@ export default function DetalheCotacaoPage() {
   if (!cotacao) return <div className="p-6 text-center">Cotação não encontrada.</div>;
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6 print:p-0">
+    <div className="cotacao-impressao p-4 md:p-6 max-w-7xl mx-auto space-y-6 print:p-0">
       <style>{`
         @page {
           margin: 0;
@@ -1027,6 +1027,12 @@ export default function DetalheCotacaoPage() {
             zoom: 82%;
             margin: 0 !important;
             background: white !important;
+          }
+          main:has(.cotacao-impressao) {
+            padding-top: 0 !important;
+          }
+          .cotacao-cabecalho {
+            margin-top: 0 !important;
           }
           .shadow-sm, .shadow, .rounded-xl {
             box-shadow: none !important;
@@ -1054,7 +1060,7 @@ export default function DetalheCotacaoPage() {
         </div>
       </div>
 
-      <div className="bg-white p-6 print:p-0 rounded-xl shadow-sm border border-slate-200 print:border-none print:shadow-none">
+      <div className="cotacao-cabecalho bg-white p-6 print:p-0 rounded-xl shadow-sm border border-slate-200 print:border-none print:shadow-none">
         <div className="flex justify-between items-start">
           <div>
             <span className="text-xs uppercase bg-blue-100 text-blue-800 font-bold px-2 py-1 rounded">
