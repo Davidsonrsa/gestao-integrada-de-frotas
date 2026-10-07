@@ -28,6 +28,16 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/cotacoes/$id/")({
   beforeLoad: requireAdmin,
+  head: () => ({
+    meta: [
+      { title: "Comparativo de Cotação | Gestão Integrada de Frotas" },
+      { name: "description", content: "Compare os valores totais e unitários dos fornecedores e os menores preços da cotação." },
+      { property: "og:title", content: "Comparativo de Cotação | Gestão Integrada de Frotas" },
+      { property: "og:description", content: "Valores totais, preços unitários e melhores ofertas da cotação." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: DetalheCotacaoPage,
 });
 
@@ -646,15 +656,13 @@ export default function DetalheCotacaoPage() {
             String(resposta.cotacao_item_id).trim() === String(item.id).trim(),
         );
         const preco = resposta?.preco ?? 0;
-        const menorPreco =
-          menorInfo?.fornecedorName === nome && menorInfo.menorUnitario === preco;
         linhas.push(`*${nome}*`);
         if (preco > 0) {
-          linhas.push(`Preço: ${brl(preco)}`);
-          linhas.push(`Marca: ${resposta?.marca || "—"}`);
           linhas.push(`Total: ${brl(preco * (item.quantidade || 1))}`);
+          linhas.push(`Marca: ${resposta?.marca || "—"}`);
+          linhas.push(`Unit.: ${brl(preco)}`);
         } else {
-          linhas.push("Preço: —");
+          linhas.push("Total: —");
         }
       });
 
@@ -1179,16 +1187,19 @@ export default function DetalheCotacaoPage() {
                             String(r.cotacao_item_id).trim() === String(item.id).trim(),
                         );
                         const precoResp = resp?.preco ?? 0;
+                        const ehMenorPreco = precoResp > 0 && precoResp === menorInfo?.menorUnitario;
                         return (
                           <td key={fornId} className="p-3 text-right">
                             {precoResp > 0 ? (
                               <div>
-                                <div className="font-semibold text-slate-800">{brl(precoResp)}</div>
+                                <div className={`font-semibold ${ehMenorPreco ? "text-success" : "text-foreground"}`}>
+                                  {brl(precoResp * (item.quantidade || 1))}
+                                </div>
                                 <div className="text-[10px] text-slate-500">
                                   Marca: {resp?.marca || "—"}
                                 </div>
-                                <div className="text-[10px] text-emerald-600 font-medium">
-                                  Total: {brl(precoResp * (item.quantidade || 1))}
+                                <div className={`text-[10px] font-medium ${ehMenorPreco ? "text-success" : "text-muted-foreground"}`}>
+                                  Unit: {brl(precoResp)}
                                 </div>
                               </div>
                             ) : (
@@ -1201,10 +1212,10 @@ export default function DetalheCotacaoPage() {
                       <td className="p-3 text-right bg-emerald-50/50">
                         {menorInfo ? (
                           <div>
-                            <div className="font-bold text-emerald-700">
+                            <div className="font-bold text-success">
                               {brl(menorInfo.menorTotal)}
                             </div>
-                            <div className="text-[10px] text-slate-600">
+                            <div className="text-[10px] text-success">
                               Unit: {brl(menorInfo.menorUnitario)} ({menorInfo.fornecedorName})
                             </div>
                             <div className="text-[10px] text-slate-500">
