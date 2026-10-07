@@ -18,7 +18,6 @@ import {
   Plus,
   Pencil,
   Trash2,
-  Printer,
   Loader2,
   MessageCircle,
   Mail,
