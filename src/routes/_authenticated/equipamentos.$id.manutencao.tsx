@@ -3,16 +3,25 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { PrintOptions } from "@/components/print-options";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Printer, FileText, Save, FileType, Eye } from "lucide-react";
+import { ArrowLeft, FileText, Save, FileType, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { MANUTENCAO_TEMPLATE, STATUS_LABELS, type ManutencaoItem } from "@/lib/manutencao-template";
 import { buildReportDocx, REPORT_TAG } from "@/lib/manutencao-docx";
 
 export const Route = createFileRoute("/_authenticated/equipamentos/$id/manutencao")({
+  head: () => ({ meta: [
+    { title: "Plano de Manutenção | Gestão Integrada de Frotas" },
+    { name: "description", content: "Registro e impressão do plano de manutenção preventiva da frota." },
+    { property: "og:title", content: "Plano de Manutenção | Gestão Integrada de Frotas" },
+    { property: "og:description", content: "Plano de manutenção preventiva e atividades do equipamento." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: ManutencaoPage,
   validateSearch: (search: Record<string, unknown>) => ({
     horimetro: typeof search.horimetro === "string" ? search.horimetro : undefined,
@@ -239,9 +248,7 @@ function ManutencaoPage() {
           <Button size="sm" variant="outline" onClick={exportWord}>
             <FileType className="w-4 h-4 mr-1" /> Word
           </Button>
-          <Button size="sm" variant="outline" onClick={() => window.print()}>
-            <Printer className="w-4 h-4 mr-1" /> Imprimir
-          </Button>
+          <PrintOptions />
           <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending}>
             <Save className="w-4 h-4 mr-1" /> {save.isPending ? "Salvando..." : "Salvar"}
           </Button>

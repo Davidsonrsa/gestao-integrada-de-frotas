@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { requireAdmin } from "@/lib/route-guards";
 import { Button } from "@/components/ui/button";
+import { PrintOptions, duplexPageCss, type PrintMode } from "@/components/print-options";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -701,7 +702,7 @@ export default function DetalheCotacaoPage() {
     window.open(url, "_blank");
   }
 
-  function imprimirDocumentoFornecedor() {
+  function imprimirDocumentoFornecedor(mode: PrintMode = "simplex") {
     const forn = fornecedorOrcamentoAtivo?.fornecedores;
     const fornNome = forn?.nome_fantasia || forn?.razao_social || "Prezado Fornecedor";
     const fornId = fornecedorOrcamentoAtivo?.fornecedor_id || (fornecedorOrcamentoAtivo as any)?.fornecedores?.id;
@@ -750,6 +751,7 @@ export default function DetalheCotacaoPage() {
           <title>${tipoEnvio === "compra" ? "Pedido de Compra" : "Solicitação de Orçamento"} - ${cotacao?.numero}</title>
           <style>
             @page { margin: 0; }
+            ${mode === "duplex" ? duplexPageCss : ""}
             body { font-family: Arial, sans-serif; color: #1e293b; margin: 20px; font-size: 14px; }
             @media print {
               body { margin: 0; }
@@ -1042,12 +1044,7 @@ export default function DetalheCotacaoPage() {
           <ArrowLeft className="w-4 h-4" /> Voltar às Cotações
         </Button>
         <div className="flex gap-2">
-          <Button
-            onClick={() => window.print()}
-            className="bg-slate-800 hover:bg-slate-900 text-white gap-2"
-          >
-            <Printer className="w-4 h-4" /> Imprimir Comparativo
-          </Button>
+          <PrintOptions label="Imprimir Comparativo" size="default" />
           <Button
             type="button"
             onClick={enviarComparativoWhatsApp}
@@ -1615,9 +1612,7 @@ export default function DetalheCotacaoPage() {
               <Button onClick={enviarPorEmail} variant="outline" className="flex-1 gap-2 py-6 text-sm font-bold border-slate-300">
                 <Mail className="w-5 h-5" /> Enviar E-mail
               </Button>
-              <Button onClick={imprimirDocumentoFornecedor} variant="outline" className="flex-1 gap-2 py-6 text-sm font-bold border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-800">
-                <Printer className="w-5 h-5" /> Imprimir / PDF
-              </Button>
+              <PrintOptions label="Imprimir / PDF" size="default" onPrint={imprimirDocumentoFornecedor} />
             </div>
           </div>
         </DialogContent>
