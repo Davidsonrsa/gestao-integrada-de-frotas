@@ -15,14 +15,22 @@ import { ManutencaoPrintStyles, imprimirPlanoManutencao } from "@/components/Man
 
 export const Route = createFileRoute("/_authenticated/equipamentos/$id/manutencao")({
   component: ManutencaoPage,
-  head: () => ({ meta: [
-    { title: "Plano de Manutenção | Gestão Integrada de Frotas" },
-    { name: "description", content: "Plano de manutenção preventiva do equipamento e impressão em A4." },
-    { property: "og:title", content: "Plano de Manutenção | Gestão Integrada de Frotas" },
-    { property: "og:description", content: "Atividades, observações e assinaturas da manutenção preventiva." },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary" },
-  ] }),
+  head: () => ({
+    meta: [
+      { title: "Plano de Manutenção | Gestão Integrada de Frotas" },
+      {
+        name: "description",
+        content: "Plano de manutenção preventiva do equipamento e impressão em A4.",
+      },
+      { property: "og:title", content: "Plano de Manutenção | Gestão Integrada de Frotas" },
+      {
+        property: "og:description",
+        content: "Atividades, observações e assinaturas da manutenção preventiva.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   validateSearch: (search: Record<string, unknown>) => ({
     horimetro: typeof search.horimetro === "string" ? search.horimetro : undefined,
     tipoRevisao: typeof search.tipoRevisao === "string" ? search.tipoRevisao : undefined,
@@ -68,6 +76,7 @@ function ManutencaoPage() {
   const [tipoRevisao, setTipoRevisao] = useState("");
   const [executante, setExecutante] = useState("");
   const [observacoes, setObservacoes] = useState("");
+  const [observacaoTecnico, setObservacaoTecnico] = useState("");
   const [itens, setItens] = useState<ManutencaoItem[]>(MANUTENCAO_TEMPLATE);
 
   useEffect(() => {
@@ -78,6 +87,7 @@ function ManutencaoPage() {
       setTipoRevisao(rascunho.tipo_revisao ?? "");
       setExecutante(rascunho.executante ?? "");
       setObservacoes(rascunho.observacoes ?? "");
+      setObservacaoTecnico(rascunho.observacao_tecnico ?? "");
       const arr = Array.isArray(rascunho.itens)
         ? (rascunho.itens as unknown as ManutencaoItem[])
         : [];
@@ -102,6 +112,7 @@ function ManutencaoPage() {
         tipo_revisao: tipoRevisao || null,
         executante: executante || null,
         observacoes: observacoes || null,
+        observacao_tecnico: observacaoTecnico || null,
         itens: JSON.parse(JSON.stringify(itens)),
       };
       let currentHistId = histId;
@@ -131,6 +142,7 @@ function ManutencaoPage() {
         tipoRevisao,
         executante,
         observacoes,
+        observacaoTecnico,
         itens,
       });
       const { data: prev } = await supabase
@@ -187,6 +199,7 @@ function ManutencaoPage() {
       tipoRevisao,
       executante,
       observacoes,
+      observacaoTecnico,
       itens,
     });
     const url = URL.createObjectURL(blob);
@@ -373,13 +386,24 @@ function ManutencaoPage() {
           </Button>
         </div>
 
-        <div className="manutencao-assinaturas grid grid-cols-2 gap-6 mt-10 text-[11px]">
+        <div className="manutencao-assinaturas mt-10 text-[11px]">
           <div className="text-center">
             <div className="border-t border-foreground print:border-black pt-1">
               <b>Mecânico responsável</b>
             </div>
           </div>
-          <div className="text-center">
+
+          <div className="mt-6">
+            <Label className="text-[11px]">Observação do técnico/supervisor</Label>
+            <Textarea
+              rows={3}
+              value={observacaoTecnico}
+              onChange={(ev) => setObservacaoTecnico(ev.target.value)}
+              className="mt-2"
+            />
+          </div>
+
+          <div className="mt-6 text-center">
             <div className="border-t border-foreground print:border-black pt-1">
               <b>Supervisor</b>
             </div>

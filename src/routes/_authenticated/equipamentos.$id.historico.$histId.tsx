@@ -49,6 +49,7 @@ async function buildReportDocx(params: {
   tipoRevisao: string;
   executante: string;
   observacoes: string;
+  observacaoTecnico: string;
   itens: ManutencaoItem[];
 }) {
   const border = { style: BorderStyle.SINGLE, size: 4, color: "999999" };
@@ -151,14 +152,27 @@ async function buildReportDocx(params: {
           new Paragraph({ children: [new TextRun("")] }),
           new Paragraph({ children: [new TextRun("")] }),
           new Paragraph({
+            children: [new TextRun("___________________________")],
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: "Mecânico responsável", bold: true, size: 18 })],
+          }),
+          new Paragraph({ children: [new TextRun("")] }),
+          new Paragraph({
             children: [
-              new TextRun("___________________________            ___________________________"),
+              new TextRun({ text: "Observação do técnico/supervisor", bold: true, size: 20 }),
             ],
           }),
           new Paragraph({
-            children: [
-              new TextRun("     Mecânico responsável                                 Supervisor"),
-            ],
+            children: [new TextRun(params.observacaoTecnico || "—")],
+          }),
+          new Paragraph({ children: [new TextRun("")] }),
+          new Paragraph({ children: [new TextRun("")] }),
+          new Paragraph({
+            children: [new TextRun("___________________________")],
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: "Supervisor", bold: true, size: 18 })],
           }),
         ],
       },
@@ -170,14 +184,22 @@ async function buildReportDocx(params: {
 
 export const Route = createFileRoute("/_authenticated/equipamentos/$id/historico/$histId")({
   component: ManutencaoFormPage,
-  head: () => ({ meta: [
-    { title: "Registro de Manutenção | Gestão Integrada de Frotas" },
-    { name: "description", content: "Registro do histórico de manutenção do equipamento e impressão em A4." },
-    { property: "og:title", content: "Registro de Manutenção | Gestão Integrada de Frotas" },
-    { property: "og:description", content: "Consulte e imprima as atividades e assinaturas da manutenção registrada." },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary" },
-  ] }),
+  head: () => ({
+    meta: [
+      { title: "Registro de Manutenção | Gestão Integrada de Frotas" },
+      {
+        name: "description",
+        content: "Registro do histórico de manutenção do equipamento e impressão em A4.",
+      },
+      { property: "og:title", content: "Registro de Manutenção | Gestão Integrada de Frotas" },
+      {
+        property: "og:description",
+        content: "Consulte e imprima as atividades e assinaturas da manutenção registrada.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   validateSearch: (s: Record<string, unknown>) => ({
     print: s.print === 1 || s.print === "1" ? 1 : undefined,
   }),
@@ -272,6 +294,7 @@ function ManutencaoFormPage() {
   const [tipoRevisao, setTipoRevisao] = useState("");
   const [executante, setExecutante] = useState("");
   const [observacoes, setObservacoes] = useState("");
+  const [observacaoTecnico, setObservacaoTecnico] = useState("");
   const [itens, setItens] = useState<ManutencaoItem[]>(MANUTENCAO_TEMPLATE);
 
   useEffect(() => {
@@ -281,6 +304,7 @@ function ManutencaoFormPage() {
     setTipoRevisao(registro.tipo_revisao ?? "");
     setExecutante(registro.executante ?? "");
     setObservacoes(registro.observacoes ?? "");
+    setObservacaoTecnico(registro.observacao_tecnico ?? "");
     const arr = Array.isArray(registro.itens)
       ? (registro.itens as unknown as ManutencaoItem[])
       : [];
@@ -305,6 +329,7 @@ function ManutencaoFormPage() {
           tipo_revisao: tipoRevisao || null,
           executante: executante || null,
           observacoes: observacoes || null,
+          observacao_tecnico: observacaoTecnico || null,
           itens: JSON.parse(JSON.stringify(itens)),
         })
         .eq("id", histId);
@@ -320,6 +345,7 @@ function ManutencaoFormPage() {
         tipoRevisao,
         executante,
         observacoes,
+        observacaoTecnico,
         itens,
       });
       // Remove relatórios anteriores deste registro
@@ -389,6 +415,7 @@ function ManutencaoFormPage() {
       ]),
       [],
       ["Observações", observacoes],
+      ["Observação do técnico/supervisor", observacaoTecnico],
     ];
     const ws = XLSX.utils.aoa_to_sheet(rows);
     ws["!cols"] = [
@@ -651,13 +678,24 @@ function ManutencaoFormPage() {
           )}
         </Card>
 
-        <div className="manutencao-assinaturas grid grid-cols-2 gap-6 mt-10 text-[11px]">
+        <div className="manutencao-assinaturas mt-10 text-[11px]">
           <div className="text-center">
             <div className="border-t border-foreground print:border-black pt-1">
               <b>Mecânico responsável</b>
             </div>
           </div>
-          <div className="text-center">
+
+          <div className="mt-6">
+            <Label className="text-[11px]">Observação do técnico/supervisor</Label>
+            <Textarea
+              rows={3}
+              value={observacaoTecnico}
+              onChange={(ev) => setObservacaoTecnico(ev.target.value)}
+              className="mt-2"
+            />
+          </div>
+
+          <div className="mt-6 text-center">
             <div className="border-t border-foreground print:border-black pt-1">
               <b>Supervisor</b>
             </div>

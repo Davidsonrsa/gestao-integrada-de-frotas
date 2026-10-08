@@ -24,6 +24,7 @@ export async function buildReportDocx(params: {
   tipoRevisao: string;
   executante: string;
   observacoes: string;
+  observacaoTecnico: string;
   itens: ManutencaoItem[];
 }) {
   const border = { style: BorderStyle.SINGLE, size: 4, color: "999999" };
@@ -139,14 +140,27 @@ export async function buildReportDocx(params: {
           new Paragraph({ children: [new TextRun("")] }),
           new Paragraph({ children: [new TextRun("")] }),
           new Paragraph({
+            children: [new TextRun("___________________________")],
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: "Mecânico responsável", bold: true, size: 18 })],
+          }),
+          new Paragraph({ children: [new TextRun("")] }),
+          new Paragraph({
             children: [
-              new TextRun("___________________________            ___________________________"),
+              new TextRun({ text: "Observação do técnico/supervisor", bold: true, size: 20 }),
             ],
           }),
           new Paragraph({
-            children: [
-              new TextRun("     Mecânico responsável                                 Supervisor"),
-            ],
+            children: [new TextRun(params.observacaoTecnico || "—")],
+          }),
+          new Paragraph({ children: [new TextRun("")] }),
+          new Paragraph({ children: [new TextRun("")] }),
+          new Paragraph({
+            children: [new TextRun("___________________________")],
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: "Supervisor", bold: true, size: 18 })],
           }),
         ],
       },

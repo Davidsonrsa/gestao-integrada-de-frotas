@@ -1577,6 +1577,7 @@ export type Database = {
           horimetro: number | null
           id: string
           itens: Json
+          observacao_tecnico: string | null
           observacoes: string | null
           tipo_revisao: string | null
           updated_at: string
@@ -1590,6 +1591,7 @@ export type Database = {
           horimetro?: number | null
           id?: string
           itens?: Json
+          observacao_tecnico?: string | null
           observacoes?: string | null
           tipo_revisao?: string | null
           updated_at?: string
@@ -1603,6 +1605,7 @@ export type Database = {
           horimetro?: number | null
           id?: string
           itens?: Json
+          observacao_tecnico?: string | null
           observacoes?: string | null
           tipo_revisao?: string | null
           updated_at?: string
