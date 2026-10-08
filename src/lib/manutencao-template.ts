@@ -43,6 +43,41 @@ export const MANUTENCAO_TEMPLATE: ManutencaoItem[] = [
   { sistema: "Carregador e Articulação", item: "Lubrificação", acao: "Substituir", pm: "P" },
 ];
 
+export function buildManutencaoTemplateWithCodes(
+  equip?: Partial<{
+    filtro_lub: string | null;
+    filtro_diesel_p: string | null;
+    filtro_diesel_s: string | null;
+    filtro_sep_agua: string | null;
+    filtro_ar_ext: string | null;
+    filtro_ar_int: string | null;
+    filtro_trans: string | null;
+    filtro_hidr: string | null;
+    filtro_respiro: string | null;
+    filtro_ar_cond1: string | null;
+    filtro_ar_cond2: string | null;
+  }>,
+): ManutencaoItem[] {
+  const map = new Map<string, string | null>([
+    ["Motor|Filtro Lubrificante", equip?.filtro_lub ?? null],
+    ["Motor|Filtro de Ar primário", equip?.filtro_ar_int ?? null],
+    ["Motor|Filtro de Ar secundário", equip?.filtro_ar_ext ?? null],
+    ["Motor|Filtro Separador de água", equip?.filtro_sep_agua ?? null],
+    ["Combustível|Filtros primário", equip?.filtro_diesel_p ?? null],
+    ["Transmissão|Filtro", equip?.filtro_trans ?? null],
+    ["Hidráulico|Filtro", equip?.filtro_hidr ?? null],
+    ["Transmissão|Respiro", equip?.filtro_respiro ?? null],
+  ]);
+
+  return MANUTENCAO_TEMPLATE.map((item) => {
+    const key = `${item.sistema}|${item.item}`;
+    return {
+      ...item,
+      codigo: map.get(key) ?? item.codigo ?? "",
+    };
+  });
+}
+
 export const STATUS_LABELS: Record<string, string> = {
   "": "—",
   ok: "OK",

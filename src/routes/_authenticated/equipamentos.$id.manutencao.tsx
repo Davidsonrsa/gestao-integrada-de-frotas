@@ -9,7 +9,12 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, Printer, FileText, Save, FileType, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
-import { MANUTENCAO_TEMPLATE, STATUS_LABELS, type ManutencaoItem } from "@/lib/manutencao-template";
+import {
+  MANUTENCAO_TEMPLATE,
+  STATUS_LABELS,
+  buildManutencaoTemplateWithCodes,
+  type ManutencaoItem,
+} from "@/lib/manutencao-template";
 import { buildReportDocx, REPORT_TAG } from "@/lib/manutencao-docx";
 import { ManutencaoPrintStyles, imprimirPlanoManutencao } from "@/components/ManutencaoPrintStyles";
 
@@ -91,12 +96,25 @@ function ManutencaoPage() {
       const arr = Array.isArray(rascunho.itens)
         ? (rascunho.itens as unknown as ManutencaoItem[])
         : [];
-      setItens(arr.length ? arr : MANUTENCAO_TEMPLATE);
+      const mapped = buildManutencaoTemplateWithCodes(e);
+      const withCodes = arr.length
+        ? arr.map((item) => {
+            const match = mapped.find(
+              (template) => template.sistema === item.sistema && template.item === item.item,
+            );
+            return {
+              ...item,
+              codigo: item.codigo || match?.codigo || "",
+            };
+          })
+        : mapped;
+      setItens(withCodes);
     } else if (e) {
       setHorimetro(
         horimetroInicial ?? (e.horimetro_atual != null ? String(e.horimetro_atual) : ""),
       );
       setTipoRevisao(tipoRevisaoInicial ?? `Revisão de ${e.limite_revisao ?? 500}h`);
+      setItens(buildManutencaoTemplateWithCodes(e));
     }
   }, [rascunho, e, horimetroInicial, tipoRevisaoInicial]);
 
