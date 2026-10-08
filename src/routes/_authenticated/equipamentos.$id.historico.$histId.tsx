@@ -22,6 +22,7 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { MANUTENCAO_TEMPLATE, type ManutencaoItem, STATUS_LABELS } from "@/lib/manutencao-template";
+import { ManutencaoPrintStyles, imprimirPlanoManutencao } from "@/components/ManutencaoPrintStyles";
 import * as XLSX from "xlsx";
 import {
   Document,
@@ -169,6 +170,14 @@ async function buildReportDocx(params: {
 
 export const Route = createFileRoute("/_authenticated/equipamentos/$id/historico/$histId")({
   component: ManutencaoFormPage,
+  head: () => ({ meta: [
+    { title: "Registro de Manutenção | Gestão Integrada de Frotas" },
+    { name: "description", content: "Registro do histórico de manutenção do equipamento e impressão em A4." },
+    { property: "og:title", content: "Registro de Manutenção | Gestão Integrada de Frotas" },
+    { property: "og:description", content: "Consulte e imprima as atividades e assinaturas da manutenção registrada." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   validateSearch: (s: Record<string, unknown>) => ({
     print: s.print === 1 || s.print === "1" ? 1 : undefined,
   }),
@@ -280,7 +289,7 @@ function ManutencaoFormPage() {
 
   useEffect(() => {
     if (printFlag && registro) {
-      const t = setTimeout(() => window.print(), 400);
+      const t = setTimeout(() => void imprimirPlanoManutencao(), 400);
       return () => clearTimeout(t);
     }
   }, [printFlag, registro]);
@@ -403,14 +412,14 @@ function ManutencaoFormPage() {
 
   return (
     <div className="bg-background min-h-screen">
-      <div className="no-print sticky top-0 z-30 bg-background border-b px-3 py-2 flex items-center justify-between">
+      <div className="no-print sticky top-0 z-30 bg-background border-b px-3 py-2 flex flex-wrap gap-2 items-center justify-between">
         <Link to="/equipamentos/$id/historico" params={{ id }}>
           <Button variant="ghost" size="sm">
             <ArrowLeft className="w-4 h-4 mr-1" /> Voltar
           </Button>
         </Link>
         <div className="flex gap-2 flex-wrap">
-          <Button size="sm" variant="outline" onClick={() => window.print()}>
+          <Button size="sm" variant="outline" onClick={imprimirPlanoManutencao}>
             <Printer className="w-4 h-4 mr-1" /> Imprimir
           </Button>
           <Button size="sm" variant="outline" onClick={exportExcel}>
@@ -422,7 +431,7 @@ function ManutencaoFormPage() {
         </div>
       </div>
 
-      <div className="max-w-[210mm] mx-auto p-4 print:p-4 print:text-black print:bg-white">
+      <div className="manutencao-documento max-w-[210mm] mx-auto p-4 print:p-4 print:text-black print:bg-white">
         <div className="flex items-center gap-4 border-b-2 border-foreground print:border-black pb-3 mb-4">
           <img src="/logo SPX MAFRA JHM.png" alt="" className="w-16 h-16 object-contain" />
           <div className="flex-1">
@@ -642,7 +651,7 @@ function ManutencaoFormPage() {
           )}
         </Card>
 
-        <div className="grid grid-cols-2 gap-6 mt-10 print:mt-16 text-[11px]">
+        <div className="manutencao-assinaturas grid grid-cols-2 gap-6 mt-10 text-[11px]">
           <div className="text-center">
             <div className="border-t border-foreground print:border-black pt-1">
               <b>Mecânico responsável</b>
@@ -662,14 +671,7 @@ function ManutencaoFormPage() {
         </div>
       </div>
 
-      <style>{`
-        @media print {
-          .no-print { display: none !important; }
-          @page { size: A4; margin: 10mm; }
-          body { background: white !important; color: black !important; }
-          select { -webkit-appearance: none; appearance: none; }
-        }
-      `}</style>
+      <ManutencaoPrintStyles />
     </div>
   );
 }

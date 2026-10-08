@@ -39,6 +39,8 @@
 }
 
 :root {
+  --print-paper: #ffffff;
+  --print-ink: #000000;
   --radius: 0.75rem;
   --background: #f1f5f9;
   --foreground: #0f172a;

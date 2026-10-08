@@ -11,9 +11,18 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { MANUTENCAO_TEMPLATE, STATUS_LABELS, type ManutencaoItem } from "@/lib/manutencao-template";
 import { buildReportDocx, REPORT_TAG } from "@/lib/manutencao-docx";
+import { ManutencaoPrintStyles, imprimirPlanoManutencao } from "@/components/ManutencaoPrintStyles";
 
 export const Route = createFileRoute("/_authenticated/equipamentos/$id/manutencao")({
   component: ManutencaoPage,
+  head: () => ({ meta: [
+    { title: "Plano de Manutenção | Gestão Integrada de Frotas" },
+    { name: "description", content: "Plano de manutenção preventiva do equipamento e impressão em A4." },
+    { property: "og:title", content: "Plano de Manutenção | Gestão Integrada de Frotas" },
+    { property: "og:description", content: "Atividades, observações e assinaturas da manutenção preventiva." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   validateSearch: (search: Record<string, unknown>) => ({
     horimetro: typeof search.horimetro === "string" ? search.horimetro : undefined,
     tipoRevisao: typeof search.tipoRevisao === "string" ? search.tipoRevisao : undefined,
@@ -40,11 +49,12 @@ function ManutencaoPage() {
     queryKey: ["manutencao_rascunho", id, userId],
     enabled: !!userId,
     queryFn: async () => {
+      if (!userId) return null;
       const { data } = await supabase
         .from("manutencao_historico")
         .select("*")
         .eq("equipamento_id", id)
-        .eq("created_by", userId!)
+        .eq("created_by", userId)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -221,7 +231,7 @@ function ManutencaoPage() {
 
   return (
     <div className="bg-background min-h-screen">
-      <div className="no-print sticky top-0 z-30 bg-background border-b px-3 py-2 flex items-center justify-between gap-2">
+      <div className="no-print sticky top-0 z-30 bg-background border-b px-3 py-2 flex flex-wrap items-center justify-between gap-2">
         <Link to="/equipamentos/$id" params={{ id }}>
           <Button variant="ghost" size="sm">
             <ArrowLeft className="w-4 h-4 mr-1" /> Voltar
@@ -239,7 +249,7 @@ function ManutencaoPage() {
           <Button size="sm" variant="outline" onClick={exportWord}>
             <FileType className="w-4 h-4 mr-1" /> Word
           </Button>
-          <Button size="sm" variant="outline" onClick={() => window.print()}>
+          <Button size="sm" variant="outline" onClick={imprimirPlanoManutencao}>
             <Printer className="w-4 h-4 mr-1" /> Imprimir
           </Button>
           <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending}>
@@ -248,7 +258,7 @@ function ManutencaoPage() {
         </div>
       </div>
 
-      <div className="max-w-[210mm] mx-auto p-4 print:p-4 print:text-black print:bg-white">
+      <div className="manutencao-documento max-w-[210mm] mx-auto p-4 print:p-4 print:text-black print:bg-white">
         <div className="flex items-center gap-4 border-b-2 border-foreground print:border-black pb-3 mb-4">
           <img src="/logo SPX MAFRA JHM.png" alt="" className="w-16 h-16 object-contain" />
           <div className="flex-1">
@@ -363,7 +373,7 @@ function ManutencaoPage() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 gap-6 mt-10 print:mt-16 text-[11px]">
+        <div className="manutencao-assinaturas grid grid-cols-2 gap-6 mt-10 text-[11px]">
           <div className="text-center">
             <div className="border-t border-foreground print:border-black pt-1">
               <b>Mecânico responsável</b>
@@ -377,14 +387,7 @@ function ManutencaoPage() {
         </div>
       </div>
 
-      <style>{`
-        @media print {
-          header, nav, .no-print { display: none !important; }
-          @page { size: A4; margin: 10mm; }
-          body { background: white !important; color: black !important; }
-          select { -webkit-appearance: none; appearance: none; }
-        }
-      `}</style>
+      <ManutencaoPrintStyles />
     </div>
   );
 }

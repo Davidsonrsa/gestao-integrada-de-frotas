@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,8 +32,23 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/equipamentos/$id/historico")({
-  component: HistoricoPage,
+  component: HistoricoLayout,
+  head: () => ({ meta: [
+    { title: "Histórico de Manutenção | Gestão Integrada de Frotas" },
+    { name: "description", content: "Histórico, formulários e anexos das manutenções do equipamento." },
+    { property: "og:title", content: "Histórico de Manutenção | Gestão Integrada de Frotas" },
+    { property: "og:description", content: "Consulte os registros e imprima os planos de manutenção." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
 });
+
+function HistoricoLayout() {
+  const { id } = Route.useParams();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const isList = pathname.replace(/\/$/, "") === `/equipamentos/${id}/historico`;
+  return <>{isList && <HistoricoPage />}<Outlet /></>;
+}
 
 type Anexo = {
   id: string;
