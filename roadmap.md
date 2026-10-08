@@ -14,3 +14,4 @@
 - [x] Pneus: saída e exclusão
 - [x] Cotação: exibir total em destaque, unitário abaixo e menor preço em verde
 - [x] Ajustar plano e histórico de manutenção para impressão A4 compacta e conferir botão Imprimir
+- [ ] Incluir observações do supervisor/técnico com assinatura abaixo e validar na mesma folha A4
