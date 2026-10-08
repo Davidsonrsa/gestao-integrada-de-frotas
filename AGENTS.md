@@ -33,7 +33,8 @@ Não há script de testes automatizados no `package.json`; para mudanças de com
 - Ao alterar autenticação, permissões ou dados sensíveis, verifique as policies RLS e os cenários documentados em [src/lib/security-checklist.ts](src/lib/security-checklist.ts).
 
 ## Convenções de implementação
- - Maintenance forms and history share scoped print styles and a font/layout-ready print command to keep A4 output consistent without changing saved records.
+- Maintenance forms and history share scoped print styles and a font/layout-ready print command to keep A4 output consistent without changing saved records.
+- The maintenance history parent renders its list only at the exact list URL and always renders Outlet so nested record and print links display the selected form.
 
 - Reutilize componentes existentes em `src/components/ui/` e ícones de `lucide-react` antes de criar equivalentes.
 - Preserve a separação entre componentes de UI, hooks, integrações Supabase e funções server-side em seus diretórios atuais.

@@ -22,7 +22,7 @@ export function ManutencaoPrintStyles() {
       .manutencao-documento h1 { font-size: 14px !important; line-height: 1.2 !important; }
       .manutencao-documento img { width: 36px !important; height: 36px !important; }
       .manutencao-documento .grid { gap: 5px 10px !important; }
-      .manutencao-documento [data-slot="card"] { padding: 5px !important; gap: 5px !important; }
+      .manutencao-documento > .p-3 { padding: 5px !important; gap: 5px !important; }
       .manutencao-documento label { font-size: 9px !important; line-height: 1.1 !important; }
       .manutencao-documento input, .manutencao-documento select {
         height: 21px !important; min-height: 0 !important; padding: 1px 3px !important;
