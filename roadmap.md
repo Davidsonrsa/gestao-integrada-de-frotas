@@ -13,4 +13,4 @@
 - [x] Criar tabelas do estoque para salvar cadastros de todas as telas
 - [x] Pneus: saída e exclusão
 - [x] Cotação: exibir total em destaque, unitário abaixo e menor preço em verde
-- [ ] Ajustar plano e histórico de manutenção para impressão A4 compacta e conferir botão Imprimir
+- [x] Ajustar plano e histórico de manutenção para impressão A4 compacta e conferir botão Imprimir
