@@ -1,4 +1,5 @@
-import { test, expect } from "bun:test";
+import { test } from "node:test";
+import { strict as assert } from "node:assert";
 import { criarItensManutencao } from "./manutencao-filtros";
 
 test("nova manutenção copia todos os códigos cadastrados sem misturar sistemas", () => {
@@ -17,18 +18,14 @@ test("nova manutenção copia todos os códigos cadastrados sem misturar sistema
   };
   const itens = criarItensManutencao(filtros);
   for (const codigo of Object.values(filtros))
-    expect(itens.filter((item) => item.codigo === codigo)).toHaveLength(1);
-  expect(
-    itens.find((item) => item.sistema === "Transmissão" && item.item === "Respiro")?.codigo,
-  ).toBe("");
+    assert.equal(itens.filter((item) => item.codigo === codigo).length, 1);
+  assert.equal(itens.find((item) => item.sistema === "Transmissão" && item.item === "Respiro")?.codigo, "");
 });
 
 test("sem filtros mantém checklist vazio e cria cópia independente", () => {
   const itens = criarItensManutencao({});
-  expect(itens).toHaveLength(32);
-  expect(
-    itens.every((item) => item.codigo === "" && item.status === "" && item.quantidade === ""),
-  ).toBe(true);
+  assert.equal(itens.length, 32);
+  assert.equal(itens.every((item) => item.codigo === "" && item.status === "" && item.quantidade === ""), true);
   itens[0].codigo = "EDITADO";
-  expect(criarItensManutencao({})[0].codigo).toBe("");
+  assert.equal(criarItensManutencao({})[0].codigo, "");
 });
