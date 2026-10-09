@@ -20,6 +20,8 @@ import {
   Printer,
   Wrench,
   FileText,
+  FileIcon,
+  Download,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -44,6 +46,16 @@ export const LIMITES_REVISAO = [250, 500, 750, 1000, 10000];
 
 export const Route = createFileRoute("/_authenticated/equipamentos/$id/")({
   component: EquipamentoDetail,
+  head: () => ({
+    meta: [
+      { title: "Detalhes do Equipamento | Gestão Integrada de Frotas" },
+      { name: "description", content: "Dados do equipamento, fotos e relatórios de manutenção salvos." },
+      { property: "og:title", content: "Detalhes do Equipamento | Gestão Integrada de Frotas" },
+      { property: "og:description", content: "Consulte o equipamento e seus anexos de manutenção." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
 type Equip = {
@@ -468,7 +480,7 @@ function EquipamentoDetail() {
 
       <Card className="p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-sm">Fotos ({fotos?.length ?? 0})</h3>
+          <h3 className="font-semibold text-sm">Fotos e relatórios ({fotos?.length ?? 0})</h3>
           <Button
             type="button"
             size="sm"
@@ -500,18 +512,41 @@ function EquipamentoDetail() {
           </button>
         ) : (
           <div className="grid grid-cols-2 gap-2">
-            {fotos.map((f) => (
+            {fotos.map((f) => {
+              const ext = (f.storage_path.split(".").pop() || "").toLowerCase();
+              const isImage = ["jpg", "jpeg", "png", "gif", "webp", "heic", "bmp"].includes(ext);
+              return (
               <div
                 key={f.id}
                 className="relative rounded-md overflow-hidden bg-muted border border-border"
               >
                 <div className="aspect-square">
-                  <img
-                    src={f.url}
-                    alt={f.caption ?? ""}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
+                  {isImage ? (
+                    <img
+                      src={f.url}
+                      alt={f.caption ?? ""}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <a
+                      href={f.url || undefined}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`Abrir ${f.caption || `arquivo ${ext}`}`}
+                      onClick={(event) => {
+                        if (!f.url) {
+                          event.preventDefault();
+                          toast.error("Não foi possível gerar o link do arquivo");
+                        }
+                      }}
+                      className="w-full h-full flex flex-col items-center justify-center gap-1 p-2 text-center hover:bg-muted/70"
+                    >
+                      <FileIcon className="w-8 h-8 text-primary" />
+                      <span className="text-[10px] uppercase font-semibold">{ext || "arquivo"}</span>
+                      <Download className="w-3 h-3 text-muted-foreground" />
+                    </a>
+                  )}
                 </div>
                 {(isAdmin || f.uploaded_by === userId) && (
                   <AlertDialog>
@@ -525,7 +560,7 @@ function EquipamentoDetail() {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Excluir foto?</AlertDialogTitle>
+                        <AlertDialogTitle>Excluir {isImage ? "foto" : "anexo"}?</AlertDialogTitle>
                         <AlertDialogDescription>
                           Esta ação não pode ser desfeita.
                         </AlertDialogDescription>
@@ -548,7 +583,8 @@ function EquipamentoDetail() {
                   </p>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Card>
