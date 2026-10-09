@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { MANUTENCAO_TEMPLATE } from "@/lib/manutencao-template";
+import { criarItensManutencao } from "@/lib/manutencao-filtros";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -72,7 +72,7 @@ function HistoricoPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("equipamentos")
-        .select("numero, identificacao, horimetro_atual")
+        .select("*")
         .eq("id", id)
         .single();
       if (error) throw error;
@@ -160,13 +160,15 @@ function HistoricoPage() {
   const createNew = useMutation({
     mutationFn: async () => {
       if (!userId) throw new Error("Não autenticado");
+      const { data: equipamento, error: equipError } = await supabase.from("equipamentos").select("*").eq("id", id).single();
+      if (equipError) throw equipError;
       const { data, error } = await supabase
         .from("manutencao_historico")
         .insert({
           equipamento_id: id,
           created_by: userId,
-          horimetro: equip?.horimetro_atual ?? null,
-          itens: MANUTENCAO_TEMPLATE.map((i) => ({ ...i, codigo: "", quantidade: "", status: "" })),
+          horimetro: equipamento.horimetro_atual ?? null,
+          itens: JSON.parse(JSON.stringify(criarItensManutencao(equipamento))),
         })
         .select("id")
         .single();
