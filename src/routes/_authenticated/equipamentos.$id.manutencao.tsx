@@ -9,13 +9,10 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, Printer, FileText, Save, FileType, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
-import {
-  MANUTENCAO_TEMPLATE,
-  STATUS_LABELS,
-  buildManutencaoTemplateWithCodes,
-  type ManutencaoItem,
-} from "@/lib/manutencao-template";
+import { MANUTENCAO_TEMPLATE, STATUS_LABELS, type ManutencaoItem } from "@/lib/manutencao-template";
 import { buildReportDocx, REPORT_TAG } from "@/lib/manutencao-docx";
+import { ManutencaoRodape } from "@/components/ManutencaoRodape";
+import { criarItensManutencao } from "@/lib/manutencao-filtros";
 import { ManutencaoPrintStyles, imprimirPlanoManutencao } from "@/components/ManutencaoPrintStyles";
 
 export const Route = createFileRoute("/_authenticated/equipamentos/$id/manutencao")({
@@ -96,25 +93,13 @@ function ManutencaoPage() {
       const arr = Array.isArray(rascunho.itens)
         ? (rascunho.itens as unknown as ManutencaoItem[])
         : [];
-      const mapped = buildManutencaoTemplateWithCodes(e);
-      const withCodes = arr.length
-        ? arr.map((item) => {
-            const match = mapped.find(
-              (template) => template.sistema === item.sistema && template.item === item.item,
-            );
-            return {
-              ...item,
-              codigo: item.codigo || match?.codigo || "",
-            };
-          })
-        : mapped;
-      setItens(withCodes);
+      setItens(arr.length ? arr : MANUTENCAO_TEMPLATE);
     } else if (e) {
+      setItens(criarItensManutencao(e));
       setHorimetro(
         horimetroInicial ?? (e.horimetro_atual != null ? String(e.horimetro_atual) : ""),
       );
       setTipoRevisao(tipoRevisaoInicial ?? `Revisão de ${e.limite_revisao ?? 500}h`);
-      setItens(buildManutencaoTemplateWithCodes(e));
     }
   }, [rascunho, e, horimetroInicial, tipoRevisaoInicial]);
 
@@ -404,29 +389,7 @@ function ManutencaoPage() {
           </Button>
         </div>
 
-        <div className="manutencao-assinaturas mt-10 text-[11px]">
-          <div className="text-center">
-            <div className="border-t border-foreground print:border-black pt-1">
-              <b>Mecânico responsável</b>
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <Label className="text-[11px]">Observação do técnico/supervisor</Label>
-            <Textarea
-              rows={3}
-              value={observacaoTecnico}
-              onChange={(ev) => setObservacaoTecnico(ev.target.value)}
-              className="mt-2"
-            />
-          </div>
-
-          <div className="mt-6 text-center">
-            <div className="border-t border-foreground print:border-black pt-1">
-              <b>Supervisor</b>
-            </div>
-          </div>
-        </div>
+        <ManutencaoRodape observacaoTecnico={observacaoTecnico} onChange={setObservacaoTecnico} />
       </div>
 
       <ManutencaoPrintStyles />

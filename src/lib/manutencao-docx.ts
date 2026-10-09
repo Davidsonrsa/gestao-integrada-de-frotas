@@ -24,7 +24,7 @@ export async function buildReportDocx(params: {
   tipoRevisao: string;
   executante: string;
   observacoes: string;
-  observacaoTecnico: string;
+  observacaoTecnico?: string;
   itens: ManutencaoItem[];
 }) {
   const border = { style: BorderStyle.SINGLE, size: 4, color: "999999" };
@@ -137,31 +137,28 @@ export async function buildReportDocx(params: {
             children: [new TextRun({ text: "Observações", bold: true, size: 22 })],
           }),
           new Paragraph({ children: [new TextRun(params.observacoes || "—")] }),
-          new Paragraph({ children: [new TextRun("")] }),
-          new Paragraph({ children: [new TextRun("")] }),
           new Paragraph({
+            spacing: { before: 240 },
             children: [new TextRun("___________________________")],
           }),
+          new Paragraph({ children: [new TextRun("Mecânico responsável")] }),
           new Paragraph({
-            children: [new TextRun({ text: "Mecânico responsável", bold: true, size: 18 })],
-          }),
-          new Paragraph({ children: [new TextRun("")] }),
-          new Paragraph({
+            keepNext: true,
             children: [
-              new TextRun({ text: "Observação do técnico/supervisor", bold: true, size: 20 }),
+              new TextRun({ text: "Observações do supervisor / técnico", bold: true, size: 20 }),
             ],
           }),
           new Paragraph({
+            keepNext: true,
             children: [new TextRun(params.observacaoTecnico || "—")],
           }),
-          new Paragraph({ children: [new TextRun("")] }),
-          new Paragraph({ children: [new TextRun("")] }),
           new Paragraph({
+            keepNext: true,
+            alignment: AlignmentType.RIGHT,
+            spacing: { before: 240 },
             children: [new TextRun("___________________________")],
           }),
-          new Paragraph({
-            children: [new TextRun({ text: "Supervisor", bold: true, size: 18 })],
-          }),
+          new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun("Supervisor")] }),
         ],
       },
     ],

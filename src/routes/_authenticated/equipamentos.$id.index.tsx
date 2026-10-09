@@ -309,15 +309,11 @@ function EquipamentoDetail() {
     qc.invalidateQueries({ queryKey: ["equipamentos"] });
   }
 
-  const isRelatorio = (caption?: string | null) => !!caption && caption.startsWith("[RELATORIO]");
-
   if (isLoading || !equip) {
     return <div className="p-6 text-center text-muted-foreground">Carregando...</div>;
   }
 
   const ro = !isAdmin;
-  const fotosRegulares = (fotos ?? []).filter((f) => !isRelatorio(f.caption));
-  const relatorios = (fotos ?? []).filter((f) => isRelatorio(f.caption));
   const hrRodadoCalc =
     form.horimetro_atual != null && form.h_revisao != null
       ? Math.max(0, Number(form.horimetro_atual) - Number(form.h_revisao))
@@ -503,120 +499,56 @@ function EquipamentoDetail() {
             <span className="text-xs">Toque para adicionar a primeira foto</span>
           </button>
         ) : (
-          <div className="space-y-3">
-            {relatorios.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-[11px] font-medium text-muted-foreground">Relatórios</p>
-                {relatorios.map((f) => (
-                  <div
-                    key={f.id}
-                    className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/30 p-2"
-                  >
-                    <a
-                      href={f.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex min-w-0 flex-1 items-center gap-2 text-left"
-                    >
-                      <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
-                        <FileText className="w-4 h-4" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[11px] font-medium text-foreground">
-                          {f.caption?.replace(/^\[RELATORIO\]\s*/i, "") ||
-                            "Relatório de manutenção"}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">Documento</p>
-                      </div>
-                    </a>
-                    {(isAdmin || f.uploaded_by === userId) && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <button
-                            type="button"
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors rounded-full p-1.5 shadow"
-                            aria-label="Excluir relatório"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Excluir relatório?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Esta ação não pode ser desfeita.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              onClick={() => deletePhoto(f.id, f.storage_path, f.uploaded_by)}
-                            >
-                              Excluir
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
-                  </div>
-                ))}
+          <div className="grid grid-cols-2 gap-2">
+            {fotos.map((f) => (
+              <div
+                key={f.id}
+                className="relative rounded-md overflow-hidden bg-muted border border-border"
+              >
+                <div className="aspect-square">
+                  <img
+                    src={f.url}
+                    alt={f.caption ?? ""}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </div>
+                {(isAdmin || f.uploaded_by === userId) && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button
+                        type="button"
+                        className="absolute top-1 right-1 bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors rounded-full p-1.5 shadow"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir foto?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta ação não pode ser desfeita.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          onClick={() => deletePhoto(f.id, f.storage_path, f.uploaded_by)}
+                        >
+                          Excluir
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+                {f.caption && (
+                  <p className="text-[11px] px-2 py-1 bg-card text-foreground border-t border-border line-clamp-2">
+                    {f.caption}
+                  </p>
+                )}
               </div>
-            )}
-
-            {fotosRegulares.length > 0 && (
-              <div className="grid grid-cols-3 gap-2">
-                {fotosRegulares.map((f) => (
-                  <div
-                    key={f.id}
-                    className="relative overflow-hidden rounded-md border border-border bg-muted"
-                  >
-                    <div className="h-20">
-                      <img
-                        src={f.url}
-                        alt={f.caption ?? ""}
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                      />
-                    </div>
-                    {(isAdmin || f.uploaded_by === userId) && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <button
-                            type="button"
-                            className="absolute top-1 right-1 bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors rounded-full p-1 shadow"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Excluir foto?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Esta ação não pode ser desfeita.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              onClick={() => deletePhoto(f.id, f.storage_path, f.uploaded_by)}
-                            >
-                              Excluir
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
-                    {f.caption && (
-                      <p className="truncate border-t border-border bg-card px-1.5 py-1 text-[10px] text-foreground">
-                        {f.caption}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+            ))}
           </div>
         )}
       </Card>
