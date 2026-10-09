@@ -45,6 +45,9 @@ export function ManutencaoPrintStyles() {
       }
       .manutencao-assinaturas { margin-top: 20px !important; padding-top: 0 !important; break-inside: avoid; }
       .manutencao-assinaturas > div { break-inside: avoid; }
+      .manutencao-rodape { margin-top: 6px !important; }
+      .manutencao-supervisor { break-inside: avoid; }
+      .manutencao-rodape .manutencao-assinaturas { margin-top: 16px !important; }
     }
   `}</style>;
 }
