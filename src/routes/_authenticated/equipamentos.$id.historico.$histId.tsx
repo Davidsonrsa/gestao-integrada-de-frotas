@@ -29,14 +29,22 @@ import { buildReportDocx, REPORT_TAG } from "@/lib/manutencao-docx";
 
 export const Route = createFileRoute("/_authenticated/equipamentos/$id/historico/$histId")({
   component: ManutencaoFormPage,
-  head: () => ({ meta: [
-    { title: "Registro de Manutenção | Gestão Integrada de Frotas" },
-    { name: "description", content: "Registro do histórico de manutenção do equipamento e impressão em A4." },
-    { property: "og:title", content: "Registro de Manutenção | Gestão Integrada de Frotas" },
-    { property: "og:description", content: "Consulte e imprima as atividades e assinaturas da manutenção registrada." },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary" },
-  ] }),
+  head: () => ({
+    meta: [
+      { title: "Registro de Manutenção | Gestão Integrada de Frotas" },
+      {
+        name: "description",
+        content: "Registro do histórico de manutenção do equipamento e impressão em A4.",
+      },
+      { property: "og:title", content: "Registro de Manutenção | Gestão Integrada de Frotas" },
+      {
+        property: "og:description",
+        content: "Consulte e imprima as atividades e assinaturas da manutenção registrada.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   validateSearch: (s: Record<string, unknown>) => ({
     print: s.print === 1 || s.print === "1" ? 1 : undefined,
   }),

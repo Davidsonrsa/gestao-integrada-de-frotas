@@ -33,21 +33,34 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 
 export const Route = createFileRoute("/_authenticated/equipamentos/$id/historico")({
   component: HistoricoLayout,
-  head: () => ({ meta: [
-    { title: "Histórico de Manutenção | Gestão Integrada de Frotas" },
-    { name: "description", content: "Histórico, formulários e anexos das manutenções do equipamento." },
-    { property: "og:title", content: "Histórico de Manutenção | Gestão Integrada de Frotas" },
-    { property: "og:description", content: "Consulte os registros e imprima os planos de manutenção." },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary" },
-  ] }),
+  head: () => ({
+    meta: [
+      { title: "Histórico de Manutenção | Gestão Integrada de Frotas" },
+      {
+        name: "description",
+        content: "Histórico, formulários e anexos das manutenções do equipamento.",
+      },
+      { property: "og:title", content: "Histórico de Manutenção | Gestão Integrada de Frotas" },
+      {
+        property: "og:description",
+        content: "Consulte os registros e imprima os planos de manutenção.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
 function HistoricoLayout() {
   const { id } = Route.useParams();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const isList = pathname.replace(/\/$/, "") === `/equipamentos/${id}/historico`;
-  return <>{isList && <HistoricoPage />}<Outlet /></>;
+  return (
+    <>
+      {isList && <HistoricoPage />}
+      <Outlet />
+    </>
+  );
 }
 
 type Anexo = {
@@ -70,11 +83,7 @@ function HistoricoPage() {
   const { data: equip } = useQuery({
     queryKey: ["equipamento", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("equipamentos")
-        .select("*")
-        .eq("id", id)
-        .single();
+      const { data, error } = await supabase.from("equipamentos").select("*").eq("id", id).single();
       if (error) throw error;
       return data;
     },
@@ -160,7 +169,11 @@ function HistoricoPage() {
   const createNew = useMutation({
     mutationFn: async () => {
       if (!userId) throw new Error("Não autenticado");
-      const { data: equipamento, error: equipError } = await supabase.from("equipamentos").select("*").eq("id", id).single();
+      const { data: equipamento, error: equipError } = await supabase
+        .from("equipamentos")
+        .select("*")
+        .eq("id", id)
+        .single();
       if (equipError) throw equipError;
       const { data, error } = await supabase
         .from("manutencao_historico")

@@ -1,11 +1,14 @@
 export async function imprimirPlanoManutencao() {
   await document.fonts.ready;
-  await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
   window.print();
 }
 
 export function ManutencaoPrintStyles() {
-  return <style>{`
+  return (
+    <style>{`
     @media print {
       @page { size: A4 portrait; margin: 8mm; }
       html, body { background: var(--print-paper) !important; color: var(--print-ink) !important; min-height: 0 !important; }
@@ -49,5 +52,6 @@ export function ManutencaoPrintStyles() {
       .manutencao-supervisor { break-inside: avoid; }
       .manutencao-rodape .manutencao-assinaturas { margin-top: 16px !important; }
     }
-  `}</style>;
+  `}</style>
+  );
 }

@@ -17,14 +17,22 @@ import { ManutencaoPrintStyles, imprimirPlanoManutencao } from "@/components/Man
 
 export const Route = createFileRoute("/_authenticated/equipamentos/$id/manutencao")({
   component: ManutencaoPage,
-  head: () => ({ meta: [
-    { title: "Plano de Manutenção | Gestão Integrada de Frotas" },
-    { name: "description", content: "Plano de manutenção preventiva do equipamento e impressão em A4." },
-    { property: "og:title", content: "Plano de Manutenção | Gestão Integrada de Frotas" },
-    { property: "og:description", content: "Atividades, observações e assinaturas da manutenção preventiva." },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary" },
-  ] }),
+  head: () => ({
+    meta: [
+      { title: "Plano de Manutenção | Gestão Integrada de Frotas" },
+      {
+        name: "description",
+        content: "Plano de manutenção preventiva do equipamento e impressão em A4.",
+      },
+      { property: "og:title", content: "Plano de Manutenção | Gestão Integrada de Frotas" },
+      {
+        property: "og:description",
+        content: "Atividades, observações e assinaturas da manutenção preventiva.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   validateSearch: (search: Record<string, unknown>) => ({
     horimetro: typeof search.horimetro === "string" ? search.horimetro : undefined,
     tipoRevisao: typeof search.tipoRevisao === "string" ? search.tipoRevisao : undefined,
@@ -107,7 +115,7 @@ function ManutencaoPage() {
         tipo_revisao: tipoRevisao || null,
         executante: executante || null,
         observacoes: observacoes || null,
-          observacao_tecnico: observacaoTecnico || null,
+        observacao_tecnico: observacaoTecnico || null,
         itens: JSON.parse(JSON.stringify(itens)),
       };
       let currentHistId = histId;

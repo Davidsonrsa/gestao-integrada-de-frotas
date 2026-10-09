@@ -137,11 +137,27 @@ export async function buildReportDocx(params: {
             children: [new TextRun({ text: "Observações", bold: true, size: 22 })],
           }),
           new Paragraph({ children: [new TextRun(params.observacoes || "—")] }),
-          new Paragraph({ spacing: { before: 240 }, children: [new TextRun("___________________________")] }),
+          new Paragraph({
+            spacing: { before: 240 },
+            children: [new TextRun("___________________________")],
+          }),
           new Paragraph({ children: [new TextRun("Mecânico responsável")] }),
-          new Paragraph({ keepNext: true, children: [new TextRun({ text: "Observações do supervisor / técnico", bold: true, size: 20 })] }),
-          new Paragraph({ keepNext: true, children: [new TextRun(params.observacaoTecnico || "—")] }),
-          new Paragraph({ keepNext: true, alignment: AlignmentType.RIGHT, spacing: { before: 240 }, children: [new TextRun("___________________________")] }),
+          new Paragraph({
+            keepNext: true,
+            children: [
+              new TextRun({ text: "Observações do supervisor / técnico", bold: true, size: 20 }),
+            ],
+          }),
+          new Paragraph({
+            keepNext: true,
+            children: [new TextRun(params.observacaoTecnico || "—")],
+          }),
+          new Paragraph({
+            keepNext: true,
+            alignment: AlignmentType.RIGHT,
+            spacing: { before: 240 },
+            children: [new TextRun("___________________________")],
+          }),
           new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun("Supervisor")] }),
         ],
       },
