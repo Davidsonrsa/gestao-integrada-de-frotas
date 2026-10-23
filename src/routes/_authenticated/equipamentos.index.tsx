@@ -1148,11 +1148,28 @@ function BotaoPendenciasAbertas({
     );
   }, [equipamentos, pendencias, clFiltro]);
 
+  const [desmarcadas, setDesmarcadas] = useState<Set<string>>(new Set());
+  const toggleItens = (ids: string[], marcar: boolean) =>
+    setDesmarcadas((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => (marcar ? next.delete(id) : next.add(id)));
+      return next;
+    });
+  const selecionadas = useMemo(
+    () =>
+      agrupadas
+        .map((g) => ({ ...g, pendencias: g.pendencias.filter((p) => !desmarcadas.has(p.id)) }))
+        .filter((g) => g.pendencias.length > 0),
+    [agrupadas, desmarcadas],
+  );
+  const todosIds = agrupadas.flatMap((g) => g.pendencias.map((p) => p.id));
+  const totalSelecionadas = selecionadas.reduce((s, g) => s + g.pendencias.length, 0);
+
   const handleImprimir = () => {
     const janela = window.open("", "", "width=900,height=700");
     if (!janela) return;
     const tituloCl = clFiltro === "__all" ? "Todos os CLs" : `CL ${clFiltro}`;
-    const gruposHtml = agrupadas
+    const gruposHtml = selecionadas
       .map(
         ({ equipamento, pendencias: itens }) => `
           <h2>${equipamento.numero}${equipamento.cl ? ` - CL ${equipamento.cl}` : ""}</h2>
@@ -1172,7 +1189,7 @@ function BotaoPendenciasAbertas({
   const gerarTextoRelatorio = () => {
     const titulo = clFiltro === "__all" ? "Todos os CLs" : `CL ${clFiltro}`;
     const linhas = [`RELATÓRIO DE PENDÊNCIAS ABERTAS - ${titulo}`, ""];
-    agrupadas.forEach(({ equipamento, pendencias: itens }) => {
+    selecionadas.forEach(({ equipamento, pendencias: itens }) => {
       linhas.push(`${equipamento.numero}${equipamento.cl ? ` - CL ${equipamento.cl}` : ""}`);
       itens.forEach((item, index) => {
         linhas.push(`${index + 1}. ${item.descricao}`);
@@ -1184,12 +1201,12 @@ function BotaoPendenciasAbertas({
   };
 
   const handleEnviarWhatsApp = () => {
-    if (!agrupadas.length) return;
+    if (!selecionadas.length) return;
     window.open(`https://wa.me/?text=${encodeURIComponent(gerarTextoRelatorio())}`, "_blank");
   };
 
   const handleEnviarEmail = () => {
-    if (!agrupadas.length) return;
+    if (!selecionadas.length) return;
     const titulo = clFiltro === "__all" ? "Todos os CLs" : `CL ${clFiltro}`;
     window.location.href = `mailto:?subject=${encodeURIComponent(`Pendências abertas - ${titulo}`)}&body=${encodeURIComponent(gerarTextoRelatorio())}`;
   };
@@ -1213,26 +1230,53 @@ function BotaoPendenciasAbertas({
               </SelectContent>
             </Select>
             <div className="flex items-center gap-1.5">
-              <Button type="button" size="sm" variant="outline" className="h-9 text-xs gap-1.5" onClick={handleEnviarWhatsApp} disabled={isLoading || !agrupadas.length}>
+              <Button type="button" size="sm" variant="outline" className="h-9 text-xs gap-1.5" onClick={handleEnviarWhatsApp} disabled={isLoading || !selecionadas.length}>
                 <MessageCircle className="w-4 h-4 text-emerald-600" /> WhatsApp
               </Button>
-              <Button type="button" size="sm" variant="outline" className="h-9 text-xs gap-1.5" onClick={handleEnviarEmail} disabled={isLoading || !agrupadas.length}>
+              <Button type="button" size="sm" variant="outline" className="h-9 text-xs gap-1.5" onClick={handleEnviarEmail} disabled={isLoading || !selecionadas.length}>
                 <Mail className="w-4 h-4 text-blue-600" /> E-mail
               </Button>
-              <Button type="button" size="sm" variant="outline" className="h-9 text-xs gap-1.5" onClick={handleImprimir} disabled={isLoading}>
+              <Button type="button" size="sm" variant="outline" className="h-9 text-xs gap-1.5" onClick={handleImprimir} disabled={isLoading || !selecionadas.length}>
                 <Printer className="w-4 h-4" /> Imprimir
               </Button>
             </div>
           </div>
           {isLoading ? <p className="py-8 text-center text-xs text-slate-500">Carregando pendências...</p> : agrupadas.length === 0 ? <p className="py-8 text-center text-xs text-slate-500">Nenhuma pendência aberta encontrada para este filtro.</p> : (
-            <div className="max-h-[55vh] overflow-y-auto space-y-3">
-              {agrupadas.map(({ equipamento, pendencias: itens }) => (
-                <div key={equipamento.id} className="rounded-lg border border-slate-200 p-3">
-                  <div className="flex items-center justify-between gap-2 mb-2"><p className="text-sm font-bold text-slate-900">{equipamento.numero}</p>{equipamento.cl && <Badge variant="secondary" className="text-[10px]">CL {equipamento.cl}</Badge>}</div>
-                  {itens.map((item) => <div key={item.id} className="rounded bg-red-50 px-2.5 py-2 text-xs mb-1.5"><p className="font-medium text-red-900">{item.descricao}</p><p className="mt-1 text-[10px] text-red-700">Registrado por: {item.registrado_por || "Não informado"}</p></div>)}
-                </div>
-              ))}
+            <>
+            <div className="flex items-center justify-between text-xs text-slate-600">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" className="h-4 w-4" checked={totalSelecionadas === todosIds.length} onChange={(e) => toggleItens(todosIds, e.target.checked)} />
+                Selecionar todos
+              </label>
+              <span>{totalSelecionadas} de {todosIds.length} selecionado(s) para imprimir/enviar</span>
             </div>
+            <div className="max-h-[55vh] overflow-y-auto space-y-3">
+              {agrupadas.map(({ equipamento, pendencias: itens }) => {
+                const ids = itens.map((i) => i.id);
+                const todosMarcados = ids.every((id) => !desmarcadas.has(id));
+                return (
+                <div key={equipamento.id} className="rounded-lg border border-slate-200 p-3">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" className="h-4 w-4" checked={todosMarcados} onChange={(e) => toggleItens(ids, e.target.checked)} />
+                      <span className="text-sm font-bold text-slate-900">{equipamento.numero}</span>
+                    </label>
+                    {equipamento.cl && <Badge variant="secondary" className="text-[10px]">CL {equipamento.cl}</Badge>}
+                  </div>
+                  {itens.map((item) => {
+                    const marcado = !desmarcadas.has(item.id);
+                    return (
+                    <label key={item.id} className={`flex items-start gap-2 rounded px-2.5 py-2 text-xs mb-1.5 cursor-pointer ${marcado ? "bg-red-50" : "bg-slate-50 opacity-60"}`}>
+                      <input type="checkbox" className="mt-0.5 h-4 w-4" checked={marcado} onChange={(e) => toggleItens([item.id], e.target.checked)} />
+                      <span><span className="block font-medium text-red-900">{item.descricao}</span><span className="block mt-1 text-[10px] text-red-700">Registrado por: {item.registrado_por || "Não informado"}</span></span>
+                    </label>
+                    );
+                  })}
+                </div>
+                );
+              })}
+            </div>
+            </>
           )}
         </DialogContent>
       </Dialog>
