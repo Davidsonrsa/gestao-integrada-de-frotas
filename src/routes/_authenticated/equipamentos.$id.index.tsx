@@ -511,7 +511,7 @@ function EquipamentoDetail() {
             <span className="text-xs">Toque para adicionar a primeira foto</span>
           </button>
         ) : (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
             {fotos.map((f) => {
               const ext = (f.storage_path.split(".").pop() || "").toLowerCase();
               const isImage = ["jpg", "jpeg", "png", "gif", "webp", "heic", "bmp"].includes(ext);
