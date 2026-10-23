@@ -1107,6 +1107,71 @@ function BotaoPendenciasCard({
 // ----------------------------------------------------
 // TELA PRINCIPAL
 // ----------------------------------------------------
+function BotaoRelatorioVencidos({ equipamentos, cl }: { equipamentos: Equip[]; cl: string }) {
+  const vencidos = useMemo(() => {
+    return equipamentos
+      .filter((e) => cl === "__all" || (e.cl ?? "") === cl)
+      .map((e) => {
+        const rodado =
+          e.horimetro_atual != null && e.h_revisao != null
+            ? Math.max(0, Number(e.horimetro_atual) - Number(e.h_revisao))
+            : null;
+        const limite = Number(e.limite_revisao ?? 500);
+        return { e, rodado, limite, excedente: rodado != null ? rodado - limite : null };
+      })
+      .filter((x) => x.rodado != null && x.rodado > x.limite)
+      .sort((a, b) => a.e.numero.localeCompare(b.e.numero));
+  }, [equipamentos, cl]);
+
+  const handleImprimir = () => {
+    if (!vencidos.length) {
+      toast.error("Nenhum equipamento vencido neste filtro.");
+      return;
+    }
+    const tituloCl = cl === "__all" ? "Todos os CLs" : `CL ${cl}`;
+    const linhas = vencidos
+      .map(
+        ({ e, rodado, limite, excedente }) => `
+          <tr>
+            <td><strong>${e.numero}</strong></td>
+            <td>${e.identificacao ?? "—"}</td>
+            <td>${e.cl ? `CL ${e.cl}` : "—"}</td>
+            <td>${e.horimetro_atual ?? "—"}</td>
+            <td>${e.h_revisao ?? "—"}</td>
+            <td>${rodado}h</td>
+            <td>${limite}h</td>
+            <td class="exc">${excedente}h</td>
+          </tr>
+        `,
+      )
+      .join("");
+    const janela = window.open("", "", "width=900,height=700");
+    if (!janela) return;
+    janela.document.write(
+      `<html><head><title>Equipamentos vencidos - ${tituloCl}</title><style>body{font-family:Arial;padding:24px;color:#111827}h1{font-size:20px;border-bottom:2px solid #111827;padding-bottom:8px}table{width:100%;border-collapse:collapse;margin-top:16px;font-size:12px}th,td{border:1px solid #d1d5db;padding:6px 8px;text-align:left}th{background:#f3f4f6}.exc{color:#dc2626;font-weight:bold}.total{margin-top:12px;font-size:12px;color:#374151}</style></head><body><h1>Relatório de equipamentos com revisão vencida - ${tituloCl}</h1><p>Emissão: ${new Date().toLocaleString("pt-BR")}</p><table><thead><tr><th>Equipamento</th><th>Identificação</th><th>CL</th><th>Horímetro atual</th><th>Hr última revisão</th><th>Hr rodado</th><th>Limite</th><th>Excedente</th></tr></thead><tbody>${linhas}</tbody></table><p class="total">Total: ${vencidos.length} equipamento(s) vencido(s).</p></body></html>`,
+    );
+    janela.document.close();
+    janela.focus();
+    setTimeout(() => {
+      janela.print();
+      janela.close();
+    }, 500);
+  };
+
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="outline"
+      className="h-9 text-xs border-slate-200 gap-1.5 bg-white whitespace-nowrap"
+      onClick={handleImprimir}
+      title="Imprimir relatório somente dos equipamentos vencidos"
+    >
+      <AlertTriangle className="w-4 h-4 text-red-600" /> Relatório de vencidos
+    </Button>
+  );
+}
+
 function BotaoPendenciasAbertas({
   clOptions,
   equipamentos,
