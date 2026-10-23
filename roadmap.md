@@ -19,3 +19,4 @@
 - [x] Igualar a visualização do relatório salvo no equipamento à do anexo no histórico
 - [x] Imprimir relatório somente dos equipamentos vencidos
 - [x] Estoque: produtos sem código interno/categoria/localização/modelo/fornecedor, só 1 campo de estoque, foto da peça; entradas sem série/responsável/observação/localização/valores; pneus com foto
+- [x] Reduzir campo de busca da frota para exibir todos os botões sem corte
