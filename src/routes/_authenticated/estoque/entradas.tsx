@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { estoqueDb as supabase } from "@/lib/estoque-db";
 
 export const Route = createFileRoute("/_authenticated/estoque/entradas")({
@@ -11,53 +12,41 @@ type Produto = {
   nome: string;
   estoque_atual?: number | null;
   unidade?: string | null;
-  custo_medio?: number | null;
 };
 type Fornecedor = { id: string; razao_social?: string | null; nome_fantasia?: string | null };
-type Localizacao = { id: string; nome: string };
+
+const ITEM_VAZIO = {
+  produto_id: "",
+  quantidade: "1",
+  unidade: "UN",
+};
 
 export default function EstoqueEntradasPage() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
-  const [localizacoes, setLocalizacoes] = useState<Localizacao[]>([]);
   const [saving, setSaving] = useState(false);
-  const [itens, setItens] = useState([
-    {
-      produto_id: "",
-      quantidade: "1",
-      unidade: "UN",
-      valor_unitario: "0",
-      desconto: "0",
-      localizacao_id: "",
-    },
-  ]);
+  const [itens, setItens] = useState([ITEM_VAZIO]);
   const [form, setForm] = useState({
     data: new Date().toISOString().slice(0, 10),
     fornecedor_id: "",
     numero_nf: "",
-    serie: "",
-    responsavel: "",
-    observacao: "",
   });
 
   async function loadData() {
     try {
-      const [produtosRes, fornecedoresRes, localizacoesRes] = await Promise.all([
+      const [produtosRes, fornecedoresRes] = await Promise.all([
         supabase.from("estoque_produtos").select("*").order("nome", { ascending: true }),
         supabase
           .from("estoque_fornecedores")
           .select("*")
           .order("razao_social", { ascending: true }),
-        supabase.from("estoque_localizacoes").select("*").order("nome", { ascending: true }),
       ]);
 
       if (produtosRes.error) throw produtosRes.error;
       if (fornecedoresRes.error) throw fornecedoresRes.error;
-      if (localizacoesRes.error) throw localizacoesRes.error;
 
       setProdutos((produtosRes.data || []) as Produto[]);
       setFornecedores((fornecedoresRes.data || []) as Fornecedor[]);
-      setLocalizacoes((localizacoesRes.data || []) as Localizacao[]);
     } catch (error) {
       console.error("Erro ao carregar dados de entrada:", error);
     }
@@ -74,17 +63,7 @@ export default function EstoqueEntradasPage() {
   }
 
   function addItemRow() {
-    setItens([
-      ...itens,
-      {
-        produto_id: "",
-        quantidade: "1",
-        unidade: "UN",
-        valor_unitario: "0",
-        desconto: "0",
-        localizacao_id: "",
-      },
-    ]);
+    setItens([...itens, ITEM_VAZIO]);
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -99,9 +78,6 @@ export default function EstoqueEntradasPage() {
             data: form.data,
             fornecedor_id: form.fornecedor_id || null,
             numero_nf: form.numero_nf || null,
-            serie: form.serie || null,
-            responsavel: form.responsavel || null,
-            observacao: form.observacao || null,
           },
         ])
         .select()
@@ -111,22 +87,12 @@ export default function EstoqueEntradasPage() {
 
       const itensPayload = itens
         .filter((item) => item.produto_id)
-        .map((item) => {
-          const quantity = Number(item.quantidade || 0);
-          const unitValue = Number(item.valor_unitario || 0);
-          const discount = Number(item.desconto || 0);
-          const total = quantity * unitValue - discount;
-          return {
-            entrada_id: entrada.id,
-            produto_id: item.produto_id,
-            quantidade: quantity,
-            unidade: item.unidade || "UN",
-            valor_unitario: unitValue,
-            desconto: discount,
-            valor_total: total,
-            localizacao_id: item.localizacao_id || null,
-          };
-        });
+        .map((item) => ({
+          entrada_id: entrada.id,
+          produto_id: item.produto_id,
+          quantidade: Number(item.quantidade || 0),
+          unidade: item.unidade || "UN",
+        }));
 
       if (itensPayload.length === 0) throw new Error("Informe ao menos um produto para a entrada.");
 
@@ -139,13 +105,11 @@ export default function EstoqueEntradasPage() {
         const produto = produtos.find((p) => p.id === item.produto_id);
         const estoqueAtual = Number(produto?.estoque_atual ?? 0);
         const novoEstoque = estoqueAtual + item.quantidade;
-        const custoMedio = Number(produto?.custo_medio ?? 0) || item.valor_unitario;
 
         await supabase
           .from("estoque_produtos")
           .update({
             estoque_atual: novoEstoque,
-            custo_medio: custoMedio,
             ultima_compra: form.data,
           })
           .eq("id", item.produto_id);
@@ -157,35 +121,22 @@ export default function EstoqueEntradasPage() {
             quantidade: item.quantidade,
             estoque_anterior: estoqueAtual,
             estoque_posterior: novoEstoque,
-            valor_total: item.valor_total,
             documento: form.numero_nf || entrada.id,
-            responsavel: form.responsavel || null,
-            observacao: form.observacao || null,
             data_movimento: form.data,
           },
         ]);
       }
 
-      setItens([
-        {
-          produto_id: "",
-          quantidade: "1",
-          unidade: "UN",
-          valor_unitario: "0",
-          desconto: "0",
-          localizacao_id: "",
-        },
-      ]);
+      setItens([ITEM_VAZIO]);
       setForm({
         data: new Date().toISOString().slice(0, 10),
         fornecedor_id: "",
         numero_nf: "",
-        serie: "",
-        responsavel: "",
-        observacao: "",
       });
+      toast.success("Entrada registrada.");
     } catch (error) {
       console.error("Erro ao registrar entrada:", error);
+      toast.error("Não foi possível registrar a entrada.");
     } finally {
       setSaving(false);
     }
@@ -223,33 +174,11 @@ export default function EstoqueEntradasPage() {
           />
         </div>
 
-        <div className="grid gap-3 md:grid-cols-2">
-          <input
-            value={form.serie}
-            onChange={(e) => setForm({ ...form, serie: e.target.value })}
-            placeholder="Série"
-            className="rounded-md border border-slate-300 p-2 text-sm"
-          />
-          <input
-            value={form.responsavel}
-            onChange={(e) => setForm({ ...form, responsavel: e.target.value })}
-            placeholder="Responsável"
-            className="rounded-md border border-slate-300 p-2 text-sm"
-          />
-        </div>
-
-        <textarea
-          value={form.observacao}
-          onChange={(e) => setForm({ ...form, observacao: e.target.value })}
-          placeholder="Observação"
-          className="min-h-20 w-full rounded-md border border-slate-300 p-2 text-sm"
-        />
-
         <div className="space-y-3">
           {itens.map((item, index) => (
             <div
               key={index}
-              className="grid gap-3 rounded-lg border border-slate-200 p-3 md:grid-cols-6"
+              className="grid gap-3 rounded-lg border border-slate-200 p-3 md:grid-cols-4"
             >
               <select
                 value={item.produto_id}
@@ -279,37 +208,6 @@ export default function EstoqueEntradasPage() {
                 placeholder="UN"
                 className="rounded-md border border-slate-300 p-2 text-sm"
               />
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={item.valor_unitario}
-                onChange={(e) => updateItem(index, "valor_unitario", e.target.value)}
-                placeholder="Valor unit."
-                className="rounded-md border border-slate-300 p-2 text-sm"
-              />
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={item.desconto}
-                onChange={(e) => updateItem(index, "desconto", e.target.value)}
-                placeholder="Desconto"
-                className="rounded-md border border-slate-300 p-2 text-sm"
-              />
-
-              <select
-                value={item.localizacao_id}
-                onChange={(e) => updateItem(index, "localizacao_id", e.target.value)}
-                className="rounded-md border border-slate-300 p-2 text-sm md:col-span-2"
-              >
-                <option value="">Localização</option>
-                {localizacoes.map((local) => (
-                  <option key={local.id} value={local.id}>
-                    {local.nome}
-                  </option>
-                ))}
-              </select>
             </div>
           ))}
         </div>
