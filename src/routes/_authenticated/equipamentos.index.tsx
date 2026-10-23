@@ -202,14 +202,14 @@ function BotaoTacografo() {
       <Button
         size="sm"
         variant="outline"
-        className="h-9 relative bg-white hover:bg-slate-100 text-slate-900 border-slate-300 gap-1.5"
+        className="h-9 px-2.5 relative bg-white hover:bg-slate-100 text-slate-900 border-slate-300 gap-1"
         onClick={() => setOpen(true)}
       >
         <Calendar className="w-4 h-4 text-slate-900" />
         <span>Tacógrafo</span>
         {tacografosVencidos.length > 0 ? (
           <span
-            className="font-bold text-[10px] h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-full border-none"
+            className="font-bold text-[10px] h-5 min-w-[18px] px-1 flex items-center justify-center rounded-full border-none"
             style={{ backgroundColor: "#dc2626", color: "#ffffff" }}
           >
             {tacografosVencidos.length}
@@ -509,14 +509,14 @@ function BotaoSeguro() {
       <Button
         size="sm"
         variant="outline"
-        className="h-9 relative bg-white hover:bg-slate-100 text-slate-900 border-slate-300 gap-1.5"
+        className="h-9 px-2.5 relative bg-white hover:bg-slate-100 text-slate-900 border-slate-300 gap-1"
         onClick={() => setOpen(true)}
       >
         <ShieldCheck className="w-4 h-4 text-slate-900" />
         <span>Seguro</span>
         {segurosVencidos.length > 0 ? (
           <span
-            className="font-bold text-[10px] h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-full border-none"
+            className="font-bold text-[10px] h-5 min-w-[18px] px-1 flex items-center justify-center rounded-full border-none"
             style={{ backgroundColor: "#dc2626", color: "#ffffff" }}
           >
             {segurosVencidos.length}
@@ -1163,7 +1163,7 @@ function BotaoRelatorioVencidos({ equipamentos, cl }: { equipamentos: Equip[]; c
       type="button"
       size="sm"
       variant="outline"
-      className="h-9 text-xs border-slate-200 gap-1.5 bg-white whitespace-nowrap"
+      className="h-9 px-2.5 text-xs border-slate-200 gap-1 bg-white whitespace-nowrap"
       onClick={handleImprimir}
       title="Imprimir relatório somente dos equipamentos vencidos"
     >
@@ -1278,7 +1278,7 @@ function BotaoPendenciasAbertas({
 
   return (
     <>
-      <Button type="button" size="sm" variant="outline" className="h-9 text-xs border-slate-200 gap-1.5 bg-white" onClick={() => setOpen(true)}>
+      <Button type="button" size="sm" variant="outline" className="h-9 px-2.5 text-xs border-slate-200 gap-1 bg-white" onClick={() => setOpen(true)}>
         <ClipboardList className="w-4 h-4" /> Pendências abertas
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
@@ -1525,7 +1525,7 @@ function EquipamentosList() {
     <div className="p-3 md:p-6 max-w-7xl mx-auto w-full space-y-3 md:space-y-4">
       {/* Header & Filtros */}
       <div className="sticky top-0 md:top-[76px] z-20 p-2.5 md:p-3 bg-white/95 backdrop-blur-md rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-2 md:gap-3 md:items-center justify-between">
-        <div className="relative w-full md:max-w-md">
+        <div className="relative w-full md:w-52 lg:w-64 md:shrink-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
             placeholder="Buscar veículo, placa, local..."
@@ -1535,14 +1535,14 @@ function EquipamentosList() {
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+        <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 md:justify-end">
           <BotaoTacografo />
           <BotaoSeguro />
           <BotaoRelatorioVencidos equipamentos={data ?? []} cl={cl} />
           <BotaoPendenciasAbertas clOptions={clOptions} equipamentos={data ?? []} />
 
           <Select value={cl} onValueChange={setCl}>
-            <SelectTrigger className="h-9 text-xs w-[130px] bg-white border-slate-200">
+            <SelectTrigger className="h-9 text-xs w-[112px] bg-white border-slate-200">
               <SelectValue placeholder="Classe (CL)" />
             </SelectTrigger>
             <SelectContent>
@@ -1560,12 +1560,12 @@ function EquipamentosList() {
             size="sm"
             variant={onlyOverdue ? "destructive" : "outline"}
             onClick={() => setOnlyOverdue((v) => !v)}
-            className="h-9 text-xs border-slate-200 gap-1.5"
+            className="h-9 px-2.5 text-xs border-slate-200 gap-1"
           >
             <span>{onlyOverdue ? "Apenas Vencidos" : "Vencidos"}</span>
             {totalEquipamentosVencidos > 0 ? (
               <span
-                className="font-bold text-[10px] h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-full border-none"
+                className="font-bold text-[10px] h-5 min-w-[18px] px-1 flex items-center justify-center rounded-full border-none"
                 style={{ backgroundColor: "#dc2626", color: "#ffffff" }}
               >
                 {totalEquipamentosVencidos}
