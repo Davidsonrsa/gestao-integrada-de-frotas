@@ -1148,11 +1148,28 @@ function BotaoPendenciasAbertas({
     );
   }, [equipamentos, pendencias, clFiltro]);
 
+  const [desmarcadas, setDesmarcadas] = useState<Set<string>>(new Set());
+  const toggleItens = (ids: string[], marcar: boolean) =>
+    setDesmarcadas((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => (marcar ? next.delete(id) : next.add(id)));
+      return next;
+    });
+  const selecionadas = useMemo(
+    () =>
+      agrupadas
+        .map((g) => ({ ...g, pendencias: g.pendencias.filter((p) => !desmarcadas.has(p.id)) }))
+        .filter((g) => g.pendencias.length > 0),
+    [agrupadas, desmarcadas],
+  );
+  const todosIds = agrupadas.flatMap((g) => g.pendencias.map((p) => p.id));
+  const totalSelecionadas = selecionadas.reduce((s, g) => s + g.pendencias.length, 0);
+
   const handleImprimir = () => {
     const janela = window.open("", "", "width=900,height=700");
     if (!janela) return;
     const tituloCl = clFiltro === "__all" ? "Todos os CLs" : `CL ${clFiltro}`;
-    const gruposHtml = agrupadas
+    const gruposHtml = selecionadas
       .map(
         ({ equipamento, pendencias: itens }) => `
           <h2>${equipamento.numero}${equipamento.cl ? ` - CL ${equipamento.cl}` : ""}</h2>
