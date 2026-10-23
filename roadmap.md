@@ -16,5 +16,6 @@
 - [x] Ajustar plano e histórico de manutenção para impressão A4 compacta e conferir botão Imprimir
 - [x] Incluir observações do supervisor/técnico com assinatura abaixo e validar na mesma folha A4
 - [x] Preencher automaticamente códigos dos filtros cadastrados ao criar nova manutenção
-- [ ] Igualar a visualização do relatório salvo no equipamento à do anexo no histórico
+- [x] Igualar a visualização do relatório salvo no equipamento à do anexo no histórico
+- [x] Imprimir relatório somente dos equipamentos vencidos
 - [x] Estoque: produtos sem código interno/categoria/localização/modelo/fornecedor, só 1 campo de estoque, foto da peça; entradas sem série/responsável/observação/localização/valores; pneus com foto
