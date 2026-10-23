@@ -202,14 +202,14 @@ function BotaoTacografo() {
       <Button
         size="sm"
         variant="outline"
-        className="h-9 relative bg-white hover:bg-slate-100 text-slate-900 border-slate-300 gap-1.5"
+        className="h-9 px-2.5 relative bg-white hover:bg-slate-100 text-slate-900 border-slate-300 gap-1"
         onClick={() => setOpen(true)}
       >
         <Calendar className="w-4 h-4 text-slate-900" />
         <span>Tacógrafo</span>
         {tacografosVencidos.length > 0 ? (
           <span
-            className="font-bold text-[10px] h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-full border-none"
+            className="font-bold text-[10px] h-5 min-w-[18px] px-1 flex items-center justify-center rounded-full border-none"
             style={{ backgroundColor: "#dc2626", color: "#ffffff" }}
           >
             {tacografosVencidos.length}
@@ -509,14 +509,14 @@ function BotaoSeguro() {
       <Button
         size="sm"
         variant="outline"
-        className="h-9 relative bg-white hover:bg-slate-100 text-slate-900 border-slate-300 gap-1.5"
+        className="h-9 px-2.5 relative bg-white hover:bg-slate-100 text-slate-900 border-slate-300 gap-1"
         onClick={() => setOpen(true)}
       >
         <ShieldCheck className="w-4 h-4 text-slate-900" />
         <span>Seguro</span>
         {segurosVencidos.length > 0 ? (
           <span
-            className="font-bold text-[10px] h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-full border-none"
+            className="font-bold text-[10px] h-5 min-w-[18px] px-1 flex items-center justify-center rounded-full border-none"
             style={{ backgroundColor: "#dc2626", color: "#ffffff" }}
           >
             {segurosVencidos.length}
