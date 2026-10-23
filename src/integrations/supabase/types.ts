@@ -1094,6 +1094,7 @@ export type Database = {
           equipamento_id: string | null
           estado: string | null
           fornecedor_id: string | null
+          foto_path: string | null
           id: string
           marca: string | null
           medida: string | null
@@ -1113,6 +1114,7 @@ export type Database = {
           equipamento_id?: string | null
           estado?: string | null
           fornecedor_id?: string | null
+          foto_path?: string | null
           id?: string
           marca?: string | null
           medida?: string | null
@@ -1132,6 +1134,7 @@ export type Database = {
           equipamento_id?: string | null
           estado?: string | null
           fornecedor_id?: string | null
+          foto_path?: string | null
           id?: string
           marca?: string | null
           medida?: string | null
@@ -1179,6 +1182,7 @@ export type Database = {
           estoque_maximo: number
           estoque_minimo: number
           fornecedor_principal_id: string | null
+          foto_path: string | null
           id: string
           localizacao: string | null
           localizacao_id: string | null
@@ -1203,6 +1207,7 @@ export type Database = {
           estoque_maximo?: number
           estoque_minimo?: number
           fornecedor_principal_id?: string | null
+          foto_path?: string | null
           id?: string
           localizacao?: string | null
           localizacao_id?: string | null
@@ -1227,6 +1232,7 @@ export type Database = {
           estoque_maximo?: number
           estoque_minimo?: number
           fornecedor_principal_id?: string | null
+          foto_path?: string | null
           id?: string
           localizacao?: string | null
           localizacao_id?: string | null

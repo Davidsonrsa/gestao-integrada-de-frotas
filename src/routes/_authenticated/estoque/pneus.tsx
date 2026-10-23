@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Gauge, LogOut, Plus, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Gauge, ImagePlus, LogOut, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { estoqueDb as supabase } from "@/lib/estoque-db";
+import { getEstoqueFotoUrls, uploadEstoqueFoto } from "@/lib/estoque-fotos";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_authenticated/estoque/pneus")({
@@ -24,12 +25,28 @@ type Pneu = {
   estado?: string | null;
   status?: string | null;
   equipamento_id?: string | null;
+  foto_path?: string | null;
 };
 type Equipamento = { id: string; numero: string; identificacao?: string | null };
+
+const FORM_VAZIO = {
+  codigo: "",
+  marca: "",
+  modelo: "",
+  medida: "",
+  codigo_serie: "",
+  dot: "",
+  tipo: "",
+  valor: "0",
+  data_compra: "",
+  estado: "EM ESTOQUE",
+  status: "EM ESTOQUE",
+};
 
 export default function EstoquePneusPage() {
   const { isAdmin } = useAuth();
   const [pneus, setPneus] = useState<Pneu[]>([]);
+  const [fotoUrls, setFotoUrls] = useState<Map<string, string>>(new Map());
   const [equipamentos, setEquipamentos] = useState<Equipamento[]>([]);
   const [loading, setLoading] = useState(true);
   const [saidaId, setSaidaId] = useState<string | null>(null);
@@ -39,20 +56,9 @@ export default function EstoquePneusPage() {
     responsavel: "",
     observacao: "",
   });
-  const [form, setForm] = useState({
-    codigo: "",
-    marca: "",
-    modelo: "",
-    medida: "",
-    codigo_serie: "",
-    dot: "",
-    tipo: "",
-    valor: "0",
-    fornecedor_id: "",
-    data_compra: "",
-    estado: "EM ESTOQUE",
-    status: "EM ESTOQUE",
-  });
+  const [form, setForm] = useState(FORM_VAZIO);
+  const [fotoFile, setFotoFile] = useState<File | null>(null);
+  const fotoInputRef = useRef<HTMLInputElement>(null);
 
   async function loadData() {
     try {
@@ -64,8 +70,10 @@ export default function EstoquePneusPage() {
           .order("numero", { ascending: true }),
       ]);
       if (error) throw error;
-      setPneus((data || []) as Pneu[]);
+      const lista = (data || []) as Pneu[];
+      setPneus(lista);
       setEquipamentos((eqRes.data || []) as Equipamento[]);
+      setFotoUrls(await getEstoqueFotoUrls(lista.map((p) => p.foto_path)));
     } catch (error) {
       console.error("Erro ao carregar pneus:", error);
     } finally {
@@ -80,6 +88,11 @@ export default function EstoquePneusPage() {
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     try {
+      let fotoPath: string | null = null;
+      if (fotoFile) {
+        fotoPath = await uploadEstoqueFoto("pneus", fotoFile);
+      }
+
       const { error } = await supabase.from("estoque_pneus").insert([
         {
           codigo: form.codigo,
@@ -90,27 +103,17 @@ export default function EstoquePneusPage() {
           dot: form.dot || null,
           tipo: form.tipo || null,
           valor: Number(form.valor || 0),
-          fornecedor_id: form.fornecedor_id || null,
           data_compra: form.data_compra || null,
           estado: form.estado,
           status: form.status,
+          foto_path: fotoPath,
         },
       ]);
       if (error) throw error;
-      setForm({
-        codigo: "",
-        marca: "",
-        modelo: "",
-        medida: "",
-        codigo_serie: "",
-        dot: "",
-        tipo: "",
-        valor: "0",
-        fornecedor_id: "",
-        data_compra: "",
-        estado: "EM ESTOQUE",
-        status: "EM ESTOQUE",
-      });
+      setForm(FORM_VAZIO);
+      setFotoFile(null);
+      if (fotoInputRef.current) fotoInputRef.current.value = "";
+      toast.success("Pneu salvo.");
       await loadData();
     } catch (error) {
       console.error("Erro ao salvar pneu:", error);
@@ -186,86 +189,97 @@ export default function EstoquePneusPage() {
           <p className="text-sm text-slate-500">Nenhum pneu cadastrado.</p>
         ) : (
           <div className="space-y-2">
-            {pneus.map((pneu) => (
-              <div key={pneu.id} className="rounded-lg border border-slate-200 p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="text-sm">
-                    <p className="font-bold text-slate-800">{pneu.codigo}</p>
-                    <p className="text-xs text-slate-500">
-                      {[pneu.marca, pneu.medida].filter(Boolean).join(" · ") || "—"} · Status:{" "}
-                      {pneu.status || "—"} · Equip.: {nomeEquip(pneu.equipamento_id)}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setSaidaId(saidaId === pneu.id ? null : pneu.id)}
-                      className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs"
-                    >
-                      <LogOut className="h-4 w-4" /> Saída
-                    </button>
-                    {isAdmin && (
+            {pneus.map((pneu) => {
+              const fotoUrl = pneu.foto_path ? fotoUrls.get(pneu.foto_path) : undefined;
+              return (
+                <div key={pneu.id} className="rounded-lg border border-slate-200 p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-3 text-sm">
+                      {fotoUrl && (
+                        <img
+                          src={fotoUrl}
+                          alt={pneu.codigo}
+                          className="h-14 w-14 rounded-md border border-slate-200 object-cover"
+                        />
+                      )}
+                      <div>
+                        <p className="font-bold text-slate-800">{pneu.codigo}</p>
+                        <p className="text-xs text-slate-500">
+                          {[pneu.marca, pneu.medida].filter(Boolean).join(" · ") || "—"} · Status:{" "}
+                          {pneu.status || "—"} · Equip.: {nomeEquip(pneu.equipamento_id)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
                       <button
                         type="button"
-                        aria-label="Excluir pneu"
-                        onClick={() => void excluirPneu(pneu)}
+                        onClick={() => setSaidaId(saidaId === pneu.id ? null : pneu.id)}
+                        className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <LogOut className="h-4 w-4" /> Saída
                       </button>
-                    )}
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          aria-label="Excluir pneu"
+                          onClick={() => void excluirPneu(pneu)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
+                  {saidaId === pneu.id && (
+                    <div className="mt-3 grid gap-2 md:grid-cols-2">
+                      <select
+                        value={saida.destino}
+                        onChange={(e) => setSaida({ ...saida, destino: e.target.value })}
+                        className="rounded-md border border-slate-300 p-2 text-sm"
+                      >
+                        <option>INSTALADO</option>
+                        <option>RECAPAGEM</option>
+                        <option>DANIFICADO</option>
+                        <option>DESCARTADO</option>
+                      </select>
+                      <select
+                        value={saida.equipamento_id}
+                        onChange={(e) => setSaida({ ...saida, equipamento_id: e.target.value })}
+                        className="rounded-md border border-slate-300 p-2 text-sm"
+                      >
+                        <option value="">Equipamento (opcional)</option>
+                        {equipamentos.map((eq) => (
+                          <option key={eq.id} value={eq.id}>
+                            {eq.identificacao || eq.numero}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        value={saida.responsavel}
+                        onChange={(e) => setSaida({ ...saida, responsavel: e.target.value })}
+                        placeholder="Responsável"
+                        className="rounded-md border border-slate-300 p-2 text-sm"
+                      />
+                      <input
+                        value={saida.observacao}
+                        onChange={(e) => setSaida({ ...saida, observacao: e.target.value })}
+                        placeholder="Observação"
+                        className="rounded-md border border-slate-300 p-2 text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void confirmarSaida(pneu)}
+                        className="rounded-md px-3 py-2 text-sm md:col-span-2"
+                      >
+                        Confirmar saída
+                      </button>
+                    </div>
+                  )}
                 </div>
-                {saidaId === pneu.id && (
-                  <div className="mt-3 grid gap-2 md:grid-cols-2">
-                    <select
-                      value={saida.destino}
-                      onChange={(e) => setSaida({ ...saida, destino: e.target.value })}
-                      className="rounded-md border border-slate-300 p-2 text-sm"
-                    >
-                      <option>INSTALADO</option>
-                      <option>RECAPAGEM</option>
-                      <option>DANIFICADO</option>
-                      <option>DESCARTADO</option>
-                    </select>
-                    <select
-                      value={saida.equipamento_id}
-                      onChange={(e) => setSaida({ ...saida, equipamento_id: e.target.value })}
-                      className="rounded-md border border-slate-300 p-2 text-sm"
-                    >
-                      <option value="">Equipamento (opcional)</option>
-                      {equipamentos.map((eq) => (
-                        <option key={eq.id} value={eq.id}>
-                          {eq.identificacao || eq.numero}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      value={saida.responsavel}
-                      onChange={(e) => setSaida({ ...saida, responsavel: e.target.value })}
-                      placeholder="Responsável"
-                      className="rounded-md border border-slate-300 p-2 text-sm"
-                    />
-                    <input
-                      value={saida.observacao}
-                      onChange={(e) => setSaida({ ...saida, observacao: e.target.value })}
-                      placeholder="Observação"
-                      className="rounded-md border border-slate-300 p-2 text-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => void confirmarSaida(pneu)}
-                      className="rounded-md px-3 py-2 text-sm md:col-span-2"
-                    >
-                      Confirmar saída
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
-
 
       <form
         onSubmit={handleSubmit}
@@ -367,6 +381,18 @@ export default function EstoquePneusPage() {
               <option>DESCARTADO</option>
             </select>
           </div>
+
+          <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-slate-300 p-2 text-sm text-slate-600">
+            <ImagePlus className="h-4 w-4 text-sky-700" />
+            {fotoFile ? fotoFile.name : "Foto do pneu (opcional)"}
+            <input
+              ref={fotoInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => setFotoFile(e.target.files?.[0] ?? null)}
+            />
+          </label>
 
           <button
             type="submit"
