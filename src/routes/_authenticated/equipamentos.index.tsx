@@ -1516,18 +1516,18 @@ function EquipamentosList() {
   return (
     <div className="p-3 md:p-6 max-w-7xl mx-auto w-full space-y-3 md:space-y-4">
       {/* Header & Filtros */}
-      <div className="sticky top-0 md:top-[76px] z-20 p-2.5 md:p-3 bg-white/95 backdrop-blur-md rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:flex-wrap gap-2 md:gap-3 md:items-center justify-between">
-        <div className="relative w-full md:w-52 lg:w-64 md:shrink-0">
+      <div className="sticky top-0 md:top-[76px] z-20 p-2 md:p-2.5 bg-white/95 backdrop-blur-md rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:flex-wrap xl:flex-nowrap gap-2 md:gap-2 md:items-center justify-between">
+        <div className="relative w-full md:w-36 lg:w-44 xl:w-56 md:shrink-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
             placeholder="Buscar veículo, placa, local..."
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            className="pl-9 h-9 text-xs border-slate-200 bg-slate-50/50 focus:bg-white transition-colors"
+            className="pl-8 h-9 text-[11px] border-slate-200 bg-slate-50/50 focus:bg-white transition-colors"
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5 w-full md:w-auto pb-1 md:pb-0 md:justify-end">
+        <div className="flex flex-wrap xl:flex-nowrap items-center gap-1 w-full md:w-auto pb-1 md:pb-0 md:justify-end">
           <BotaoTacografo />
           <BotaoSeguro />
           <BotaoRelatorioFrota equipamentos={filtered} cl={cl} busca={q} somenteVencidos={onlyOverdue} />
@@ -1535,7 +1535,7 @@ function EquipamentosList() {
           <BotaoPendenciasAbertas clOptions={clOptions} equipamentos={data ?? []} />
 
           <Select value={cl} onValueChange={setCl}>
-            <SelectTrigger className="h-9 text-xs w-[112px] bg-white border-slate-200">
+            <SelectTrigger className="h-9 text-[11px] w-[86px] bg-white border-slate-200">
               <SelectValue placeholder="Classe (CL)" />
             </SelectTrigger>
             <SelectContent>
@@ -1553,7 +1553,7 @@ function EquipamentosList() {
             size="sm"
             variant={onlyOverdue ? "destructive" : "outline"}
             onClick={() => setOnlyOverdue((v) => !v)}
-            className="h-9 px-2.5 text-xs border-slate-200 gap-1"
+            className="h-9 px-2 text-[11px] border-slate-200 gap-1 whitespace-nowrap"
           >
             <span>{onlyOverdue ? "Apenas Vencidos" : "Vencidos"}</span>
             {totalEquipamentosVencidos > 0 ? (
