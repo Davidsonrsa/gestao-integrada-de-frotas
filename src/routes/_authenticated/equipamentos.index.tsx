@@ -35,8 +35,18 @@ import {
 } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { BotaoRelatorioFrota } from "@/components/BotaoRelatorioFrota";
+import { filtrarEquipamentos } from "@/lib/frota-relatorio";
 
 export const Route = createFileRoute("/_authenticated/equipamentos/")({
+  head: () => ({ meta: [
+    { title: "Frota cadastrada | Gestão Integrada de Frotas" },
+    { name: "description", content: "Consulte equipamentos por CL, acompanhe horímetros e imprima relatórios da frota selecionada." },
+    { property: "og:title", content: "Frota cadastrada | Gestão Integrada de Frotas" },
+    { property: "og:description", content: "Equipamentos, revisões e relatórios por CL na Gestão Integrada de Frotas." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: EquipamentosList,
 });
 
@@ -1441,25 +1451,7 @@ function EquipamentosList() {
   }, [data]);
 
   const filtered = useMemo(() => {
-    if (!data) return [];
-    const s = q.trim().toLowerCase();
-    return data.filter((e) => {
-      if (cl !== "__all" && (e.cl ?? "") !== cl) return false;
-      const hrRodado =
-        e.horimetro_atual != null && e.h_revisao != null
-          ? Math.max(0, Number(e.horimetro_atual) - Number(e.h_revisao))
-          : null;
-      const overdue = hrRodado != null && hrRodado > Number(e.limite_revisao ?? 500);
-      if (onlyOverdue && !overdue) return false;
-      if (
-        s &&
-        ![e.numero, e.identificacao, e.placa, e.localizacao, e.operador_contato, e.status]
-          .filter(Boolean)
-          .some((v) => String(v).toLowerCase().includes(s))
-      )
-        return false;
-      return true;
-    });
+    return filtrarEquipamentos(data ?? [], cl, q, onlyOverdue);
   }, [data, q, cl, onlyOverdue]);
 
   async function handleStatusChange(equipamentoId: string, status: string) {
@@ -1524,7 +1516,7 @@ function EquipamentosList() {
   return (
     <div className="p-3 md:p-6 max-w-7xl mx-auto w-full space-y-3 md:space-y-4">
       {/* Header & Filtros */}
-      <div className="sticky top-0 md:top-[76px] z-20 p-2.5 md:p-3 bg-white/95 backdrop-blur-md rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-2 md:gap-3 md:items-center justify-between">
+      <div className="sticky top-0 md:top-[76px] z-20 p-2.5 md:p-3 bg-white/95 backdrop-blur-md rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:flex-wrap gap-2 md:gap-3 md:items-center justify-between">
         <div className="relative w-full md:w-52 lg:w-64 md:shrink-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
@@ -1535,9 +1527,10 @@ function EquipamentosList() {
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5 w-full md:w-auto pb-1 md:pb-0 md:justify-end md:flex-nowrap">
+        <div className="flex flex-wrap items-center gap-1.5 w-full md:w-auto pb-1 md:pb-0 md:justify-end">
           <BotaoTacografo />
           <BotaoSeguro />
+          <BotaoRelatorioFrota equipamentos={filtered} cl={cl} busca={q} somenteVencidos={onlyOverdue} />
           <BotaoRelatorioVencidos equipamentos={data ?? []} cl={cl} />
           <BotaoPendenciasAbertas clOptions={clOptions} equipamentos={data ?? []} />
 
