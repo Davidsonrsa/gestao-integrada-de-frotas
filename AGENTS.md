@@ -33,6 +33,7 @@ Não há script de testes automatizados no `package.json`; para mudanças de com
 - Ao alterar autenticação, permissões ou dados sensíveis, verifique as policies RLS e os cenários documentados em [src/lib/security-checklist.ts](src/lib/security-checklist.ts).
 
 ## Convenções de implementação
+- Fleet filtered reports receive the same filtered equipment array as the visible list, so CL, search and overdue filters cannot diverge between screen and print.
 - Maintenance forms and history share scoped print styles and a font/layout-ready print command to keep A4 output consistent without changing saved records.
 - The maintenance history parent renders its list only at the exact list URL and always renders Outlet so nested record and print links display the selected form.
 - Maintenance forms share the footer and report generator, persisting supervisor notes in the existing technical-observation field to preserve saved records.
