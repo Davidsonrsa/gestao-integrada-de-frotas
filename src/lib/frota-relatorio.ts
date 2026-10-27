@@ -20,11 +20,17 @@ export function filtrarEquipamentos<T extends EquipamentoFiltro>(
   const termo = busca.trim().toLowerCase();
   return equipamentos.filter((e) => {
     if (cl !== "__all" && (e.cl ?? "") !== cl) return false;
-    const rodado = e.horimetro_atual != null && e.h_revisao != null
-      ? Math.max(0, Number(e.horimetro_atual) - Number(e.h_revisao))
-      : null;
-    if (somenteVencidos && !(rodado != null && rodado > Number(e.limite_revisao ?? 500))) return false;
-    return !termo || [e.numero, e.identificacao, e.placa, e.localizacao, e.operador_contato, e.status]
-      .some((valor) => valor?.toLowerCase().includes(termo));
+    const rodado =
+      e.horimetro_atual != null && e.h_revisao != null
+        ? Math.max(0, Number(e.horimetro_atual) - Number(e.h_revisao))
+        : null;
+    if (somenteVencidos && !(rodado != null && rodado > Number(e.limite_revisao ?? 500)))
+      return false;
+    return (
+      !termo ||
+      [e.numero, e.identificacao, e.placa, e.localizacao, e.operador_contato, e.status].some(
+        (valor) => valor?.toLowerCase().includes(termo),
+      )
+    );
   });
 }
