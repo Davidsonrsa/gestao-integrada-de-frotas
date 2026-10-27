@@ -212,14 +212,14 @@ function BotaoTacografo() {
       <Button
         size="sm"
         variant="outline"
-        className="h-9 px-2.5 relative bg-white hover:bg-slate-100 text-slate-900 border-slate-300 gap-1"
+        className="h-9 px-2 text-[11px] relative bg-white hover:bg-slate-100 text-slate-900 border-slate-300 gap-1 whitespace-nowrap"
         onClick={() => setOpen(true)}
       >
         <Calendar className="w-4 h-4 text-slate-900" />
         <span>Tacógrafo</span>
         {tacografosVencidos.length > 0 ? (
           <span
-            className="font-bold text-[10px] h-5 min-w-[18px] px-1 flex items-center justify-center rounded-full border-none"
+            className="font-bold text-[9px] h-4 min-w-[16px] px-1 flex items-center justify-center rounded-full border-none"
             style={{ backgroundColor: "#dc2626", color: "#ffffff" }}
           >
             {tacografosVencidos.length}
@@ -519,14 +519,14 @@ function BotaoSeguro() {
       <Button
         size="sm"
         variant="outline"
-        className="h-9 px-2.5 relative bg-white hover:bg-slate-100 text-slate-900 border-slate-300 gap-1"
+        className="h-9 px-2 text-[11px] relative bg-white hover:bg-slate-100 text-slate-900 border-slate-300 gap-1 whitespace-nowrap"
         onClick={() => setOpen(true)}
       >
         <ShieldCheck className="w-4 h-4 text-slate-900" />
         <span>Seguro</span>
         {segurosVencidos.length > 0 ? (
           <span
-            className="font-bold text-[10px] h-5 min-w-[18px] px-1 flex items-center justify-center rounded-full border-none"
+            className="font-bold text-[9px] h-4 min-w-[16px] px-1 flex items-center justify-center rounded-full border-none"
             style={{ backgroundColor: "#dc2626", color: "#ffffff" }}
           >
             {segurosVencidos.length}
@@ -1173,11 +1173,11 @@ function BotaoRelatorioVencidos({ equipamentos, cl }: { equipamentos: Equip[]; c
       type="button"
       size="sm"
       variant="outline"
-      className="h-9 px-2.5 text-xs border-slate-200 gap-1 bg-white whitespace-nowrap"
+      className="h-9 px-2 text-[11px] border-slate-200 gap-1 bg-white whitespace-nowrap"
       onClick={handleImprimir}
       title="Imprimir relatório somente dos equipamentos vencidos"
     >
-      <AlertTriangle className="w-4 h-4 text-red-600" /> Relatório de vencidos
+      <AlertTriangle className="w-4 h-4 text-red-600" /> Rel. vencidos
     </Button>
   );
 }
@@ -1288,8 +1288,8 @@ function BotaoPendenciasAbertas({
 
   return (
     <>
-      <Button type="button" size="sm" variant="outline" className="h-9 px-2.5 text-xs border-slate-200 gap-1 bg-white" onClick={() => setOpen(true)}>
-        <ClipboardList className="w-4 h-4" /> Pendências abertas
+      <Button type="button" size="sm" variant="outline" className="h-9 px-2 text-[11px] border-slate-200 gap-1 bg-white whitespace-nowrap" title="Pendências abertas" onClick={() => setOpen(true)}>
+        <ClipboardList className="w-4 h-4" /> Pendências
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-2xl text-slate-900 bg-white">
@@ -1558,7 +1558,7 @@ function EquipamentosList() {
             <span>{onlyOverdue ? "Apenas Vencidos" : "Vencidos"}</span>
             {totalEquipamentosVencidos > 0 ? (
               <span
-                className="font-bold text-[10px] h-5 min-w-[18px] px-1 flex items-center justify-center rounded-full border-none"
+                className="font-bold text-[9px] h-4 min-w-[16px] px-1 flex items-center justify-center rounded-full border-none"
                 style={{ backgroundColor: "#dc2626", color: "#ffffff" }}
               >
                 {totalEquipamentosVencidos}

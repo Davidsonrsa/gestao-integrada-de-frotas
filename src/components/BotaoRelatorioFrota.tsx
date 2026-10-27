@@ -74,11 +74,11 @@ export function BotaoRelatorioFrota({
       type="button"
       size="sm"
       variant="outline"
-      className="h-9 gap-1.5 text-xs"
+      className="h-9 px-2 gap-1 text-[11px] whitespace-nowrap" title="Imprimir itens selecionados"
       onClick={imprimir}
       disabled={!equipamentos.length}
     >
-      <Printer className="h-4 w-4" /> Imprimir selecionados
+      <Printer className="h-4 w-4" /> Imprimir
     </Button>
   );
 }
