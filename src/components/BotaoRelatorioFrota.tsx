@@ -55,7 +55,7 @@ export function BotaoRelatorioFrota({
           e.horimetro_atual != null && e.h_revisao != null
             ? Math.max(0, e.horimetro_atual - e.h_revisao)
             : null;
-        return `<tr>${[e.numero, e.identificacao, e.placa, e.cl, e.localizacao, e.status || "Operacional", e.horimetro_atual, e.h_revisao, rodado, e.proxima_revisao_horimetro, e.limite_revisao ?? 500].map((valor) => `<td>${escapar(valor)}</td>`).join("")}</tr>`;
+        return `<tr>${[e.cl, e.numero, e.identificacao, e.placa, e.localizacao, e.status || "Operacional", e.horimetro_atual, e.h_revisao, rodado, e.proxima_revisao_horimetro, e.limite_revisao ?? 500].map((valor) => `<td>${escapar(valor)}</td>`).join("")}</tr>`;
       })
       .join("");
     janela.document.write(
