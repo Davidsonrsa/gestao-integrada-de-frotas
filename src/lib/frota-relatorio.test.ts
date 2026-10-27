@@ -1,4 +1,5 @@
-import { describe, expect, test } from "bun:test";
+import { describe, test } from "node:test";
+import { strict as assert } from "node:assert";
 import { filtrarEquipamentos } from "./frota-relatorio";
 
 const base = { identificacao: null, placa: null, localizacao: null, operador_contato: null, status: null, horimetro_atual: 1000, h_revisao: 500, limite_revisao: 500 };
@@ -10,12 +11,12 @@ const equipamentos = [
 
 describe("Equipamentos selecionados para relatório", () => {
   test("inclui somente os itens do CL selecionado", () => {
-    expect(filtrarEquipamentos(equipamentos, "05", "", false).map((e) => e.numero)).toEqual(["RE-30", "RE-40"]);
+    assert.deepEqual(filtrarEquipamentos(equipamentos, "05", "", false).map((e) => e.numero), ["RE-30", "RE-40"]);
   });
   test("respeita também a busca dentro do CL", () => {
-    expect(filtrarEquipamentos(equipamentos, "05", "RE-40", false).map((e) => e.numero)).toEqual(["RE-40"]);
+    assert.deepEqual(filtrarEquipamentos(equipamentos, "05", "RE-40", false).map((e) => e.numero), ["RE-40"]);
   });
   test("respeita apenas vencidos e exclui o equipamento exatamente no limite", () => {
-    expect(filtrarEquipamentos(equipamentos, "05", "", true).map((e) => e.numero)).toEqual(["RE-40"]);
+    assert.deepEqual(filtrarEquipamentos(equipamentos, "05", "", true).map((e) => e.numero), ["RE-40"]);
   });
 });
