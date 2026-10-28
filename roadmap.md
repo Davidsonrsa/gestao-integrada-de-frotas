@@ -24,3 +24,4 @@
 - [x] Alinhar campo de busca aos demais botões e compactar botões para caberem em uma linha
 - [x] Compactar resumo de filtros/óleos com números dos equipamentos e conferir impressão autenticada na CL 05
 - [x] Colocar equipamentos como 1ª coluna e quantidade de equipamentos como 2ª no resumo impresso
+- [ ] Criar cotação com códigos e quantidades dos filtros da seleção da frota e validar os itens salvos
