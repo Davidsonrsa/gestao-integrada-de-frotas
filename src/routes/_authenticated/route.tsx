@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthenticatedLayout() {
-  const { isAdmin, fullName } = useAuth();
+  const { isAdmin, isOperador, fullName } = useAuth();
   const navigate = useNavigate();
 
   async function handleLogout() {
@@ -46,7 +46,9 @@ function AuthenticatedLayout() {
 
   const visibleNavItems = navItems.filter(
     ({ to }) =>
-      isAdmin || !["/medicoes", "/custos", "/cotacoes", "/notas-fiscais", "/admin"].includes(to),
+      (isAdmin ||
+        !["/medicoes", "/custos", "/cotacoes", "/notas-fiscais", "/admin"].includes(to)) &&
+      !(isOperador && to === "/estoque"),
   );
 
   return (
