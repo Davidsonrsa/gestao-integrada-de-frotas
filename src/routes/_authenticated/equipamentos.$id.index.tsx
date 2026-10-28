@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
+import { obterEnderecoAtual } from "@/lib/horimetro-localizacao";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -84,6 +85,8 @@ type Equip = {
   limite_revisao: number;
   data_horimetro_atual: string | null;
   horimetro_atual: number | null;
+  horimetro_atualizado_em: string | null;
+  horimetro_endereco: string | null;
   proxima_revisao_horimetro: number | null;
   hr_rodado: number | null;
   observacoes: string | null;
@@ -143,17 +146,21 @@ function EquipamentoDetail() {
         }
       }
 
-      const { data, error } = await supabase
-        .from("equipamentos")
-        .select(
-          isOperador
-            ? "id, numero, cl, identificacao, horimetro_atual, h_revisao, limite_revisao, proxima_revisao_horimetro, data_horimetro_atual, cover_storage_path"
-            : "*",
-        )
-        .eq("id", id)
-        .single();
+      if (isOperador) {
+        const { data, error } = await supabase
+          .from("equipamentos")
+          .select(
+            "id, numero, cl, identificacao, horimetro_atual, horimetro_atualizado_em, horimetro_endereco, h_revisao, limite_revisao, proxima_revisao_horimetro, data_horimetro_atual, cover_storage_path",
+          )
+          .eq("id", id)
+          .single();
+        if (error) throw error;
+        return data as Equip;
+      }
+
+      const { data, error } = await supabase.from("equipamentos").select("*").eq("id", id).single();
       if (error) throw error;
-      return data as Equip;
+      return data;
     },
   });
 
@@ -191,23 +198,34 @@ function EquipamentoDetail() {
   });
 
   const [form, setForm] = useState<Partial<Equip>>({});
+  const [capturandoLocalizacao, setCapturandoLocalizacao] = useState(false);
 
   useEffect(() => {
     if (equip) setForm(equip);
   }, [equip]);
 
   const save = useMutation({
-    mutationFn: async (payload: Partial<Equip>) => {
+    mutationFn: async ({
+      payload,
+      locationWarning,
+    }: {
+      payload: Partial<Equip>;
+      locationWarning: boolean;
+    }) => {
       const allowed = isAdmin
         ? payload
         : isOperador
           ? {
               horimetro_atual: payload.horimetro_atual,
               data_horimetro_atual: payload.data_horimetro_atual,
+              horimetro_atualizado_em: payload.horimetro_atualizado_em,
+              horimetro_endereco: payload.horimetro_endereco,
             }
           : {
               horimetro_atual: payload.horimetro_atual,
               data_horimetro_atual: payload.data_horimetro_atual,
+              horimetro_atualizado_em: payload.horimetro_atualizado_em,
+              horimetro_endereco: payload.horimetro_endereco,
               observacoes: payload.observacoes,
               motor_oleo: payload.motor_oleo,
               hidraulico_oleo: payload.hidraulico_oleo,
@@ -229,15 +247,62 @@ function EquipamentoDetail() {
 
       const { error } = await supabase.from("equipamentos").update(allowed).eq("id", id);
       if (error) throw error;
+      return { locationWarning };
     },
-    onSuccess: () => {
-      toast.success("Alterações salvas");
+    onSuccess: ({ locationWarning }) => {
+      if (locationWarning) {
+        toast.warning("Alterações salvas, mas não foi possível registrar o endereço.");
+      } else {
+        toast.success("Alterações salvas");
+      }
       qc.invalidateQueries({ queryKey: ["equipamento", id] });
       qc.invalidateQueries({ queryKey: ["equipamentos"] });
       qc.invalidateQueries({ queryKey: ["notificacoes"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  async function handleSave(payload: Partial<Equip>) {
+    const alterouHorimetro =
+      "horimetro_atual" in payload &&
+      (equip?.horimetro_atual ?? null) !== (payload.horimetro_atual ?? null);
+
+    if (!alterouHorimetro) {
+      save.mutate({ payload, locationWarning: false });
+      return;
+    }
+
+    const novoHorimetro = payload.horimetro_atual ?? null;
+    if (
+      !window.confirm(
+        `Deseja confirmar a alteração do horímetro do equipamento ${equip?.numero ?? ""} para ${novoHorimetro ?? "—"}h? O app usará a localização do celular e enviará as coordenadas ao OpenStreetMap para obter o endereço.`,
+      )
+    ) {
+      return;
+    }
+
+    const atualizadoEm = new Date();
+    let endereco: string | null = null;
+    setCapturandoLocalizacao(true);
+    try {
+      endereco = await obterEnderecoAtual();
+    } catch (error) {
+      console.warn("Não foi possível obter o endereço da atualização do horímetro:", error);
+    } finally {
+      setCapturandoLocalizacao(false);
+    }
+
+    const dataHorimetro = `${atualizadoEm.getFullYear()}-${String(atualizadoEm.getMonth() + 1).padStart(2, "0")}-${String(atualizadoEm.getDate()).padStart(2, "0")}`;
+    save.mutate({
+      payload: {
+        ...payload,
+        data_horimetro_atual: dataHorimetro,
+        horimetro_atualizado_em: atualizadoEm.toISOString(),
+        horimetro_endereco: endereco,
+      },
+      locationWarning: !endereco,
+    });
+  }
 
   const remove = useMutation({
     mutationFn: async () => {
@@ -505,23 +570,16 @@ function EquipamentoDetail() {
         <Button
           type="button"
           variant="default"
-          onClick={() => {
-            const horimetroAtual = equip?.horimetro_atual ?? null;
-            const novoHorimetro = form.horimetro_atual ?? null;
-            if (
-              horimetroAtual !== novoHorimetro &&
-              !window.confirm(
-                `Deseja confirmar a alteração do horímetro do equipamento ${equip?.numero ?? ""} para ${novoHorimetro ?? "—"}h?`,
-              )
-            ) {
-              return;
-            }
-            save.mutate(form);
-          }}
-          disabled={save.isPending}
+          onClick={() => void handleSave(form)}
+          disabled={save.isPending || capturandoLocalizacao}
           className="w-full h-11"
         >
-          <Save className="w-4 h-4 mr-2" /> {save.isPending ? "Salvando..." : "Salvar"}
+          <Save className="w-4 h-4 mr-2" />
+          {capturandoLocalizacao
+            ? "Obtendo localização..."
+            : save.isPending
+              ? "Salvando..."
+              : "Salvar"}
         </Button>
       </Card>
 
@@ -819,10 +877,11 @@ function EquipamentoDetail() {
           {isAdmin ? (
             <Select
               value={String(limite)}
+              disabled={save.isPending || capturandoLocalizacao}
               onValueChange={(v) => {
                 const next = { ...form, limite_revisao: Number(v) };
                 setForm(next);
-                save.mutate({ limite_revisao: Number(v) });
+                void handleSave({ limite_revisao: Number(v) });
               }}
             >
               <SelectTrigger>
@@ -845,8 +904,8 @@ function EquipamentoDetail() {
           <div className="flex gap-2 pt-2">
             <Button
               type="button"
-              onClick={() => save.mutate(form)}
-              disabled={save.isPending}
+              onClick={() => void handleSave(form)}
+              disabled={save.isPending || capturandoLocalizacao}
               className="flex-1"
             >
               <Save className="w-4 h-4 mr-2" /> Salvar tudo
@@ -993,8 +1052,8 @@ function EquipamentoDetail() {
         <div className="flex gap-2">
           <Button
             type="button"
-            onClick={() => save.mutate(form)}
-            disabled={save.isPending}
+            onClick={() => void handleSave(form)}
+            disabled={save.isPending || capturandoLocalizacao}
             className="flex-1"
             variant="default"
           >

@@ -37,6 +37,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import { BotaoRelatorioFrota } from "@/components/BotaoRelatorioFrota";
 import { filtrarEquipamentos } from "@/lib/frota-relatorio";
+import { obterEnderecoAtual } from "@/lib/horimetro-localizacao";
 
 export const Route = createFileRoute("/_authenticated/equipamentos/")({
   head: () => ({
@@ -71,6 +72,8 @@ type Equip = {
   limite_revisao: number | null;
   proxima_revisao_horimetro: number | null;
   data_horimetro_atual: string | null;
+  horimetro_atualizado_em: string | null;
+  horimetro_endereco: string | null;
   status: string | null;
   cl: string | null;
   cover_storage_path: string | null;
@@ -1457,15 +1460,6 @@ function EquipamentosList() {
     queryKey: ["equipamentos", isOperador ? userId : "all"],
     enabled: role !== null && (!isOperador || !!userId),
     queryFn: async () => {
-      let query = supabase
-        .from("equipamentos")
-        .select(
-          isOperador
-            ? "id, numero, identificacao, placa, localizacao, horimetro_atual, h_revisao, limite_revisao, proxima_revisao_horimetro, data_horimetro_atual, status, cl, cover_storage_path, updated_by"
-            : "id, numero, identificacao, placa, localizacao, operador_contato, horimetro_atual, h_revisao, limite_revisao, proxima_revisao_horimetro, data_horimetro_atual, status, cl, cover_storage_path, updated_by, motor_oleo, hidraulico_oleo, transmissao_oleo, eixo_oleo, tandem_oleo, filtro_lub, filtro_diesel_p, filtro_diesel_s, filtro_sep_agua, filtro_ar_ext, filtro_ar_int, filtro_trans, filtro_hidr, filtro_respiro, filtro_ar_cond1, filtro_ar_cond2",
-        )
-        .order("numero", { ascending: true });
-
       if (isOperador && userId) {
         const { data: designados, error: designadosError } = await supabase
           .from("operador_equipamentos")
@@ -1476,10 +1470,24 @@ function EquipamentosList() {
 
         const ids = (designados ?? []).map((item) => item.equipamento_id).filter(Boolean);
         if (ids.length === 0) return [] as Equip[];
-        query = query.in("id", ids);
+
+        const { data: equipamentos, error } = await supabase
+          .from("equipamentos")
+          .select(
+            "id, numero, identificacao, placa, localizacao, horimetro_atual, h_revisao, limite_revisao, proxima_revisao_horimetro, data_horimetro_atual, horimetro_atualizado_em, horimetro_endereco, status, cl, cover_storage_path, updated_by",
+          )
+          .in("id", ids)
+          .order("numero", { ascending: true });
+        if (error) throw error;
+        return (equipamentos ?? []) as Equip[];
       }
 
-      const { data: equipamentos, error } = await query;
+      const { data: equipamentos, error } = await supabase
+        .from("equipamentos")
+        .select(
+          "id, numero, identificacao, placa, localizacao, operador_contato, horimetro_atual, h_revisao, limite_revisao, proxima_revisao_horimetro, data_horimetro_atual, horimetro_atualizado_em, horimetro_endereco, status, cl, cover_storage_path, updated_by, motor_oleo, hidraulico_oleo, transmissao_oleo, eixo_oleo, tandem_oleo, filtro_lub, filtro_diesel_p, filtro_diesel_s, filtro_sep_agua, filtro_ar_ext, filtro_ar_int, filtro_trans, filtro_hidr, filtro_respiro, filtro_ar_cond1, filtro_ar_cond2",
+        )
+        .order("numero", { ascending: true });
       if (error) throw error;
       return (equipamentos ?? []) as Equip[];
     },
@@ -1586,7 +1594,7 @@ function EquipamentosList() {
     const equipamento = data?.find((item) => item.id === equipamentoId);
     if (
       !window.confirm(
-        `Deseja confirmar a alteração do horímetro do equipamento ${equipamento?.numero ?? ""} para ${horimetro ?? "—"}h?`,
+        `Deseja confirmar a alteração do horímetro do equipamento ${equipamento?.numero ?? ""} para ${horimetro ?? "—"}h? O app usará a localização do celular e enviará as coordenadas ao OpenStreetMap para obter o endereço.`,
       )
     ) {
       setHorimetroDrafts((drafts) => ({
@@ -1598,18 +1606,31 @@ function EquipamentosList() {
 
     const hoje = new Date();
     const dataHorimetro = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}-${String(hoje.getDate()).padStart(2, "0")}`;
+    let endereco: string | null = null;
+    let falhaLocalizacao = false;
+    try {
+      endereco = await obterEnderecoAtual();
+    } catch (error) {
+      falhaLocalizacao = true;
+      console.warn("Não foi possível obter o endereço da atualização do horímetro:", error);
+    }
+    const horimetroAtualizadoEm = hoje.toISOString();
 
-    queryClient.setQueryData<Equip[]>(["equipamentos"], (equipamentos) =>
-      equipamentos?.map((equipamento) =>
-        equipamento.id === equipamentoId
-          ? {
-              ...equipamento,
-              horimetro_atual: horimetro,
-              data_horimetro_atual: dataHorimetro,
-              updated_by: userId,
-            }
-          : equipamento,
-      ),
+    queryClient.setQueryData<Equip[]>(
+      ["equipamentos", isOperador ? userId : "all"],
+      (equipamentos) =>
+        equipamentos?.map((equipamento) =>
+          equipamento.id === equipamentoId
+            ? {
+                ...equipamento,
+                horimetro_atual: horimetro,
+                data_horimetro_atual: dataHorimetro,
+                horimetro_atualizado_em: horimetroAtualizadoEm,
+                horimetro_endereco: endereco,
+                updated_by: userId,
+              }
+            : equipamento,
+        ),
     );
 
     const { error } = await supabase
@@ -1617,6 +1638,8 @@ function EquipamentosList() {
       .update({
         horimetro_atual: horimetro,
         data_horimetro_atual: dataHorimetro,
+        horimetro_atualizado_em: horimetroAtualizadoEm,
+        horimetro_endereco: endereco,
         updated_by: userId,
       })
       .eq("id", equipamentoId);
@@ -1628,6 +1651,8 @@ function EquipamentosList() {
       }));
       queryClient.invalidateQueries({ queryKey: ["equipamentos"] });
       toast.error("Não foi possível atualizar o horímetro");
+    } else if (falhaLocalizacao) {
+      toast.warning("Horímetro atualizado, mas não foi possível registrar o endereço.");
     }
   }
 
@@ -1892,15 +1917,24 @@ function EquipamentosList() {
                     <span className="text-black font-semibold">Hr rodado: {hrRodado}h</span>
                     <span className="text-black font-semibold">limite: {limite}h</span>
                   </div>
-                  {e.data_horimetro_atual && (
+                  {(e.horimetro_atualizado_em || e.data_horimetro_atual) && (
                     <p className="text-[11px] text-slate-500">
-                      Atualizado em {formatarDataHorimetro(e.data_horimetro_atual)}
+                      Atualizado em{" "}
+                      {e.horimetro_atualizado_em
+                        ? new Intl.DateTimeFormat("pt-BR", {
+                            dateStyle: "short",
+                            timeStyle: "short",
+                          }).format(new Date(e.horimetro_atualizado_em))
+                        : formatarDataHorimetro(e.data_horimetro_atual)}
                       {primeiroNome(
                         e.updated_by === userId ? fullName : nomesResponsaveis[e.updated_by ?? ""],
                       )
                         ? ` por ${primeiroNome(e.updated_by === userId ? fullName : nomesResponsaveis[e.updated_by ?? ""])}`
                         : ""}
                     </p>
+                  )}
+                  {e.horimetro_endereco && (
+                    <p className="text-[11px] text-slate-500">Local: {e.horimetro_endereco}</p>
                   )}
                 </div>
               </Card>
