@@ -39,14 +39,23 @@ import { BotaoRelatorioFrota } from "@/components/BotaoRelatorioFrota";
 import { filtrarEquipamentos } from "@/lib/frota-relatorio";
 
 export const Route = createFileRoute("/_authenticated/equipamentos/")({
-  head: () => ({ meta: [
-    { title: "Frota cadastrada | Gestão Integrada de Frotas" },
-    { name: "description", content: "Consulte equipamentos por CL, acompanhe horímetros e imprima relatórios da frota selecionada." },
-    { property: "og:title", content: "Frota cadastrada | Gestão Integrada de Frotas" },
-    { property: "og:description", content: "Equipamentos, revisões e relatórios por CL na Gestão Integrada de Frotas." },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary" },
-  ] }),
+  head: () => ({
+    meta: [
+      { title: "Frota cadastrada | Gestão Integrada de Frotas" },
+      {
+        name: "description",
+        content:
+          "Consulte equipamentos por CL, acompanhe horímetros e imprima relatórios da frota selecionada.",
+      },
+      { property: "og:title", content: "Frota cadastrada | Gestão Integrada de Frotas" },
+      {
+        property: "og:description",
+        content: "Equipamentos, revisões e relatórios por CL na Gestão Integrada de Frotas.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: EquipamentosList,
 });
 
@@ -589,9 +598,7 @@ function BotaoSeguro() {
                   <Input
                     placeholder="Nome do contato"
                     value={form.contato_sinistro_nome}
-                    onChange={(e) =>
-                      setForm({ ...form, contato_sinistro_nome: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, contato_sinistro_nome: e.target.value })}
                     className="h-8 text-xs bg-white border-slate-300 text-slate-900"
                   />
                   <Input
@@ -1252,7 +1259,9 @@ function BotaoPendenciasAbertas({
         `,
       )
       .join("");
-    janela.document.write(`<html><head><title>Pendências abertas - ${tituloCl}</title><style>body{font-family:Arial;padding:24px;color:#111827}h1{font-size:20px;border-bottom:2px solid #111827;padding-bottom:8px}h2{font-size:16px;margin:20px 0 8px}.item{border:1px solid #d1d5db;padding:10px;margin:6px 0}.meta{color:#6b7280;font-size:11px;margin-top:4px}</style></head><body><h1>Relatório de pendências abertas - ${tituloCl}</h1><p>Emissão: ${new Date().toLocaleString("pt-BR")}</p>${gruposHtml || "<p>Nenhuma pendência aberta encontrada.</p>"}</body></html>`);
+    janela.document.write(
+      `<html><head><title>Pendências abertas - ${tituloCl}</title><style>body{font-family:Arial;padding:24px;color:#111827}h1{font-size:20px;border-bottom:2px solid #111827;padding-bottom:8px}h2{font-size:16px;margin:20px 0 8px}.item{border:1px solid #d1d5db;padding:10px;margin:6px 0}.meta{color:#6b7280;font-size:11px;margin-top:4px}</style></head><body><h1>Relatório de pendências abertas - ${tituloCl}</h1><p>Emissão: ${new Date().toLocaleString("pt-BR")}</p>${gruposHtml || "<p>Nenhuma pendência aberta encontrada.</p>"}</body></html>`,
+    );
     janela.document.close();
     janela.focus();
     setTimeout(() => {
@@ -1288,69 +1297,145 @@ function BotaoPendenciasAbertas({
 
   return (
     <>
-      <Button type="button" size="sm" variant="outline" className="h-9 px-2 text-[11px] border-slate-200 gap-1 bg-white whitespace-nowrap" title="Pendências abertas" onClick={() => setOpen(true)}>
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        className="h-9 px-2 text-[11px] border-slate-200 gap-1 bg-white whitespace-nowrap"
+        title="Pendências abertas"
+        onClick={() => setOpen(true)}
+      >
         <ClipboardList className="w-4 h-4" /> Pendências
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-2xl text-slate-900 bg-white">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><ClipboardList className="w-5 h-5 text-red-600" />Pendências abertas</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardList className="w-5 h-5 text-red-600" />
+              Pendências abertas
+            </DialogTitle>
           </DialogHeader>
           <div className="flex items-center justify-between gap-2 border-y border-slate-200 py-3">
             <Select value={clFiltro} onValueChange={setClFiltro}>
-              <SelectTrigger className="h-9 w-[180px] text-xs"><SelectValue placeholder="Filtrar por CL" /></SelectTrigger>
+              <SelectTrigger className="h-9 w-[180px] text-xs">
+                <SelectValue placeholder="Filtrar por CL" />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__all">Todos os CLs</SelectItem>
-                {clOptions.map((opcao) => <SelectItem key={opcao} value={opcao}>CL {opcao}</SelectItem>)}
+                {clOptions.map((opcao) => (
+                  <SelectItem key={opcao} value={opcao}>
+                    CL {opcao}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <div className="flex items-center gap-1.5">
-              <Button type="button" size="sm" variant="outline" className="h-9 text-xs gap-1.5" onClick={handleEnviarWhatsApp} disabled={isLoading || !selecionadas.length}>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-9 text-xs gap-1.5"
+                onClick={handleEnviarWhatsApp}
+                disabled={isLoading || !selecionadas.length}
+              >
                 <MessageCircle className="w-4 h-4 text-emerald-600" /> WhatsApp
               </Button>
-              <Button type="button" size="sm" variant="outline" className="h-9 text-xs gap-1.5" onClick={handleEnviarEmail} disabled={isLoading || !selecionadas.length}>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-9 text-xs gap-1.5"
+                onClick={handleEnviarEmail}
+                disabled={isLoading || !selecionadas.length}
+              >
                 <Mail className="w-4 h-4 text-blue-600" /> E-mail
               </Button>
-              <Button type="button" size="sm" variant="outline" className="h-9 text-xs gap-1.5" onClick={handleImprimir} disabled={isLoading || !selecionadas.length}>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-9 text-xs gap-1.5"
+                onClick={handleImprimir}
+                disabled={isLoading || !selecionadas.length}
+              >
                 <Printer className="w-4 h-4" /> Imprimir
               </Button>
             </div>
           </div>
-          {isLoading ? <p className="py-8 text-center text-xs text-slate-500">Carregando pendências...</p> : agrupadas.length === 0 ? <p className="py-8 text-center text-xs text-slate-500">Nenhuma pendência aberta encontrada para este filtro.</p> : (
+          {isLoading ? (
+            <p className="py-8 text-center text-xs text-slate-500">Carregando pendências...</p>
+          ) : agrupadas.length === 0 ? (
+            <p className="py-8 text-center text-xs text-slate-500">
+              Nenhuma pendência aberta encontrada para este filtro.
+            </p>
+          ) : (
             <>
-            <div className="flex items-center justify-between text-xs text-slate-600">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="h-4 w-4" checked={totalSelecionadas === todosIds.length} onChange={(e) => toggleItens(todosIds, e.target.checked)} />
-                Selecionar todos
-              </label>
-              <span>{totalSelecionadas} de {todosIds.length} selecionado(s) para imprimir/enviar</span>
-            </div>
-            <div className="max-h-[55vh] overflow-y-auto space-y-3">
-              {agrupadas.map(({ equipamento, pendencias: itens }) => {
-                const ids = itens.map((i) => i.id);
-                const todosMarcados = ids.every((id) => !desmarcadas.has(id));
-                return (
-                <div key={equipamento.id} className="rounded-lg border border-slate-200 p-3">
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" className="h-4 w-4" checked={todosMarcados} onChange={(e) => toggleItens(ids, e.target.checked)} />
-                      <span className="text-sm font-bold text-slate-900">{equipamento.numero}</span>
-                    </label>
-                    {equipamento.cl && <Badge variant="secondary" className="text-[10px]">CL {equipamento.cl}</Badge>}
-                  </div>
-                  {itens.map((item) => {
-                    const marcado = !desmarcadas.has(item.id);
-                    return (
-                    <label key={item.id} className={`flex items-start gap-2 rounded px-2.5 py-2 text-xs mb-1.5 cursor-pointer ${marcado ? "bg-red-50" : "bg-slate-50 opacity-60"}`}>
-                      <input type="checkbox" className="mt-0.5 h-4 w-4" checked={marcado} onChange={(e) => toggleItens([item.id], e.target.checked)} />
-                      <span><span className="block font-medium text-red-900">{item.descricao}</span><span className="block mt-1 text-[10px] text-red-700">Registrado por: {item.registrado_por || "Não informado"}</span></span>
-                    </label>
-                    );
-                  })}
-                </div>
-                );
-              })}
-            </div>
+              <div className="flex items-center justify-between text-xs text-slate-600">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4"
+                    checked={totalSelecionadas === todosIds.length}
+                    onChange={(e) => toggleItens(todosIds, e.target.checked)}
+                  />
+                  Selecionar todos
+                </label>
+                <span>
+                  {totalSelecionadas} de {todosIds.length} selecionado(s) para imprimir/enviar
+                </span>
+              </div>
+              <div className="max-h-[55vh] overflow-y-auto space-y-3">
+                {agrupadas.map(({ equipamento, pendencias: itens }) => {
+                  const ids = itens.map((i) => i.id);
+                  const todosMarcados = ids.every((id) => !desmarcadas.has(id));
+                  return (
+                    <div key={equipamento.id} className="rounded-lg border border-slate-200 p-3">
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4"
+                            checked={todosMarcados}
+                            onChange={(e) => toggleItens(ids, e.target.checked)}
+                          />
+                          <span className="text-sm font-bold text-slate-900">
+                            {equipamento.numero}
+                          </span>
+                        </label>
+                        {equipamento.cl && (
+                          <Badge variant="secondary" className="text-[10px]">
+                            CL {equipamento.cl}
+                          </Badge>
+                        )}
+                      </div>
+                      {itens.map((item) => {
+                        const marcado = !desmarcadas.has(item.id);
+                        return (
+                          <label
+                            key={item.id}
+                            className={`flex items-start gap-2 rounded px-2.5 py-2 text-xs mb-1.5 cursor-pointer ${marcado ? "bg-red-50" : "bg-slate-50 opacity-60"}`}
+                          >
+                            <input
+                              type="checkbox"
+                              className="mt-0.5 h-4 w-4"
+                              checked={marcado}
+                              onChange={(e) => toggleItens([item.id], e.target.checked)}
+                            />
+                            <span>
+                              <span className="block font-medium text-red-900">
+                                {item.descricao}
+                              </span>
+                              <span className="block mt-1 text-[10px] text-red-700">
+                                Registrado por: {item.registrado_por || "Não informado"}
+                              </span>
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
             </>
           )}
         </DialogContent>
@@ -1360,7 +1445,7 @@ function BotaoPendenciasAbertas({
 }
 
 function EquipamentosList() {
-  const { isAdmin, userId, fullName } = useAuth();
+  const { isAdmin, isOperador, userId, fullName } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [q, setQ] = useState("");
@@ -1369,22 +1454,40 @@ function EquipamentosList() {
   const [horimetroDrafts, setHorimetroDrafts] = useState<Record<string, string>>({});
 
   const { data, isLoading } = useQuery({
-    queryKey: ["equipamentos"],
+    queryKey: ["equipamentos", isOperador ? userId : "all"],
+    enabled: !isOperador || !!userId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("equipamentos")
         .select(
           "id, numero, identificacao, placa, localizacao, operador_contato, horimetro_atual, h_revisao, limite_revisao, proxima_revisao_horimetro, data_horimetro_atual, status, cl, cover_storage_path, updated_by, motor_oleo, hidraulico_oleo, transmissao_oleo, eixo_oleo, tandem_oleo, filtro_lub, filtro_diesel_p, filtro_diesel_s, filtro_sep_agua, filtro_ar_ext, filtro_ar_int, filtro_trans, filtro_hidr, filtro_respiro, filtro_ar_cond1, filtro_ar_cond2",
         )
         .order("numero", { ascending: true });
 
+      if (isOperador && userId) {
+        const { data: designados, error: designadosError } = await supabase
+          .from("operador_equipamentos")
+          .select("equipamento_id")
+          .eq("user_id", userId);
+
+        if (designadosError) throw designadosError;
+
+        const ids = (designados ?? []).map((item) => item.equipamento_id).filter(Boolean);
+        if (ids.length === 0) return [] as Equip[];
+        query = query.in("id", ids);
+      }
+
+      const { data: equipamentos, error } = await query;
       if (error) throw error;
-      return (data ?? []) as Equip[];
+      return (equipamentos ?? []) as Equip[];
     },
   });
 
   const responsaveisIds = useMemo(
-    () => Array.from(new Set((data ?? []).map((e) => e.updated_by).filter((id): id is string => Boolean(id)))).sort(),
+    () =>
+      Array.from(
+        new Set((data ?? []).map((e) => e.updated_by).filter((id): id is string => Boolean(id))),
+      ).sort(),
     [data],
   );
 
@@ -1530,7 +1633,12 @@ function EquipamentosList() {
         <div className="flex flex-wrap xl:flex-nowrap items-center gap-1 w-full md:w-auto pb-1 md:pb-0 md:justify-end">
           <BotaoTacografo />
           <BotaoSeguro />
-          <BotaoRelatorioFrota equipamentos={filtered} cl={cl} busca={q} somenteVencidos={onlyOverdue} />
+          <BotaoRelatorioFrota
+            equipamentos={filtered}
+            cl={cl}
+            busca={q}
+            somenteVencidos={onlyOverdue}
+          />
           <BotaoRelatorioVencidos equipamentos={data ?? []} cl={cl} />
           <BotaoPendenciasAbertas clOptions={clOptions} equipamentos={data ?? []} />
 
@@ -1762,12 +1870,8 @@ function EquipamentosList() {
                   </div>
 
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-black font-semibold">
-                      Hr rodado: {hrRodado}h
-                    </span>
-                    <span className="text-black font-semibold">
-                      limite: {limite}h
-                    </span>
+                    <span className="text-black font-semibold">Hr rodado: {hrRodado}h</span>
+                    <span className="text-black font-semibold">limite: {limite}h</span>
                   </div>
                   {e.data_horimetro_atual && (
                     <p className="text-[11px] text-slate-500">

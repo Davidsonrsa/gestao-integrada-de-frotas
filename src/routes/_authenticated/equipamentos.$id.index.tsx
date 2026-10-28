@@ -49,9 +49,15 @@ export const Route = createFileRoute("/_authenticated/equipamentos/$id/")({
   head: () => ({
     meta: [
       { title: "Detalhes do Equipamento | Gestão Integrada de Frotas" },
-      { name: "description", content: "Dados do equipamento, fotos e relatórios de manutenção salvos." },
+      {
+        name: "description",
+        content: "Dados do equipamento, fotos e relatórios de manutenção salvos.",
+      },
       { property: "og:title", content: "Detalhes do Equipamento | Gestão Integrada de Frotas" },
-      { property: "og:description", content: "Consulte o equipamento e seus anexos de manutenção." },
+      {
+        property: "og:description",
+        content: "Consulte o equipamento e seus anexos de manutenção.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -113,7 +119,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function EquipamentoDetail() {
   const { id } = Route.useParams();
-  const { isAdmin, userId } = useAuth();
+  const { isAdmin, isOperador, userId } = useAuth();
   const qc = useQueryClient();
   const navigate = useNavigate();
 
@@ -121,8 +127,21 @@ function EquipamentoDetail() {
   const coverInput = useRef<HTMLInputElement>(null);
 
   const { data: equip, isLoading } = useQuery({
-    queryKey: ["equipamento", id],
+    queryKey: ["equipamento", id, isOperador ? userId : "all"],
     queryFn: async () => {
+      if (isOperador && userId) {
+        const { data: designados, error: designadosError } = await supabase
+          .from("operador_equipamentos")
+          .select("equipamento_id")
+          .eq("user_id", userId)
+          .eq("equipamento_id", id);
+
+        if (designadosError) throw designadosError;
+        if (!designados || designados.length === 0) {
+          throw new Error("Equipamento indisponível para este operador");
+        }
+      }
+
       const { data, error } = await supabase.from("equipamentos").select("*").eq("id", id).single();
       if (error) throw error;
       return data as Equip;
@@ -172,27 +191,32 @@ function EquipamentoDetail() {
     mutationFn: async (payload: Partial<Equip>) => {
       const allowed = isAdmin
         ? payload
-        : {
-            horimetro_atual: payload.horimetro_atual,
-            data_horimetro_atual: payload.data_horimetro_atual,
-            observacoes: payload.observacoes,
-            motor_oleo: payload.motor_oleo,
-            hidraulico_oleo: payload.hidraulico_oleo,
-            transmissao_oleo: payload.transmissao_oleo,
-            eixo_oleo: payload.eixo_oleo,
-            tandem_oleo: payload.tandem_oleo,
-            filtro_lub: payload.filtro_lub,
-            filtro_diesel_p: payload.filtro_diesel_p,
-            filtro_diesel_s: payload.filtro_diesel_s,
-            filtro_sep_agua: payload.filtro_sep_agua,
-            filtro_ar_ext: payload.filtro_ar_ext,
-            filtro_ar_int: payload.filtro_ar_int,
-            filtro_trans: payload.filtro_trans,
-            filtro_hidr: payload.filtro_hidr,
-            filtro_respiro: payload.filtro_respiro,
-            filtro_ar_cond1: payload.filtro_ar_cond1,
-            filtro_ar_cond2: payload.filtro_ar_cond2,
-          };
+        : isOperador
+          ? {
+              horimetro_atual: payload.horimetro_atual,
+              data_horimetro_atual: payload.data_horimetro_atual,
+            }
+          : {
+              horimetro_atual: payload.horimetro_atual,
+              data_horimetro_atual: payload.data_horimetro_atual,
+              observacoes: payload.observacoes,
+              motor_oleo: payload.motor_oleo,
+              hidraulico_oleo: payload.hidraulico_oleo,
+              transmissao_oleo: payload.transmissao_oleo,
+              eixo_oleo: payload.eixo_oleo,
+              tandem_oleo: payload.tandem_oleo,
+              filtro_lub: payload.filtro_lub,
+              filtro_diesel_p: payload.filtro_diesel_p,
+              filtro_diesel_s: payload.filtro_diesel_s,
+              filtro_sep_agua: payload.filtro_sep_agua,
+              filtro_ar_ext: payload.filtro_ar_ext,
+              filtro_ar_int: payload.filtro_ar_int,
+              filtro_trans: payload.filtro_trans,
+              filtro_hidr: payload.filtro_hidr,
+              filtro_respiro: payload.filtro_respiro,
+              filtro_ar_cond1: payload.filtro_ar_cond1,
+              filtro_ar_cond2: payload.filtro_ar_cond2,
+            };
 
       const { error } = await supabase.from("equipamentos").update(allowed).eq("id", id);
       if (error) throw error;
@@ -516,73 +540,75 @@ function EquipamentoDetail() {
               const ext = (f.storage_path.split(".").pop() || "").toLowerCase();
               const isImage = ["jpg", "jpeg", "png", "gif", "webp", "heic", "bmp"].includes(ext);
               return (
-              <div
-                key={f.id}
-                className="relative rounded-md overflow-hidden bg-muted border border-border"
-              >
-                <div className="aspect-square">
-                  {isImage ? (
-                    <img
-                      src={f.url}
-                      alt={f.caption ?? ""}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <a
-                      href={f.url || undefined}
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label={`Abrir ${f.caption || `arquivo ${ext}`}`}
-                      onClick={(event) => {
-                        if (!f.url) {
-                          event.preventDefault();
-                          toast.error("Não foi possível gerar o link do arquivo");
-                        }
-                      }}
-                      className="w-full h-full flex flex-col items-center justify-center gap-1 p-2 text-center hover:bg-muted/70"
-                    >
-                      <FileIcon className="w-8 h-8 text-primary" />
-                      <span className="text-[10px] uppercase font-semibold">{ext || "arquivo"}</span>
-                      <Download className="w-3 h-3 text-muted-foreground" />
-                    </a>
+                <div
+                  key={f.id}
+                  className="relative rounded-md overflow-hidden bg-muted border border-border"
+                >
+                  <div className="aspect-square">
+                    {isImage ? (
+                      <img
+                        src={f.url}
+                        alt={f.caption ?? ""}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <a
+                        href={f.url || undefined}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label={`Abrir ${f.caption || `arquivo ${ext}`}`}
+                        onClick={(event) => {
+                          if (!f.url) {
+                            event.preventDefault();
+                            toast.error("Não foi possível gerar o link do arquivo");
+                          }
+                        }}
+                        className="w-full h-full flex flex-col items-center justify-center gap-1 p-2 text-center hover:bg-muted/70"
+                      >
+                        <FileIcon className="w-8 h-8 text-primary" />
+                        <span className="text-[10px] uppercase font-semibold">
+                          {ext || "arquivo"}
+                        </span>
+                        <Download className="w-3 h-3 text-muted-foreground" />
+                      </a>
+                    )}
+                  </div>
+                  {(isAdmin || f.uploaded_by === userId) && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button
+                          type="button"
+                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors rounded-full p-1.5 shadow"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Excluir {isImage ? "foto" : "anexo"}?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Esta ação não pode ser desfeita.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            onClick={() => deletePhoto(f.id, f.storage_path, f.uploaded_by)}
+                          >
+                            Excluir
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                  {f.caption && (
+                    <p className="text-[11px] px-2 py-1 bg-card text-foreground border-t border-border line-clamp-2">
+                      {f.caption}
+                    </p>
                   )}
                 </div>
-                {(isAdmin || f.uploaded_by === userId) && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <button
-                        type="button"
-                        className="absolute top-1 right-1 bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors rounded-full p-1.5 shadow"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Excluir {isImage ? "foto" : "anexo"}?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Esta ação não pode ser desfeita.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          onClick={() => deletePhoto(f.id, f.storage_path, f.uploaded_by)}
-                        >
-                          Excluir
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
-                {f.caption && (
-                  <p className="text-[11px] px-2 py-1 bg-card text-foreground border-t border-border line-clamp-2">
-                    {f.caption}
-                  </p>
-                )}
-              </div>
               );
             })}
           </div>

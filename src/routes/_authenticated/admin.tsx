@@ -10,6 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import {
   adminCreateUser,
@@ -40,10 +47,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 function AdminPage() {
-  const { isAdmin, session } = useAuth();
-  const adminEmail = session?.user.email?.toLowerCase();
-  const canManageUsers =
-    adminEmail === "mat-0001@sphjhm.app" || adminEmail === "mat-001@sphjhm.app";
+  const { isAdmin } = useAuth();
   if (!isAdmin) {
     return (
       <div className="p-6 text-center text-sm text-muted-foreground">
@@ -54,19 +58,17 @@ function AdminPage() {
   return (
     <div className="px-3 py-3 md:px-6 md:py-6 max-w-md md:max-w-5xl mx-auto w-full">
       <Tabs defaultValue="equipamentos">
-        <TabsList className={`grid w-full mb-3 ${canManageUsers ? "grid-cols-2" : "grid-cols-1"}`}>
+        <TabsList className="grid w-full mb-3 grid-cols-2">
           <TabsTrigger value="equipamentos">Equipamentos</TabsTrigger>
-          {canManageUsers && <TabsTrigger value="usuarios">Usuários</TabsTrigger>}
+          <TabsTrigger value="usuarios">Usuários</TabsTrigger>
         </TabsList>
         <TabsContent value="equipamentos" className="space-y-3">
           <ImportEquipamentos />
           <NewEquipamento />
         </TabsContent>
-        {canManageUsers && (
-          <TabsContent value="usuarios">
-            <Usuarios />
-          </TabsContent>
-        )}
+        <TabsContent value="usuarios">
+          <Usuarios />
+        </TabsContent>
       </Tabs>
     </div>
   );
@@ -177,6 +179,27 @@ function Usuarios() {
     isLoading,
     error: listError,
   } = useQuery({ queryKey: ["admin-users"], queryFn: () => list() });
+  const {
+    data: equipamentos = [],
+    isLoading: loadingEquipamentos,
+    error: equipamentosError,
+  } = useQuery({
+    queryKey: ["admin-operator-equipment-options"],
+    queryFn: async () => {
+      const [{ data: equipamentos, error: equipamentosError }, { data: assignments, error }] =
+        await Promise.all([
+          supabase.from("equipamentos").select("id, numero").order("numero"),
+          supabase.from("operador_equipamentos").select("equipamento_id"),
+        ]);
+      if (equipamentosError) throw equipamentosError;
+      if (error) throw error;
+
+      const assignedIds = new Set(
+        (assignments ?? []).map((assignment) => assignment.equipamento_id),
+      );
+      return (equipamentos ?? []).filter((equipamento) => !assignedIds.has(equipamento.id));
+    },
+  });
   const { userId } = useAuth();
 
   const [editId, setEditId] = useState<string | null>(null);
@@ -206,35 +229,49 @@ function Usuarios() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-
   const [f, setF] = useState({
     matricula: "",
     password: "",
     fullName: "",
     phone: "",
+    role: "colaborador" as "colaborador" | "operador",
+    equipamentoId: "",
   });
 
   const m = useMutation({
-    mutationFn: () =>
-      create({
+    mutationFn: () => {
+      if (f.role === "operador" && !f.equipamentoId) {
+        throw new Error("Selecione o equipamento exclusivo do operador.");
+      }
+      return create({
         data: {
           matricula: f.matricula,
           password: f.password,
           fullName: f.fullName,
           phone: f.phone || null,
+          role: f.role,
+          equipamentoId: f.role === "operador" ? f.equipamentoId : null,
         },
-      }),
+      });
+    },
     onSuccess: () => {
-      toast.success("Colaborador criado com sucesso");
+      toast.success(
+        f.role === "operador"
+          ? "Operador criado e vinculado ao equipamento"
+          : "Colaborador criado com sucesso",
+      );
 
       setF({
         matricula: "",
         password: "",
         fullName: "",
         phone: "",
+        role: "colaborador",
+        equipamentoId: "",
       });
 
       qc.invalidateQueries({ queryKey: ["admin-users"] });
+      qc.invalidateQueries({ queryKey: ["admin-operator-equipment-options"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -274,6 +311,58 @@ function Usuarios() {
           </div>
         </div>
         <div>
+          <Label className="text-xs">Perfil *</Label>
+          <Select
+            value={f.role}
+            onValueChange={(role: "colaborador" | "operador") =>
+              setF({ ...f, role, equipamentoId: role === "operador" ? f.equipamentoId : "" })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="colaborador">Colaborador</SelectItem>
+              <SelectItem value="operador">Operador</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {f.role === "operador" && (
+          <div>
+            <Label className="text-xs">Equipamento exclusivo *</Label>
+            <Select
+              value={f.equipamentoId}
+              onValueChange={(equipamentoId) => setF({ ...f, equipamentoId })}
+              disabled={loadingEquipamentos || !!equipamentosError || equipamentos.length === 0}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um equipamento" />
+              </SelectTrigger>
+              <SelectContent>
+                {equipamentos.map((equipamento) => (
+                  <SelectItem key={equipamento.id} value={equipamento.id}>
+                    {equipamento.numero}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {loadingEquipamentos && (
+              <p className="mt-1 text-[11px] text-muted-foreground">Carregando equipamentos...</p>
+            )}
+            {equipamentosError && (
+              <p className="mt-1 text-[11px] text-destructive">
+                Não foi possível carregar os equipamentos:{" "}
+                {equipamentosError instanceof Error ? equipamentosError.message : "erro inesperado"}
+              </p>
+            )}
+            {!loadingEquipamentos && !equipamentosError && equipamentos.length === 0 && (
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Não há equipamentos disponíveis para vincular.
+              </p>
+            )}
+          </div>
+        )}
+        <div>
           <Label className="text-xs">Senha inicial *</Label>
           <Input
             type="text"
@@ -286,10 +375,18 @@ function Usuarios() {
           <Button
             type="button"
             onClick={() => m.mutate()}
-            disabled={m.isPending}
+            disabled={
+              m.isPending ||
+              (f.role === "operador" &&
+                (!f.equipamentoId || loadingEquipamentos || !!equipamentosError))
+            }
             className="w-full font-semibold"
           >
-            {m.isPending ? "Criando..." : "Criar colaborador"}
+            {m.isPending
+              ? "Criando..."
+              : f.role === "operador"
+                ? "Criar operador"
+                : "Criar colaborador"}
           </Button>
         </div>
 
@@ -327,10 +424,13 @@ function Usuarios() {
                   <p className="text-[11px] text-muted-foreground truncate">
                     MAT {emailToMat(usr.email)}
                     {usr.phone ? ` • ${usr.phone}` : ""}
+                    {usr.isOperator
+                      ? ` • Equipamento ${usr.equipmentNumber ?? "não vinculado"}`
+                      : ""}
                   </p>
                 </div>
                 <Badge variant={usr.isAdmin ? "default" : "secondary"} className="text-[10px]">
-                  {usr.isAdmin ? "Admin" : "Colab"}
+                  {usr.isAdmin ? "Admin" : usr.isOperator ? "Operador" : "Colab"}
                 </Badge>
                 <Button
                   size="icon"
