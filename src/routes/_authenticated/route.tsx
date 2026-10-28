@@ -46,9 +46,7 @@ function AuthenticatedLayout() {
 
   const visibleNavItems = navItems.filter(
     ({ to }) =>
-      (isAdmin ||
-        !["/medicoes", "/custos", "/cotacoes", "/notas-fiscais", "/admin"].includes(to)) &&
-      !(isOperador && to === "/estoque"),
+      isAdmin || !["/medicoes", "/custos", "/cotacoes", "/notas-fiscais", "/admin"].includes(to),
   );
 
   return (
