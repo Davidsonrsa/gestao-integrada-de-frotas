@@ -59,7 +59,9 @@ describe("Filtros enviados para nova cotação", () => {
   });
   test("não duplica equipamentos nem inclui códigos vazios", () => {
     const e = { id: "1", numero: "RE-30", filtro_lub: "PSL283", filtro_trans: "  " };
-    assert.deepEqual(itensFiltrosParaCotacao([e, e]), [{ codigo: "PSL283", quantidade: 1 }]);
+    assert.deepEqual(itensFiltrosParaCotacao([e, e]), [
+      { codigo: "PSL283", descricao: "Filtro lubrificante", quantidade: 1 },
+    ]);
   });
 });
 
