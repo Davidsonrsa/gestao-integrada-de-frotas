@@ -25,3 +25,7 @@
 - [x] Compactar resumo de filtros/óleos com números dos equipamentos e conferir impressão autenticada na CL 05
 - [x] Colocar equipamentos como 1ª coluna e quantidade de equipamentos como 2ª no resumo impresso
 - [x] Criar cotação com códigos e quantidades dos filtros da seleção da frota e validar os itens salvos
+- [ ] Perfil Operador: enum app_role + tabela operador_equipamentos + RLS (frota e pendências restritas)
+- [ ] Admin: cadastrar/editar usuário com tipo Operador e equipamentos designados
+- [ ] Frontend: operador vê só Frota, lança horímetro e cadastra pendências (sem editar/excluir)
+- [ ] Validar com tsgo, testes e Playwright (login como operador)
