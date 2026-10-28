@@ -51,6 +51,7 @@ export function CotacaoFiltrosDialog({
         })),
       );
       if (itensError) throw itensError;
+      cotacaoId = null;
       setOpen(false);
       toast.success("Cotação criada com os filtros selecionados!");
       await navigate({ to: "/cotacoes/$id", params: { id: cotacao.id } });
