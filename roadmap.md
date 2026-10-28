@@ -23,3 +23,4 @@
 - [x] Criar relatório dos equipamentos filtrados por CL, busca e vencidos com testes de seleção
 - [x] Alinhar campo de busca aos demais botões e compactar botões para caberem em uma linha
 - [x] Compactar resumo de filtros/óleos com números dos equipamentos e conferir impressão autenticada na CL 05
+- [x] Colocar equipamentos como 1ª coluna e quantidade de equipamentos como 2ª no resumo impresso
