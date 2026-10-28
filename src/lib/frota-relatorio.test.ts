@@ -1,6 +1,6 @@
 import { describe, test } from "node:test";
 import { strict as assert } from "node:assert";
-import { filtrarEquipamentos } from "./frota-relatorio";
+import { filtrarEquipamentos, quantidadeItemRevisao, resumirItensRevisao } from "./frota-relatorio";
 
 const base = {
   identificacao: null,
@@ -17,6 +17,37 @@ const equipamentos = [
   { ...base, numero: "RE-40", cl: "05", horimetro_atual: 1001 },
   { ...base, numero: "CB-03", cl: "49", horimetro_atual: 1200 },
 ];
+
+describe("Resumo de filtros e óleos", () => {
+  test("lista os números dos equipamentos com o mesmo código e soma uma unidade por filtro", () => {
+    const resumo = resumirItensRevisao([
+      { id: "1", numero: "RE-30", filtro_lub: "PSL283" },
+      { id: "2", numero: "RE-40", filtro_lub: "PSL283" },
+      { id: "3", numero: "RE-55", filtro_lub: "OUTRO" },
+    ]);
+    assert.deepEqual(resumo.find((item) => item.codigo === "PSL283"), {
+      tipo: "Filtro lubrificante", codigo: "PSL283", equipamentos: ["RE-30", "RE-40"],
+      qtd: 2, total: 2, un: "un",
+    });
+  });
+  test("10W30 transmissão usa 16 litros", () => {
+    assert.deepEqual(quantidadeItemRevisao("transmissao_oleo", "10w30"), { n: 16, un: "L" });
+  });
+  test("10W30 eixo usa 14 litros", () => {
+    assert.deepEqual(quantidadeItemRevisao("eixo_oleo", "10W30"), { n: 14, un: "L" });
+  });
+  test("15W40 usa 13 litros", () => {
+    assert.deepEqual(quantidadeItemRevisao("motor_oleo", "15W40"), { n: 13, un: "L" });
+  });
+  test("soma os litros dos equipamentos listados", () => {
+    const [item] = resumirItensRevisao([
+      { id: "1", numero: "RE-30", transmissao_oleo: "10W30" },
+      { id: "2", numero: "RE-40", transmissao_oleo: "10W30" },
+    ]);
+    assert.equal(item.total, 32);
+    assert.equal(item.qtd, 2);
+  });
+});
 
 describe("Equipamentos selecionados para relatório", () => {
   test("inclui somente os itens do CL selecionado", () => {

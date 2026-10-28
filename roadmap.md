@@ -22,4 +22,4 @@
 - [x] Reduzir campo de busca da frota para exibir todos os botões sem corte
 - [x] Criar relatório dos equipamentos filtrados por CL, busca e vencidos com testes de seleção
 - [x] Alinhar campo de busca aos demais botões e compactar botões para caberem em uma linha
-- [ ] Conferir impressão na tela com sessão autenticada — aguarda login no preview
+- [ ] Compactar resumo de filtros/óleos com números dos equipamentos e conferir impressão autenticada
