@@ -119,7 +119,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function EquipamentoDetail() {
   const { id } = Route.useParams();
-  const { isAdmin, isOperador, userId } = useAuth();
+  const { isAdmin, isOperador, role, userId } = useAuth();
   const qc = useQueryClient();
   const navigate = useNavigate();
 
@@ -128,6 +128,7 @@ function EquipamentoDetail() {
 
   const { data: equip, isLoading } = useQuery({
     queryKey: ["equipamento", id, isOperador ? userId : "all"],
+    enabled: role !== null,
     queryFn: async () => {
       if (isOperador && userId) {
         const { data: designados, error: designadosError } = await supabase
@@ -142,7 +143,15 @@ function EquipamentoDetail() {
         }
       }
 
-      const { data, error } = await supabase.from("equipamentos").select("*").eq("id", id).single();
+      const { data, error } = await supabase
+        .from("equipamentos")
+        .select(
+          isOperador
+            ? "id, numero, cl, identificacao, horimetro_atual, h_revisao, limite_revisao, proxima_revisao_horimetro, data_horimetro_atual, cover_storage_path"
+            : "*",
+        )
+        .eq("id", id)
+        .single();
       if (error) throw error;
       return data as Equip;
     },
@@ -366,23 +375,25 @@ function EquipamentoDetail() {
         >
           <ArrowLeft className="w-4 h-4" /> Voltar
         </Link>
-        <div className="flex items-center gap-3">
-          <Link
-            to="/equipamentos/$id/historico"
-            params={{ id }}
-            className="inline-flex items-center gap-1 text-xs text-primary font-medium"
-          >
-            <FileText className="w-3.5 h-3.5" /> Histórico
-          </Link>
-          <Link
-            to="/equipamentos/$id/manutencao"
-            params={{ id }}
-            search={{ horimetro: undefined, tipoRevisao: undefined }}
-            className="inline-flex items-center gap-1 text-xs text-primary font-medium"
-          >
-            <Wrench className="w-3.5 h-3.5" /> Plano
-          </Link>
-        </div>
+        {!isOperador && (
+          <div className="flex items-center gap-3">
+            <Link
+              to="/equipamentos/$id/historico"
+              params={{ id }}
+              className="inline-flex items-center gap-1 text-xs text-primary font-medium"
+            >
+              <FileText className="w-3.5 h-3.5" /> Histórico
+            </Link>
+            <Link
+              to="/equipamentos/$id/manutencao"
+              params={{ id }}
+              search={{ horimetro: undefined, tipoRevisao: undefined }}
+              className="inline-flex items-center gap-1 text-xs text-primary font-medium"
+            >
+              <Wrench className="w-3.5 h-3.5" /> Plano
+            </Link>
+          </div>
+        )}
       </div>
 
       <Card className={`p-4 ${overdue ? "border-destructive ring-1 ring-destructive/40" : ""}`}>
@@ -615,7 +626,7 @@ function EquipamentoDetail() {
         )}
       </Card>
 
-      <Card className="p-4 space-y-3">
+      <Card hidden={isOperador} className="p-4 space-y-3">
         <h3 className="font-semibold text-sm flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-primary" />
           Dados do equipamento{" "}
@@ -854,7 +865,7 @@ function EquipamentoDetail() {
         )}
       </Card>
 
-      <Card className="p-4 space-y-3">
+      <Card hidden={isOperador} className="p-4 space-y-3">
         <h3 className="font-semibold text-sm flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-amber-500" />
           Filtros e Lubrificantes
@@ -1007,15 +1018,17 @@ function EquipamentoDetail() {
         </div>
       </Card>
 
-      <Link
-        to="/equipamentos/$id/manutencao"
-        params={{ id }}
-        search={{ horimetro: undefined, tipoRevisao: undefined }}
-      >
-        <Button type="button" variant="outline" className="w-full h-12">
-          <Printer className="w-4 h-4 mr-2" /> Formulário de manutenção (imprimir)
-        </Button>
-      </Link>
+      {!isOperador && (
+        <Link
+          to="/equipamentos/$id/manutencao"
+          params={{ id }}
+          search={{ horimetro: undefined, tipoRevisao: undefined }}
+        >
+          <Button type="button" variant="outline" className="w-full h-12">
+            <Printer className="w-4 h-4 mr-2" /> Formulário de manutenção (imprimir)
+          </Button>
+        </Link>
+      )}
     </div>
   );
 }

@@ -1445,7 +1445,7 @@ function BotaoPendenciasAbertas({
 }
 
 function EquipamentosList() {
-  const { isAdmin, isOperador, userId, fullName } = useAuth();
+  const { isAdmin, isOperador, role, userId, fullName } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [q, setQ] = useState("");
@@ -1455,12 +1455,14 @@ function EquipamentosList() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["equipamentos", isOperador ? userId : "all"],
-    enabled: !isOperador || !!userId,
+    enabled: role !== null && (!isOperador || !!userId),
     queryFn: async () => {
       let query = supabase
         .from("equipamentos")
         .select(
-          "id, numero, identificacao, placa, localizacao, operador_contato, horimetro_atual, h_revisao, limite_revisao, proxima_revisao_horimetro, data_horimetro_atual, status, cl, cover_storage_path, updated_by, motor_oleo, hidraulico_oleo, transmissao_oleo, eixo_oleo, tandem_oleo, filtro_lub, filtro_diesel_p, filtro_diesel_s, filtro_sep_agua, filtro_ar_ext, filtro_ar_int, filtro_trans, filtro_hidr, filtro_respiro, filtro_ar_cond1, filtro_ar_cond2",
+          isOperador
+            ? "id, numero, identificacao, placa, localizacao, horimetro_atual, h_revisao, limite_revisao, proxima_revisao_horimetro, data_horimetro_atual, status, cl, cover_storage_path, updated_by"
+            : "id, numero, identificacao, placa, localizacao, operador_contato, horimetro_atual, h_revisao, limite_revisao, proxima_revisao_horimetro, data_horimetro_atual, status, cl, cover_storage_path, updated_by, motor_oleo, hidraulico_oleo, transmissao_oleo, eixo_oleo, tandem_oleo, filtro_lub, filtro_diesel_p, filtro_diesel_s, filtro_sep_agua, filtro_ar_ext, filtro_ar_int, filtro_trans, filtro_hidr, filtro_respiro, filtro_ar_cond1, filtro_ar_cond2",
         )
         .order("numero", { ascending: true });
 
@@ -1631,48 +1633,52 @@ function EquipamentosList() {
         </div>
 
         <div className="flex flex-wrap xl:flex-nowrap items-center gap-1 w-full md:w-auto pb-1 md:pb-0 md:justify-end">
-          <BotaoTacografo />
-          <BotaoSeguro />
-          <BotaoRelatorioFrota
-            equipamentos={filtered}
-            cl={cl}
-            busca={q}
-            somenteVencidos={onlyOverdue}
-          />
-          <BotaoRelatorioVencidos equipamentos={data ?? []} cl={cl} />
-          <BotaoPendenciasAbertas clOptions={clOptions} equipamentos={data ?? []} />
+          {!isOperador && (
+            <>
+              <BotaoTacografo />
+              <BotaoSeguro />
+              <BotaoRelatorioFrota
+                equipamentos={filtered}
+                cl={cl}
+                busca={q}
+                somenteVencidos={onlyOverdue}
+              />
+              <BotaoRelatorioVencidos equipamentos={data ?? []} cl={cl} />
+              <BotaoPendenciasAbertas clOptions={clOptions} equipamentos={data ?? []} />
 
-          <Select value={cl} onValueChange={setCl}>
-            <SelectTrigger className="h-9 text-[11px] w-[86px] bg-white border-slate-200">
-              <SelectValue placeholder="Classe (CL)" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all">Todas as CL</SelectItem>
-              {clOptions.map((c) => (
-                <SelectItem key={c} value={c}>
-                  CL {c}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+              <Select value={cl} onValueChange={setCl}>
+                <SelectTrigger className="h-9 text-[11px] w-[86px] bg-white border-slate-200">
+                  <SelectValue placeholder="Classe (CL)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all">Todas as CL</SelectItem>
+                  {clOptions.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      CL {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-          <Button
-            type="button"
-            size="sm"
-            variant={onlyOverdue ? "destructive" : "outline"}
-            onClick={() => setOnlyOverdue((v) => !v)}
-            className="h-9 px-2 text-[11px] border-slate-200 gap-1 whitespace-nowrap"
-          >
-            <span>{onlyOverdue ? "Apenas Vencidos" : "Vencidos"}</span>
-            {totalEquipamentosVencidos > 0 ? (
-              <span
-                className="font-bold text-[9px] h-4 min-w-[16px] px-1 flex items-center justify-center rounded-full border-none"
-                style={{ backgroundColor: "#dc2626", color: "#ffffff" }}
+              <Button
+                type="button"
+                size="sm"
+                variant={onlyOverdue ? "destructive" : "outline"}
+                onClick={() => setOnlyOverdue((v) => !v)}
+                className="h-9 px-2 text-[11px] border-slate-200 gap-1 whitespace-nowrap"
               >
-                {totalEquipamentosVencidos}
-              </span>
-            ) : null}
-          </Button>
+                <span>{onlyOverdue ? "Apenas Vencidos" : "Vencidos"}</span>
+                {totalEquipamentosVencidos > 0 ? (
+                  <span
+                    className="font-bold text-[9px] h-4 min-w-[16px] px-1 flex items-center justify-center rounded-full border-none"
+                    style={{ backgroundColor: "#dc2626", color: "#ffffff" }}
+                  >
+                    {totalEquipamentosVencidos}
+                  </span>
+                ) : null}
+              </Button>
+            </>
+          )}
 
           <Notificacoes />
         </div>
