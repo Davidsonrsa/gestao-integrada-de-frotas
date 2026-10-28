@@ -31,17 +31,20 @@ type EquipamentoRevisao = { id: string; numero: string } & Partial<
 >;
 
 export function itensFiltrosParaCotacao(equipamentos: EquipamentoRevisao[]) {
-  const porCodigo = new Map<string, { codigo: string; quantidade: number }>();
+  const porCodigo = new Map<
+    string,
+    { codigo: string; descricao: string; quantidade: number }
+  >();
   const vistos = new Set<string>();
   for (const equipamento of equipamentos) {
     if (vistos.has(equipamento.id)) continue;
     vistos.add(equipamento.id);
-    for (const [campo] of ITENS_REVISAO) {
+    for (const [campo, tipo] of ITENS_REVISAO) {
       if (!campo.startsWith("filtro")) continue;
       const codigo = equipamento[campo]?.trim();
       if (!codigo) continue;
       const chave = codigo.toUpperCase().replace(/\s/g, "");
-      const item = porCodigo.get(chave) ?? { codigo, quantidade: 0 };
+      const item = porCodigo.get(chave) ?? { codigo, descricao: tipo, quantidade: 0 };
       item.quantidade += 1;
       porCodigo.set(chave, item);
     }
