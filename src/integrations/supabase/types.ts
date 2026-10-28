@@ -1917,6 +1917,49 @@ export type Database = {
           },
         ]
       }
+      operador_equipamentos: {
+        Row: {
+          created_at: string
+          equipamento_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          equipamento_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          equipamento_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operador_equipamentos_equipamento_id_fkey"
+            columns: ["equipamento_id"]
+            isOneToOne: false
+            referencedRelation: "equipamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operador_equipamentos_equipamento_id_fkey"
+            columns: ["equipamento_id"]
+            isOneToOne: false
+            referencedRelation: "tacografos_vencimentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operador_equipamentos_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -2071,7 +2114,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "colaborador"
+      app_role: "admin" | "colaborador" | "operador"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2199,7 +2242,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "colaborador"],
+      app_role: ["admin", "colaborador", "operador"],
     },
   },
 } as const
