@@ -505,7 +505,19 @@ function EquipamentoDetail() {
         <Button
           type="button"
           variant="default"
-          onClick={() => save.mutate(form)}
+          onClick={() => {
+            const horimetroAtual = equip?.horimetro_atual ?? null;
+            const novoHorimetro = form.horimetro_atual ?? null;
+            if (
+              horimetroAtual !== novoHorimetro &&
+              !window.confirm(
+                `Deseja confirmar a alteração do horímetro do equipamento ${equip?.numero ?? ""} para ${novoHorimetro ?? "—"}h?`,
+              )
+            ) {
+              return;
+            }
+            save.mutate(form);
+          }}
           disabled={save.isPending}
           className="w-full h-11"
         >

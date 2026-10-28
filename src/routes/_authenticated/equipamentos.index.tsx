@@ -1583,6 +1583,19 @@ function EquipamentosList() {
     const previous = data?.find((equipamento) => equipamento.id === equipamentoId)?.horimetro_atual;
     if ((previous ?? null) === horimetro) return;
 
+    const equipamento = data?.find((item) => item.id === equipamentoId);
+    if (
+      !window.confirm(
+        `Deseja confirmar a alteração do horímetro do equipamento ${equipamento?.numero ?? ""} para ${horimetro ?? "—"}h?`,
+      )
+    ) {
+      setHorimetroDrafts((drafts) => ({
+        ...drafts,
+        [equipamentoId]: previous?.toString() ?? "",
+      }));
+      return;
+    }
+
     const hoje = new Date();
     const dataHorimetro = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}-${String(hoje.getDate()).padStart(2, "0")}`;
 
