@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "admin" | "colaborador";
+export type AppRole = "admin" | "colaborador" | "operador";
 
 export interface NotasFiscaisPermissoes {
   visualizar: boolean;
@@ -16,6 +16,7 @@ export interface AuthState {
   userId: string | null;
   role: AppRole | null;
   isAdmin: boolean;
+  isOperador: boolean;
   fullName: string;
   notasFiscais: NotasFiscaisPermissoes & { autorizado: boolean };
 }
@@ -59,10 +60,11 @@ export function useAuth(): AuthState {
       ]);
 
       const isAdmin = roles?.some((r) => r.role === "admin") ?? false;
+      const isOperador = !isAdmin && (roles?.some((r) => r.role === "operador") ?? false);
       const nfPermission = nfPerms as NotasFiscaisPermissoes | null;
 
       return {
-        role: (isAdmin ? "admin" : "colaborador") as AppRole,
+        role: (isAdmin ? "admin" : isOperador ? "operador" : "colaborador") as AppRole,
         fullName: prof?.full_name ?? "",
         notasFiscais: {
           visualizar: nfPermission?.visualizar ?? false,
@@ -79,6 +81,7 @@ export function useAuth(): AuthState {
     userId: uid,
     role: data?.role ?? null,
     isAdmin: data?.role === "admin",
+    isOperador: data?.role === "operador",
     fullName: data?.fullName ?? "",
     notasFiscais: data?.notasFiscais ?? EMPTY_NF,
   };
