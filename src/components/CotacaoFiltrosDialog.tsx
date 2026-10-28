@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 export function CotacaoFiltrosDialog({
   itens,
 }: {
-  itens: { codigo: string; quantidade: number }[];
+  itens: { codigo: string; descricao: string; quantidade: number }[];
 }) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -60,7 +60,7 @@ export function CotacaoFiltrosDialog({
           cotacao_id: cotacao.id,
           ordem: index + 1,
           codigo: item.codigo,
-          descricao: item.codigo,
+          descricao: `${item.descricao} ${item.codigo}`.trim(),
           quantidade: item.quantidade,
           unidade: "UN",
         })),
