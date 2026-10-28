@@ -81,25 +81,37 @@ export function BotaoRelatorioFrota({
         return `<tr>${[e.cl, e.numero, e.identificacao, e.placa, e.localizacao, e.status || "Operacional", e.horimetro_atual, e.h_revisao, rodado, e.proxima_revisao_horimetro, e.limite_revisao ?? 500].map((valor) => `<td>${escapar(valor)}</td>`).join("")}</tr>`;
       })
       .join("");
-    const resumo = new Map<string, { tipo: string; qtd: number }>();
+    const quantidade = (campo: string, valor: string): { n: number; un: string } | null => {
+      if (campo.startsWith("filtro")) return { n: 1, un: "un" };
+      const v = valor.toUpperCase().replace(/\s/g, "");
+      if (v.includes("15W40")) return { n: 13, un: "L" };
+      if (v.includes("10W30") && campo === "transmissao_oleo") return { n: 16, un: "L" };
+      if (v.includes("10W30") && campo === "eixo_oleo") return { n: 14, un: "L" };
+      return null;
+    };
+    const resumo = new Map<string, { tipo: string; qtd: number; total: number; un: string }>();
     const blocos = equipamentos
       .map((e) => {
         const itens = [...FILTROS, ...OLEOS]
-          .map(([campo, nome]) => ({ campo, nome, valor: (e[campo] ?? "").trim() }))
+          .map(([campo, nome]) => {
+            const valor = (e[campo] ?? "").trim();
+            return { campo, nome, valor, q: quantidade(campo, valor) };
+          })
           .filter((i) => i.valor);
         for (const i of itens) {
           const chave = `${i.nome}|${i.valor}`;
-          const atual = resumo.get(chave) ?? { tipo: i.nome, qtd: 0 };
+          const atual = resumo.get(chave) ?? { tipo: i.nome, qtd: 0, total: 0, un: i.q?.un ?? "" };
           atual.qtd += 1;
+          atual.total += i.q?.n ?? 0;
           resumo.set(chave, atual);
         }
         const nFiltros = itens.filter((i) => i.campo.startsWith("filtro")).length;
-        return `<tr><td>${escapar(e.cl)}</td><td>${escapar(e.numero)}</td><td>${nFiltros}</td><td>${itens.length ? itens.map((i) => `<b>${escapar(i.nome)}:</b> ${escapar(i.valor)}`).join("<br>") : "Nenhum filtro ou óleo cadastrado"}</td></tr>`;
+        return `<tr><td>${escapar(e.cl)}</td><td>${escapar(e.numero)}</td><td>${nFiltros}</td><td>${itens.length ? itens.map((i) => `<b>${escapar(i.nome)}:</b> ${escapar(i.valor)}${i.q ? ` — ${i.q.n} ${i.q.un}` : ""}`).join("<br>") : "Nenhum filtro ou óleo cadastrado"}</td></tr>`;
       })
       .join("");
     const linhasResumo = [...resumo.entries()]
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([chave, r]) => `<tr><td>${escapar(r.tipo)}</td><td>${escapar(chave.split("|").slice(1).join("|"))}</td><td>${r.qtd}</td></tr>`)
+      .map(([chave, r]) => `<tr><td>${escapar(r.tipo)}</td><td>${escapar(chave.split("|").slice(1).join("|"))}</td><td>${r.qtd}</td><td>${r.total ? `${r.total} ${r.un}` : "—"}</td></tr>`)
       .join("");
     const secaoFiltros = comFiltros
       ? `<h2 style="font-size:14px;margin-top:16px;break-before:page">Filtros e óleos para revisão por equipamento</h2><table><thead><tr><th>CL</th><th>Equipamento</th><th>Qtd filtros</th><th>Filtros e óleos</th></tr></thead><tbody>${blocos}</tbody></table><h2 style="font-size:14px;margin-top:16px">Resumo — quantidade total por item</h2><table><thead><tr><th>Item</th><th>Código / especificação</th><th>Qtd equipamentos</th></tr></thead><tbody>${linhasResumo || '<tr><td colspan="3">Nenhum item cadastrado</td></tr>'}</tbody></table>`
