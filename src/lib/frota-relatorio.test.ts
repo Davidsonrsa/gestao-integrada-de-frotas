@@ -37,8 +37,8 @@ describe("Filtros enviados para nova cotação", () => {
         { id: "2", numero: "RE-40", filtro_lub: "PSL283", filtro_ar_ext: "ARS8889" },
       ]),
       [
-        { codigo: "ARS8889", quantidade: 1 },
-        { codigo: "PSL283", quantidade: 2 },
+        { codigo: "ARS8889", descricao: "Filtro de ar externo", quantidade: 1 },
+        { codigo: "PSL283", descricao: "Filtro lubrificante", quantidade: 2 },
       ],
     );
   });
@@ -48,13 +48,13 @@ describe("Filtros enviados para nova cotação", () => {
         { id: "1", numero: "RE-30", filtro_lub: "PSL283", filtro_hidr: " psl283 " },
         { id: "2", numero: "RE-40", filtro_lub: "PSL283" },
       ]),
-      [{ codigo: "PSL283", quantidade: 3 }],
+      [{ codigo: "PSL283", descricao: "Filtro lubrificante", quantidade: 3 }],
     );
   });
   test("respeita a seleção de CL e busca usada pelo relatório", () => {
     const frota = equipamentos.map((e, i) => ({ ...e, id: String(i), filtro_lub: "PSL283" }));
     assert.deepEqual(itensFiltrosParaCotacao(filtrarEquipamentos(frota, "05", "RE-40", false)), [
-      { codigo: "PSL283", quantidade: 1 },
+      { codigo: "PSL283", descricao: "Filtro lubrificante", quantidade: 1 },
     ]);
   });
   test("não duplica equipamentos nem inclui códigos vazios", () => {

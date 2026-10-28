@@ -125,6 +125,7 @@ export function CotacaoFiltrosDialog({
               <thead className="bg-muted">
                 <tr>
                   <th className="p-2 text-left">Código</th>
+                  <th className="p-2 text-left">Descrição</th>
                   <th className="p-2 text-right">Quantidade (un.)</th>
                 </tr>
               </thead>
@@ -132,6 +133,7 @@ export function CotacaoFiltrosDialog({
                 {itens.map((item) => (
                   <tr key={item.codigo} className="border-b border-border">
                     <td className="p-2 font-mono break-all">{item.codigo}</td>
+                    <td className="p-2">{item.descricao}</td>
                     <td className="p-2 text-right tabular-nums">{item.quantidade}</td>
                   </tr>
                 ))}
