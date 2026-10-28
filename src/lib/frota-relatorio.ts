@@ -50,9 +50,16 @@ export function itensFiltrosParaCotacao(equipamentos: EquipamentoRevisao[]) {
 }
 
 export function resumirItensRevisao(equipamentos: EquipamentoRevisao[]) {
-  const resumo = new Map<string, {
-    tipo: string; codigo: string; equipamentos: Map<string, string>; total: number; un: string;
-  }>();
+  const resumo = new Map<
+    string,
+    {
+      tipo: string;
+      codigo: string;
+      equipamentos: Map<string, string>;
+      total: number;
+      un: string;
+    }
+  >();
   for (const equipamento of equipamentos) {
     for (const [campo, tipo] of ITENS_REVISAO) {
       const codigo = equipamento[campo]?.trim();
@@ -60,7 +67,11 @@ export function resumirItensRevisao(equipamentos: EquipamentoRevisao[]) {
       const chave = `${tipo}|${codigo.toUpperCase().replace(/\s/g, "")}`;
       const quantidade = quantidadeItemRevisao(campo, codigo);
       const item = resumo.get(chave) ?? {
-        tipo, codigo, equipamentos: new Map<string, string>(), total: 0, un: quantidade?.un ?? "",
+        tipo,
+        codigo,
+        equipamentos: new Map<string, string>(),
+        total: 0,
+        un: quantidade?.un ?? "",
       };
       if (!item.equipamentos.has(equipamento.id)) {
         item.equipamentos.set(equipamento.id, equipamento.numero);
@@ -69,11 +80,17 @@ export function resumirItensRevisao(equipamentos: EquipamentoRevisao[]) {
       resumo.set(chave, item);
     }
   }
-  return [...resumo.entries()].sort(([a], [b]) => a.localeCompare(b, "pt-BR"))
+  return [...resumo.entries()]
+    .sort(([a], [b]) => a.localeCompare(b, "pt-BR"))
     .map(([, item]) => ({
-      tipo: item.tipo, codigo: item.codigo, total: item.total, un: item.un,
+      tipo: item.tipo,
+      codigo: item.codigo,
+      total: item.total,
+      un: item.un,
       qtd: item.equipamentos.size,
-      equipamentos: [...item.equipamentos.values()].sort((a, b) => a.localeCompare(b, "pt-BR", { numeric: true })),
+      equipamentos: [...item.equipamentos.values()].sort((a, b) =>
+        a.localeCompare(b, "pt-BR", { numeric: true }),
+      ),
     }));
 }
 
