@@ -44,7 +44,6 @@ const DialogContent = React.forwardRef<
       {...props}
     >
       {children}
-      /* No arquivo src/components/ui/dialog.tsx */
       <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground bg-gray-100 p-1">
         <X className="h-5 w-5 text-gray-800" /> {/* Garante que o X fique visível */}
         <span className="sr-only">Close</span>
