@@ -2,7 +2,9 @@ import { useState } from "react";
 import { Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ITENS_REVISAO, resumirItensRevisao } from "@/lib/frota-relatorio";
+import { ITENS_REVISAO, itensFiltrosParaCotacao, resumirItensRevisao } from "@/lib/frota-relatorio";
+import { CotacaoFiltrosDialog } from "@/components/CotacaoFiltrosDialog";
+import { useAuth } from "@/hooks/use-auth";
 
 type EquipamentoRelatorio = {
   id: string;
@@ -43,6 +45,7 @@ export function BotaoRelatorioFrota({
   somenteVencidos: boolean;
 }) {
   const [comFiltros, setComFiltros] = useState(false);
+  const { isAdmin } = useAuth();
   const imprimir = () => {
     if (!equipamentos.length) return;
     const janela = window.open("", "_blank", "width=1000,height=750");
@@ -62,7 +65,10 @@ export function BotaoRelatorioFrota({
       })
       .join("");
     const linhasResumo = resumirItensRevisao(equipamentos)
-      .map((r) => `<tr><td>${r.equipamentos.map(escapar).join(", ")}</td><td>${r.qtd}</td><td>${escapar(r.tipo)}</td><td>${escapar(r.codigo)}</td><td>${r.total ? `${r.total} ${escapar(r.un)}` : "—"}</td></tr>`)
+      .map(
+        (r) =>
+          `<tr><td>${r.equipamentos.map(escapar).join(", ")}</td><td>${r.qtd}</td><td>${escapar(r.tipo)}</td><td>${escapar(r.codigo)}</td><td>${r.total ? `${r.total} ${escapar(r.un)}` : "—"}</td></tr>`,
+      )
       .join("");
     const secaoFiltros = comFiltros
       ? `<h2>Filtros e óleos para revisão — resumo por item</h2><table class="resumo"><colgroup><col style="width:44%"><col style="width:8%"><col style="width:23%"><col style="width:17%"><col style="width:8%"></colgroup><thead><tr><th>Equipamentos</th><th>Qtd. equip.</th><th>Item</th><th>Código / especificação</th><th>Total un./L</th></tr></thead><tbody>${linhasResumo || '<tr><td colspan="5">Nenhum item cadastrado</td></tr>'}</tbody></table>`
@@ -81,20 +87,31 @@ export function BotaoRelatorioFrota({
 
   return (
     <div className="flex items-center gap-1">
-    <label className="flex items-center gap-1 text-[11px] whitespace-nowrap cursor-pointer" title="Incluir filtros e óleos de cada equipamento no relatório">
-      <input type="checkbox" checked={comFiltros} onChange={(ev) => setComFiltros(ev.target.checked)} />
-      Filtros/óleos
-    </label>
-    <Button
-      type="button"
-      size="sm"
-      variant="outline"
-      className="h-9 px-2 gap-1 text-[11px] whitespace-nowrap" title="Imprimir itens selecionados"
-      onClick={imprimir}
-      disabled={!equipamentos.length}
-    >
-      <Printer className="h-4 w-4" /> Imprimir
-    </Button>
+      <label
+        className="flex items-center gap-1 text-[11px] whitespace-nowrap cursor-pointer"
+        title="Incluir filtros e óleos de cada equipamento no relatório"
+      >
+        <input
+          type="checkbox"
+          checked={comFiltros}
+          onChange={(ev) => setComFiltros(ev.target.checked)}
+        />
+        Filtros/óleos
+      </label>
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        className="h-9 px-2 gap-1 text-[11px] whitespace-nowrap"
+        title="Imprimir itens selecionados"
+        onClick={imprimir}
+        disabled={!equipamentos.length}
+      >
+        <Printer className="h-4 w-4" /> Imprimir
+      </Button>
+      {comFiltros && isAdmin && (
+        <CotacaoFiltrosDialog itens={itensFiltrosParaCotacao(equipamentos)} />
+      )}
     </div>
   );
 }

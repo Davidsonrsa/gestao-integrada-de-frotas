@@ -30,10 +30,36 @@ type EquipamentoRevisao = { id: string; numero: string } & Partial<
   Record<(typeof ITENS_REVISAO)[number][0], string | null>
 >;
 
+export function itensFiltrosParaCotacao(equipamentos: EquipamentoRevisao[]) {
+  const porCodigo = new Map<string, { codigo: string; quantidade: number }>();
+  const vistos = new Set<string>();
+  for (const equipamento of equipamentos) {
+    if (vistos.has(equipamento.id)) continue;
+    vistos.add(equipamento.id);
+    for (const [campo] of ITENS_REVISAO) {
+      if (!campo.startsWith("filtro")) continue;
+      const codigo = equipamento[campo]?.trim();
+      if (!codigo) continue;
+      const chave = codigo.toUpperCase().replace(/\s/g, "");
+      const item = porCodigo.get(chave) ?? { codigo, quantidade: 0 };
+      item.quantidade += 1;
+      porCodigo.set(chave, item);
+    }
+  }
+  return [...porCodigo.values()].sort((a, b) => a.codigo.localeCompare(b.codigo, "pt-BR"));
+}
+
 export function resumirItensRevisao(equipamentos: EquipamentoRevisao[]) {
-  const resumo = new Map<string, {
-    tipo: string; codigo: string; equipamentos: Map<string, string>; total: number; un: string;
-  }>();
+  const resumo = new Map<
+    string,
+    {
+      tipo: string;
+      codigo: string;
+      equipamentos: Map<string, string>;
+      total: number;
+      un: string;
+    }
+  >();
   for (const equipamento of equipamentos) {
     for (const [campo, tipo] of ITENS_REVISAO) {
       const codigo = equipamento[campo]?.trim();
@@ -41,7 +67,11 @@ export function resumirItensRevisao(equipamentos: EquipamentoRevisao[]) {
       const chave = `${tipo}|${codigo.toUpperCase().replace(/\s/g, "")}`;
       const quantidade = quantidadeItemRevisao(campo, codigo);
       const item = resumo.get(chave) ?? {
-        tipo, codigo, equipamentos: new Map<string, string>(), total: 0, un: quantidade?.un ?? "",
+        tipo,
+        codigo,
+        equipamentos: new Map<string, string>(),
+        total: 0,
+        un: quantidade?.un ?? "",
       };
       if (!item.equipamentos.has(equipamento.id)) {
         item.equipamentos.set(equipamento.id, equipamento.numero);
@@ -50,11 +80,17 @@ export function resumirItensRevisao(equipamentos: EquipamentoRevisao[]) {
       resumo.set(chave, item);
     }
   }
-  return [...resumo.entries()].sort(([a], [b]) => a.localeCompare(b, "pt-BR"))
+  return [...resumo.entries()]
+    .sort(([a], [b]) => a.localeCompare(b, "pt-BR"))
     .map(([, item]) => ({
-      tipo: item.tipo, codigo: item.codigo, total: item.total, un: item.un,
+      tipo: item.tipo,
+      codigo: item.codigo,
+      total: item.total,
+      un: item.un,
       qtd: item.equipamentos.size,
-      equipamentos: [...item.equipamentos.values()].sort((a, b) => a.localeCompare(b, "pt-BR", { numeric: true })),
+      equipamentos: [...item.equipamentos.values()].sort((a, b) =>
+        a.localeCompare(b, "pt-BR", { numeric: true }),
+      ),
     }));
 }
 
