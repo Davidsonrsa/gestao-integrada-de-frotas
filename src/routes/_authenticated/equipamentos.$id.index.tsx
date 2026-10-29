@@ -227,7 +227,19 @@ function EquipamentoDetail() {
               filtro_ar_cond2: payload.filtro_ar_cond2,
             };
 
-      const { error } = await supabase.from("equipamentos").update(allowed).eq("id", id);
+      const mudouHorimetro =
+        (payload.horimetro_atual ?? null) !== (equip?.horimetro_atual ?? null);
+      const comData = mudouHorimetro
+        ? {
+            ...allowed,
+            data_horimetro_atual:
+              payload.data_horimetro_atual && payload.data_horimetro_atual !== equip?.data_horimetro_atual
+                ? payload.data_horimetro_atual
+                : new Date().toLocaleDateString("en-CA"),
+            horimetro_atualizado_em: new Date().toISOString(),
+          }
+        : allowed;
+      const { error } = await supabase.from("equipamentos").update(comData).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {

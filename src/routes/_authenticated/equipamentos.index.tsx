@@ -1631,12 +1631,14 @@ function EquipamentosList() {
       })
       .eq("id", equipamentoId);
 
+    queryClient.invalidateQueries({ queryKey: ["equipamentos"] });
+    queryClient.invalidateQueries({ queryKey: ["equipamento", equipamentoId] });
+    queryClient.invalidateQueries({ queryKey: ["notificacoes"] });
     if (error) {
       setHorimetroDrafts((drafts) => ({
         ...drafts,
         [equipamentoId]: previous?.toString() ?? "",
       }));
-      queryClient.invalidateQueries({ queryKey: ["equipamentos"] });
       toast.error("Não foi possível atualizar o horímetro");
     }
   }
