@@ -645,6 +645,8 @@ export type Database = {
           h_revisao: number | null
           hidraulico_oleo: string | null
           horimetro_atual: number | null
+          horimetro_atualizado_em: string | null
+          horimetro_endereco: string | null
           hr_rodado: number | null
           id: string
           identificacao: string | null
@@ -691,6 +693,8 @@ export type Database = {
           h_revisao?: number | null
           hidraulico_oleo?: string | null
           horimetro_atual?: number | null
+          horimetro_atualizado_em?: string | null
+          horimetro_endereco?: string | null
           hr_rodado?: number | null
           id?: string
           identificacao?: string | null
@@ -737,6 +741,8 @@ export type Database = {
           h_revisao?: number | null
           hidraulico_oleo?: string | null
           horimetro_atual?: number | null
+          horimetro_atualizado_em?: string | null
+          horimetro_endereco?: string | null
           hr_rodado?: number | null
           id?: string
           identificacao?: string | null

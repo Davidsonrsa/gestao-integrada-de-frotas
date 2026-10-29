@@ -1,0 +1,1 @@
+ALTER TABLE public.equipamentos ADD COLUMN IF NOT EXISTS horimetro_atualizado_em timestamptz, ADD COLUMN IF NOT EXISTS horimetro_endereco text;

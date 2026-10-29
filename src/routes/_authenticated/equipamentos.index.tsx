@@ -75,6 +75,8 @@ type Equip = {
   cl: string | null;
   cover_storage_path: string | null;
   updated_by: string | null;
+  horimetro_atualizado_em?: string | null;
+  horimetro_endereco?: string | null;
 };
 
 function formatarDataHorimetro(data: string | null) {
@@ -1460,9 +1462,9 @@ function EquipamentosList() {
       let query = supabase
         .from("equipamentos")
         .select(
-          isOperador
-            ? "id, numero, identificacao, placa, localizacao, horimetro_atual, h_revisao, limite_revisao, proxima_revisao_horimetro, data_horimetro_atual, status, cl, cover_storage_path, updated_by"
-            : "id, numero, identificacao, placa, localizacao, operador_contato, horimetro_atual, h_revisao, limite_revisao, proxima_revisao_horimetro, data_horimetro_atual, status, cl, cover_storage_path, updated_by, motor_oleo, hidraulico_oleo, transmissao_oleo, eixo_oleo, tandem_oleo, filtro_lub, filtro_diesel_p, filtro_diesel_s, filtro_sep_agua, filtro_ar_ext, filtro_ar_int, filtro_trans, filtro_hidr, filtro_respiro, filtro_ar_cond1, filtro_ar_cond2",
+          (isOperador
+            ? "id, numero, identificacao, placa, localizacao, horimetro_atual, h_revisao, limite_revisao, proxima_revisao_horimetro, data_horimetro_atual, status, cl, cover_storage_path, updated_by, horimetro_atualizado_em, horimetro_endereco"
+            : "id, numero, identificacao, placa, localizacao, operador_contato, horimetro_atual, h_revisao, limite_revisao, proxima_revisao_horimetro, data_horimetro_atual, status, cl, cover_storage_path, updated_by, horimetro_atualizado_em, horimetro_endereco, motor_oleo, hidraulico_oleo, transmissao_oleo, eixo_oleo, tandem_oleo, filtro_lub, filtro_diesel_p, filtro_diesel_s, filtro_sep_agua, filtro_ar_ext, filtro_ar_int, filtro_trans, filtro_hidr, filtro_respiro, filtro_ar_cond1, filtro_ar_cond2") as "*",
         )
         .order("numero", { ascending: true });
 
@@ -1607,10 +1609,17 @@ function EquipamentosList() {
               horimetro_atual: horimetro,
               data_horimetro_atual: dataHorimetro,
               updated_by: userId,
+              horimetro_atualizado_em: hoje.toISOString(),
             }
           : equipamento,
       ),
     );
+
+    const extras: { horimetro_atualizado_em: string; horimetro_endereco: string | null } = {
+      horimetro_atualizado_em: hoje.toISOString(),
+      horimetro_endereco: null,
+    };
+    if (isOperador) extras.horimetro_endereco = await obterEnderecoAtual();
 
     const { error } = await supabase
       .from("equipamentos")
@@ -1618,6 +1627,7 @@ function EquipamentosList() {
         horimetro_atual: horimetro,
         data_horimetro_atual: dataHorimetro,
         updated_by: userId,
+        ...extras,
       })
       .eq("id", equipamentoId);
 
@@ -1900,6 +1910,12 @@ function EquipamentosList() {
                       )
                         ? ` por ${primeiroNome(e.updated_by === userId ? fullName : nomesResponsaveis[e.updated_by ?? ""])}`
                         : ""}
+                      {e.horimetro_atualizado_em
+                        ? ` às ${new Date(e.horimetro_atualizado_em).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
+                        : ""}
+                      {e.horimetro_endereco && (
+                        <span className="block">Local: {e.horimetro_endereco}</span>
+                      )}
                     </p>
                   )}
                 </div>
@@ -1921,4 +1937,36 @@ function EquipamentosList() {
       )}
     </div>
   );
+}
+
+async function obterEnderecoAtual(): Promise<string | null> {
+  if (typeof navigator === "undefined" || !navigator.geolocation) return null;
+  const pos = await new Promise<GeolocationPosition | null>((resolve) =>
+    navigator.geolocation.getCurrentPosition(resolve, () => resolve(null), {
+      enableHighAccuracy: true,
+      timeout: 10000,
+    }),
+  );
+  if (!pos) return null;
+  const { latitude, longitude } = pos.coords;
+  const coords = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+  try {
+    const r = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=pt-BR&lat=${latitude}&lon=${longitude}`,
+    );
+    const j = (await r.json()) as {
+      address?: Record<string, string>;
+      display_name?: string;
+    };
+    const a = j.address ?? {};
+    const partes = [
+      [a.road, a.house_number].filter(Boolean).join(", "),
+      a.suburb ?? a.neighbourhood,
+      a.city ?? a.town ?? a.village,
+      a.state,
+    ].filter(Boolean);
+    return partes.length ? partes.join(" - ") : (j.display_name ?? coords);
+  } catch {
+    return coords;
+  }
 }

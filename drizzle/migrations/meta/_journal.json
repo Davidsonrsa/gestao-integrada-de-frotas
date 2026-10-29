@@ -43,6 +43,13 @@
       "when": 1793192380476,
       "tag": "0005_operador_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793270408976,
+      "tag": "0006_horimetro_hora_endereco",
+      "breakpoints": true
     }
   ]
 }
