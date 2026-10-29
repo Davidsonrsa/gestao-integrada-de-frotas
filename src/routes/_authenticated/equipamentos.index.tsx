@@ -1462,9 +1462,9 @@ function EquipamentosList() {
       let query = supabase
         .from("equipamentos")
         .select(
-          isOperador
+          (isOperador
             ? "id, numero, identificacao, placa, localizacao, horimetro_atual, h_revisao, limite_revisao, proxima_revisao_horimetro, data_horimetro_atual, status, cl, cover_storage_path, updated_by, horimetro_atualizado_em, horimetro_endereco"
-            : "id, numero, identificacao, placa, localizacao, operador_contato, horimetro_atual, h_revisao, limite_revisao, proxima_revisao_horimetro, data_horimetro_atual, status, cl, cover_storage_path, updated_by, horimetro_atualizado_em, horimetro_endereco, motor_oleo, hidraulico_oleo, transmissao_oleo, eixo_oleo, tandem_oleo, filtro_lub, filtro_diesel_p, filtro_diesel_s, filtro_sep_agua, filtro_ar_ext, filtro_ar_int, filtro_trans, filtro_hidr, filtro_respiro, filtro_ar_cond1, filtro_ar_cond2",
+            : "id, numero, identificacao, placa, localizacao, operador_contato, horimetro_atual, h_revisao, limite_revisao, proxima_revisao_horimetro, data_horimetro_atual, status, cl, cover_storage_path, updated_by, horimetro_atualizado_em, horimetro_endereco, motor_oleo, hidraulico_oleo, transmissao_oleo, eixo_oleo, tandem_oleo, filtro_lub, filtro_diesel_p, filtro_diesel_s, filtro_sep_agua, filtro_ar_ext, filtro_ar_int, filtro_trans, filtro_hidr, filtro_respiro, filtro_ar_cond1, filtro_ar_cond2") as "*",
         )
         .order("numero", { ascending: true });
 
