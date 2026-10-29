@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "node:test";
 import { operadorPodeAcessar } from "@/lib/route-guards";
 
 describe("operadorPodeAcessar", () => {
