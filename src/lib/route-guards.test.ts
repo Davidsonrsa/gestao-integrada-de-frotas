@@ -1,23 +1,24 @@
-import { describe, expect, it } from "bun:test";
+import { describe, test } from "node:test";
+import { strict as assert } from "node:assert";
 import { operadorPodeAcessar } from "@/lib/route-guards";
 
 describe("operadorPodeAcessar", () => {
-  it("permite a tela Frota", () => {
-    expect(operadorPodeAcessar("/equipamentos")).toBe(true);
+  test("permite a tela Frota", () => {
+    assert.strictEqual(operadorPodeAcessar("/equipamentos"), true);
   });
 
-  it("permite as páginas do equipamento", () => {
-    expect(operadorPodeAcessar("/equipamentos/abc-123")).toBe(true);
-    expect(operadorPodeAcessar("/equipamentos/abc-123/manutencao")).toBe(true);
+  test("permite as páginas do equipamento", () => {
+    assert.strictEqual(operadorPodeAcessar("/equipamentos/abc-123"), true);
+    assert.strictEqual(operadorPodeAcessar("/equipamentos/abc-123/manutencao"), true);
   });
 
-  it("bloqueia as demais telas do app", () => {
-    expect(operadorPodeAcessar("/")).toBe(false);
-    expect(operadorPodeAcessar("/medicoes")).toBe(false);
-    expect(operadorPodeAcessar("/custos")).toBe(false);
-    expect(operadorPodeAcessar("/cotacoes")).toBe(false);
-    expect(operadorPodeAcessar("/notas-fiscais")).toBe(false);
-    expect(operadorPodeAcessar("/estoque")).toBe(false);
-    expect(operadorPodeAcessar("/admin")).toBe(false);
+  test("bloqueia as demais telas do app", () => {
+    assert.strictEqual(operadorPodeAcessar("/"), false);
+    assert.strictEqual(operadorPodeAcessar("/medicoes"), false);
+    assert.strictEqual(operadorPodeAcessar("/custos"), false);
+    assert.strictEqual(operadorPodeAcessar("/cotacoes"), false);
+    assert.strictEqual(operadorPodeAcessar("/notas-fiscais"), false);
+    assert.strictEqual(operadorPodeAcessar("/estoque"), false);
+    assert.strictEqual(operadorPodeAcessar("/admin"), false);
   });
 });

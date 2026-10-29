@@ -153,7 +153,7 @@ function EquipamentoDetail() {
         .eq("id", id)
         .single();
       if (error) throw error;
-      return data as Equip;
+      return data as unknown as Equip;
     },
   });
 

@@ -1481,7 +1481,7 @@ function EquipamentosList() {
 
       const { data: equipamentos, error } = await query;
       if (error) throw error;
-      return (equipamentos ?? []) as Equip[];
+      return (equipamentos ?? []) as unknown as Equip[];
     },
   });
 
