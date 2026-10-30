@@ -1,5 +1,8 @@
 # Roadmap
 
+- [ ] Registrar histórico dos horímetros de operadores com acesso e impressão somente do administrador
+- [ ] Solicitar localização nos lançamentos do operador nas duas telas e validar o fluxo
+
 - [x] Restringir exclusão de contratos aos administradores
 - [x] Ajustar totais e assinaturas no layout de impressão das cotações
 - [x] Validar a impressão da cotação

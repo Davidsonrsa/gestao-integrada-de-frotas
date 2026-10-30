@@ -33,6 +33,7 @@ Não há script de testes automatizados no `package.json`; para mudanças de com
 - Ao alterar autenticação, permissões ou dados sensíveis, verifique as policies RLS e os cenários documentados em [src/lib/security-checklist.ts](src/lib/security-checklist.ts).
 
 ## Convenções de implementação
+- Operator hourmeter changes are audited atomically by a database trigger into immutable snapshot rows with admin-only SELECT; both editing screens share the operator location request helper so history and location cannot diverge.
 - Fleet filtered reports receive the same filtered equipment array as the visible list, so CL, search and overdue filters cannot diverge between screen and print.
 - Fleet revision summaries use the shared report helper to group item codes, equipment numbers and quantities consistently.
 - Fleet-to-quotation actions consolidate filter codes through the report helper and save to existing quotation tables under existing RLS; the preview and insertion use the same item array to avoid mismatches.
