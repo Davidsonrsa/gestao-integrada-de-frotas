@@ -1624,7 +1624,10 @@ function EquipamentosList() {
     if (isOperador) {
       const localizacao = await solicitarLocalizacaoHorimetro();
       extras.horimetro_endereco = localizacao.endereco;
-      if (localizacao.indisponivel) toast.warning("Localização não autorizada ou indisponível. O lançamento será registrado sem endereço.");
+      if (localizacao.indisponivel)
+        toast.warning(
+          "Localização não autorizada ou indisponível. O lançamento será registrado sem endereço.",
+        );
     }
 
     const { error } = await supabase
@@ -1947,4 +1950,3 @@ function EquipamentosList() {
     </div>
   );
 }
-

@@ -229,15 +229,22 @@ function EquipamentoDetail() {
             };
 
       const mudouHorimetro =
-        (payload.horimetro_atual !== undefined && payload.horimetro_atual !== equip?.horimetro_atual) ||
-        (payload.data_horimetro_atual !== undefined && payload.data_horimetro_atual !== equip?.data_horimetro_atual);
-      const localizacao = isOperador && mudouHorimetro ? await solicitarLocalizacaoHorimetro() : null;
-      if (localizacao?.indisponivel) toast.warning("Localização não autorizada ou indisponível. O lançamento será registrado sem endereço.");
+        (payload.horimetro_atual !== undefined &&
+          payload.horimetro_atual !== equip?.horimetro_atual) ||
+        (payload.data_horimetro_atual !== undefined &&
+          payload.data_horimetro_atual !== equip?.data_horimetro_atual);
+      const localizacao =
+        isOperador && mudouHorimetro ? await solicitarLocalizacaoHorimetro() : null;
+      if (localizacao?.indisponivel)
+        toast.warning(
+          "Localização não autorizada ou indisponível. O lançamento será registrado sem endereço.",
+        );
       const comData = mudouHorimetro
         ? {
             ...allowed,
             data_horimetro_atual:
-              payload.data_horimetro_atual && payload.data_horimetro_atual !== equip?.data_horimetro_atual
+              payload.data_horimetro_atual &&
+              payload.data_horimetro_atual !== equip?.data_horimetro_atual
                 ? payload.data_horimetro_atual
                 : new Date().toLocaleDateString("en-CA"),
             horimetro_atualizado_em: new Date().toISOString(),

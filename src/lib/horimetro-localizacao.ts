@@ -31,7 +31,10 @@ export async function solicitarLocalizacaoHorimetro(): Promise<LocalizacaoHorime
       a.city ?? a.town ?? a.village,
       a.state,
     ].filter(Boolean);
-    return { endereco: partes.join(" - ") || dados.display_name || coordenadas, indisponivel: false };
+    return {
+      endereco: partes.join(" - ") || dados.display_name || coordenadas,
+      indisponivel: false,
+    };
   } catch {
     return { endereco: coordenadas, indisponivel: false };
   }

@@ -18,13 +18,20 @@ export type FiltrosHistoricoHorimetro = {
   fim: string;
 };
 
-export function filtrarHistoricoHorimetro(registros: RegistroHorimetro[], filtros: FiltrosHistoricoHorimetro) {
+export function filtrarHistoricoHorimetro(
+  registros: RegistroHorimetro[],
+  filtros: FiltrosHistoricoHorimetro,
+) {
   return registros.filter((r) => {
-    const dia = new Date(r.registrado_em).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
-    return (!filtros.operador || r.operador_id === filtros.operador) &&
+    const dia = new Date(r.registrado_em).toLocaleDateString("en-CA", {
+      timeZone: "America/Sao_Paulo",
+    });
+    return (
+      (!filtros.operador || r.operador_id === filtros.operador) &&
       (!filtros.equipamento || r.equipamento_numero === filtros.equipamento) &&
       (!filtros.inicio || dia >= filtros.inicio) &&
-      (!filtros.fim || dia <= filtros.fim);
+      (!filtros.fim || dia <= filtros.fim)
+    );
   });
 }
 
@@ -37,5 +44,8 @@ export function formatarDataHistorico(valor: string | null) {
 }
 
 export function escaparHistorico(valor: unknown) {
-  return String(valor ?? "—").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c);
+  return String(valor ?? "—").replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c,
+  );
 }
