@@ -1579,6 +1579,48 @@ export type Database = {
         }
         Relationships: []
       }
+      horimetro_historico: {
+        Row: {
+          data_horimetro: string | null
+          endereco: string | null
+          equipamento_cl: string | null
+          equipamento_id: string
+          equipamento_numero: string
+          horimetro_anterior: number | null
+          horimetro_atual: number | null
+          id: string
+          operador_id: string
+          operador_nome: string
+          registrado_em: string
+        }
+        Insert: {
+          data_horimetro?: string | null
+          endereco?: string | null
+          equipamento_cl?: string | null
+          equipamento_id: string
+          equipamento_numero: string
+          horimetro_anterior?: number | null
+          horimetro_atual?: number | null
+          id?: string
+          operador_id: string
+          operador_nome: string
+          registrado_em?: string
+        }
+        Update: {
+          data_horimetro?: string | null
+          endereco?: string | null
+          equipamento_cl?: string | null
+          equipamento_id?: string
+          equipamento_numero?: string
+          horimetro_anterior?: number | null
+          horimetro_atual?: number | null
+          id?: string
+          operador_id?: string
+          operador_nome?: string
+          registrado_em?: string
+        }
+        Relationships: []
+      }
       manutencao_historico: {
         Row: {
           created_at: string

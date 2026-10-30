@@ -50,6 +50,13 @@
       "when": 1793270408976,
       "tag": "0006_horimetro_hora_endereco",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793356152772,
+      "tag": "0007_operator_hourmeter_audit",
+      "breakpoints": true
     }
   ]
 }
