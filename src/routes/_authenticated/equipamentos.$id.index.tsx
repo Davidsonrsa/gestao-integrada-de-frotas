@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
+import { solicitarLocalizacaoHorimetro } from "@/lib/horimetro-localizacao";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -228,7 +229,10 @@ function EquipamentoDetail() {
             };
 
       const mudouHorimetro =
-        (payload.horimetro_atual ?? null) !== (equip?.horimetro_atual ?? null);
+        (payload.horimetro_atual !== undefined && payload.horimetro_atual !== equip?.horimetro_atual) ||
+        (payload.data_horimetro_atual !== undefined && payload.data_horimetro_atual !== equip?.data_horimetro_atual);
+      const localizacao = isOperador && mudouHorimetro ? await solicitarLocalizacaoHorimetro() : null;
+      if (localizacao?.indisponivel) toast.warning("Localização não autorizada ou indisponível. O lançamento será registrado sem endereço.");
       const comData = mudouHorimetro
         ? {
             ...allowed,
@@ -237,6 +241,8 @@ function EquipamentoDetail() {
                 ? payload.data_horimetro_atual
                 : new Date().toLocaleDateString("en-CA"),
             horimetro_atualizado_em: new Date().toISOString(),
+            horimetro_endereco: localizacao?.endereco ?? null,
+            updated_by: userId,
           }
         : allowed;
       const { error } = await supabase.from("equipamentos").update(comData).eq("id", id);
@@ -247,6 +253,7 @@ function EquipamentoDetail() {
       qc.invalidateQueries({ queryKey: ["equipamento", id] });
       qc.invalidateQueries({ queryKey: ["equipamentos"] });
       qc.invalidateQueries({ queryKey: ["notificacoes"] });
+      qc.invalidateQueries({ queryKey: ["horimetro-historico"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });

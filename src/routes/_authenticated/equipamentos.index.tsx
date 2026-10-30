@@ -37,6 +37,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import { BotaoRelatorioFrota } from "@/components/BotaoRelatorioFrota";
 import { filtrarEquipamentos } from "@/lib/frota-relatorio";
+import { HistoricoHorimetroDialog } from "@/components/HistoricoHorimetroDialog";
+import { solicitarLocalizacaoHorimetro } from "@/lib/horimetro-localizacao";
 
 export const Route = createFileRoute("/_authenticated/equipamentos/")({
   head: () => ({
@@ -1619,7 +1621,11 @@ function EquipamentosList() {
       horimetro_atualizado_em: hoje.toISOString(),
       horimetro_endereco: null,
     };
-    if (isOperador) extras.horimetro_endereco = await obterEnderecoAtual();
+    if (isOperador) {
+      const localizacao = await solicitarLocalizacaoHorimetro();
+      extras.horimetro_endereco = localizacao.endereco;
+      if (localizacao.indisponivel) toast.warning("Localização não autorizada ou indisponível. O lançamento será registrado sem endereço.");
+    }
 
     const { error } = await supabase
       .from("equipamentos")
@@ -1662,6 +1668,7 @@ function EquipamentosList() {
             <>
               <BotaoTacografo />
               <BotaoSeguro />
+              {isAdmin && <HistoricoHorimetroDialog />}
               <BotaoRelatorioFrota
                 equipamentos={filtered}
                 cl={cl}
@@ -1941,34 +1948,3 @@ function EquipamentosList() {
   );
 }
 
-async function obterEnderecoAtual(): Promise<string | null> {
-  if (typeof navigator === "undefined" || !navigator.geolocation) return null;
-  const pos = await new Promise<GeolocationPosition | null>((resolve) =>
-    navigator.geolocation.getCurrentPosition(resolve, () => resolve(null), {
-      enableHighAccuracy: true,
-      timeout: 10000,
-    }),
-  );
-  if (!pos) return null;
-  const { latitude, longitude } = pos.coords;
-  const coords = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
-  try {
-    const r = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=pt-BR&lat=${latitude}&lon=${longitude}`,
-    );
-    const j = (await r.json()) as {
-      address?: Record<string, string>;
-      display_name?: string;
-    };
-    const a = j.address ?? {};
-    const partes = [
-      [a.road, a.house_number].filter(Boolean).join(", "),
-      a.suburb ?? a.neighbourhood,
-      a.city ?? a.town ?? a.village,
-      a.state,
-    ].filter(Boolean);
-    return partes.length ? partes.join(" - ") : (j.display_name ?? coords);
-  } catch {
-    return coords;
-  }
-}
