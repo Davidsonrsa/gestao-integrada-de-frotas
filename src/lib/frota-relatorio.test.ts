@@ -142,6 +142,18 @@ describe("Resumo de filtros e óleos", () => {
       },
     );
   });
+  test("mostra a próxima revisão de cada equipamento na lista", () => {
+    const resumo = resumirItensRevisao([
+      { id: "1", numero: "RE-30", filtro_lub: "PSL283", proxima_revisao_horimetro: 250 },
+      { id: "2", numero: "RE-40", filtro_lub: "PSL283", proxima_revisao_horimetro: 1000 },
+      { id: "3", numero: "RE-55", filtro_lub: "PSL283" },
+    ]);
+    assert.deepEqual(resumo.find((item) => item.codigo === "PSL283")?.equipamentos, [
+      "RE-30 (250 h)",
+      "RE-40 (1000 h)",
+      "RE-55",
+    ]);
+  });
   test("10W30 transmissão usa 16 litros", () => {
     assert.deepEqual(quantidadeItemRevisao("transmissao_oleo", "10w30"), { n: 16, un: "L" });
   });
