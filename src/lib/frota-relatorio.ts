@@ -26,14 +26,32 @@ export function quantidadeItemRevisao(campo: string, valor: string) {
   return null;
 }
 
-type EquipamentoRevisao = { id: string; numero: string } & Partial<
-  Record<(typeof ITENS_REVISAO)[number][0], string | null>
->;
+const FILTROS_REVISAO_PARCIAL = new Set([
+  "filtro_lub",
+  "filtro_ar_ext",
+  "filtro_ar_int",
+  "filtro_diesel_p",
+  "filtro_diesel_s",
+]);
+
+/** 250/500/750 h trocam só lubrificante, ar e diesel; 1000 h (ou sem revisão definida) troca todos. */
+export function filtroEntraNaRevisao(campo: string, proximaRevisao: number | null | undefined) {
+  if (!campo.startsWith("filtro")) return true;
+  const rev = Number(proximaRevisao);
+  if (!proximaRevisao || !Number.isFinite(rev) || rev % 1000 === 0) return true;
+  return FILTROS_REVISAO_PARCIAL.has(campo);
+}
+
+type EquipamentoRevisao = {
+  id: string;
+  numero: string;
+  proxima_revisao_horimetro?: number | null;
+} & Partial<Record<(typeof ITENS_REVISAO)[number][0], string | null>>;
 
 export function itensFiltrosParaCotacao(equipamentos: EquipamentoRevisao[]) {
   const porCodigo = new Map<
     string,
-    { codigo: string; descricao: string; quantidade: number }
+    { codigo: string; descricao: string; quantidade: number; equipamentos: string[] }
   >();
   const vistos = new Set<string>();
   for (const equipamento of equipamentos) {
@@ -41,14 +59,24 @@ export function itensFiltrosParaCotacao(equipamentos: EquipamentoRevisao[]) {
     vistos.add(equipamento.id);
     for (const [campo, tipo] of ITENS_REVISAO) {
       if (!campo.startsWith("filtro")) continue;
+      if (!filtroEntraNaRevisao(campo, equipamento.proxima_revisao_horimetro)) continue;
       const codigo = equipamento[campo]?.trim();
       if (!codigo) continue;
       const chave = codigo.toUpperCase().replace(/\s/g, "");
-      const item = porCodigo.get(chave) ?? { codigo, descricao: tipo, quantidade: 0 };
+      const item = porCodigo.get(chave) ?? {
+        codigo,
+        descricao: tipo,
+        quantidade: 0,
+        equipamentos: [],
+      };
       item.quantidade += 1;
+      if (!item.equipamentos.includes(equipamento.numero))
+        item.equipamentos.push(equipamento.numero);
       porCodigo.set(chave, item);
     }
   }
+  for (const item of porCodigo.values())
+    item.equipamentos.sort((a, b) => a.localeCompare(b, "pt-BR", { numeric: true }));
   return [...porCodigo.values()].sort((a, b) => a.codigo.localeCompare(b.codigo, "pt-BR"));
 }
 
@@ -65,6 +93,7 @@ export function resumirItensRevisao(equipamentos: EquipamentoRevisao[]) {
   >();
   for (const equipamento of equipamentos) {
     for (const [campo, tipo] of ITENS_REVISAO) {
+      if (!filtroEntraNaRevisao(campo, equipamento.proxima_revisao_horimetro)) continue;
       const codigo = equipamento[campo]?.trim();
       if (!codigo) continue;
       const chave = `${tipo}|${codigo.toUpperCase().replace(/\s/g, "")}`;

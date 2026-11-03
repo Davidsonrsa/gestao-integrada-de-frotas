@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 export function CotacaoFiltrosDialog({
   itens,
 }: {
-  itens: { codigo: string; descricao: string; quantidade: number }[];
+  itens: { codigo: string; descricao: string; quantidade: number; equipamentos: string[] }[];
 }) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -63,6 +63,7 @@ export function CotacaoFiltrosDialog({
           descricao: `${item.descricao} ${item.codigo}`.trim(),
           quantidade: item.quantidade,
           unidade: "UN",
+          aplicacao: item.equipamentos.join(", ") || null,
         })),
       );
       if (itensError) throw itensError;
@@ -116,7 +117,7 @@ export function CotacaoFiltrosDialog({
           if (!saving) setOpen(value);
         }}
       >
-        <DialogContent aria-describedby={undefined} className="max-w-md">
+        <DialogContent aria-describedby={undefined} className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Nova cotação de filtros</DialogTitle>
           </DialogHeader>
@@ -126,7 +127,8 @@ export function CotacaoFiltrosDialog({
                 <tr>
                   <th className="p-2 text-left">Código</th>
                   <th className="p-2 text-left">Descrição</th>
-                  <th className="p-2 text-right">Quantidade (un.)</th>
+                  <th className="p-2 text-left">Equipamentos</th>
+                  <th className="p-2 text-right">Qtd.</th>
                 </tr>
               </thead>
               <tbody>
@@ -134,6 +136,7 @@ export function CotacaoFiltrosDialog({
                   <tr key={item.codigo} className="border-b border-border">
                     <td className="p-2 font-mono break-all">{item.codigo}</td>
                     <td className="p-2">{item.descricao}</td>
+                    <td className="p-2 text-xs">{item.equipamentos.join(", ")}</td>
                     <td className="p-2 text-right tabular-nums">{item.quantidade}</td>
                   </tr>
                 ))}
