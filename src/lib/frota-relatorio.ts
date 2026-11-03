@@ -86,7 +86,7 @@ export function resumirItensRevisao(equipamentos: EquipamentoRevisao[]) {
     {
       tipo: string;
       codigo: string;
-      equipamentos: Map<string, string>;
+      equipamentos: Map<string, { numero: string; rev: number | null }>;
       total: number;
       un: string;
     }
@@ -101,17 +101,23 @@ export function resumirItensRevisao(equipamentos: EquipamentoRevisao[]) {
       const item = resumo.get(chave) ?? {
         tipo,
         codigo,
-        equipamentos: new Map<string, string>(),
+        equipamentos: new Map<string, { numero: string; rev: number | null }>(),
         total: 0,
         un: quantidade?.un ?? "",
       };
       if (!item.equipamentos.has(equipamento.id)) {
-        item.equipamentos.set(equipamento.id, equipamento.numero);
+        const rev = equipamento.proxima_revisao_horimetro;
+        item.equipamentos.set(equipamento.id, {
+          numero: equipamento.numero,
+          rev: typeof rev === "number" && Number.isFinite(rev) ? rev : null,
+        });
         item.total += quantidade?.n ?? 0;
       }
       resumo.set(chave, item);
     }
   }
+  const rotulo = (e: { numero: string; rev: number | null }) =>
+    e.rev != null ? `${e.numero} (${e.rev} h)` : e.numero;
   return [...resumo.entries()]
     .sort(([a], [b]) => a.localeCompare(b, "pt-BR"))
     .map(([, item]) => ({
@@ -120,9 +126,9 @@ export function resumirItensRevisao(equipamentos: EquipamentoRevisao[]) {
       total: item.total,
       un: item.un,
       qtd: item.equipamentos.size,
-      equipamentos: [...item.equipamentos.values()].sort((a, b) =>
-        a.localeCompare(b, "pt-BR", { numeric: true }),
-      ),
+      equipamentos: [...item.equipamentos.values()]
+        .sort((a, b) => a.numero.localeCompare(b.numero, "pt-BR", { numeric: true }))
+        .map(rotulo),
     }));
 }
 
