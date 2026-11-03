@@ -37,8 +37,18 @@ describe("Filtros enviados para nova cotação", () => {
         { id: "2", numero: "RE-40", filtro_lub: "PSL283", filtro_ar_ext: "ARS8889" },
       ]),
       [
-        { codigo: "ARS8889", descricao: "Filtro de ar externo", quantidade: 1 },
-        { codigo: "PSL283", descricao: "Filtro lubrificante", quantidade: 2 },
+        {
+          codigo: "ARS8889",
+          descricao: "Filtro de ar externo",
+          quantidade: 1,
+          equipamentos: ["RE-40"],
+        },
+        {
+          codigo: "PSL283",
+          descricao: "Filtro lubrificante",
+          quantidade: 2,
+          equipamentos: ["RE-30", "RE-40"],
+        },
       ],
     );
   });
@@ -48,20 +58,68 @@ describe("Filtros enviados para nova cotação", () => {
         { id: "1", numero: "RE-30", filtro_lub: "PSL283", filtro_hidr: " psl283 " },
         { id: "2", numero: "RE-40", filtro_lub: "PSL283" },
       ]),
-      [{ codigo: "PSL283", descricao: "Filtro lubrificante", quantidade: 3 }],
+      [
+        {
+          codigo: "PSL283",
+          descricao: "Filtro lubrificante",
+          quantidade: 3,
+          equipamentos: ["RE-30", "RE-40"],
+        },
+      ],
     );
   });
   test("respeita a seleção de CL e busca usada pelo relatório", () => {
     const frota = equipamentos.map((e, i) => ({ ...e, id: String(i), filtro_lub: "PSL283" }));
     assert.deepEqual(itensFiltrosParaCotacao(filtrarEquipamentos(frota, "05", "RE-40", false)), [
-      { codigo: "PSL283", descricao: "Filtro lubrificante", quantidade: 1 },
+      {
+        codigo: "PSL283",
+        descricao: "Filtro lubrificante",
+        quantidade: 1,
+        equipamentos: ["RE-40"],
+      },
     ]);
   });
   test("não duplica equipamentos nem inclui códigos vazios", () => {
     const e = { id: "1", numero: "RE-30", filtro_lub: "PSL283", filtro_trans: "  " };
     assert.deepEqual(itensFiltrosParaCotacao([e, e]), [
-      { codigo: "PSL283", descricao: "Filtro lubrificante", quantidade: 1 },
+      {
+        codigo: "PSL283",
+        descricao: "Filtro lubrificante",
+        quantidade: 1,
+        equipamentos: ["RE-30"],
+      },
     ]);
+  });
+  test("revisão de 500 h leva só lubrificante, ar e diesel", () => {
+    const e = {
+      id: "1",
+      numero: "RE-30",
+      proxima_revisao_horimetro: 500,
+      filtro_lub: "L",
+      filtro_ar_ext: "A",
+      filtro_diesel_s: "D",
+      filtro_hidr: "H",
+      filtro_trans: "T",
+    };
+    assert.deepEqual(
+      itensFiltrosParaCotacao([e]).map((i) => i.codigo),
+      ["A", "D", "L"],
+    );
+  });
+  test("revisão de 1000 h leva todos os filtros", () => {
+    const e = {
+      id: "1",
+      numero: "RE-57",
+      proxima_revisao_horimetro: 1000,
+      filtro_lub: "L",
+      filtro_hidr: "H",
+      filtro_trans: "T",
+      filtro_respiro: "R",
+    };
+    assert.deepEqual(
+      itensFiltrosParaCotacao([e]).map((i) => i.codigo),
+      ["H", "L", "R", "T"],
+    );
   });
 });
 
