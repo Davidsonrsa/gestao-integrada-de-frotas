@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Ajustar impressão e PDF das medições para uma folha A4 com assinaturas e validar os dois modelos
+
 - [ ] Registrar histórico dos horímetros de operadores com acesso e impressão somente do administrador
 - [ ] Solicitar localização nos lançamentos do operador nas duas telas e validar o fluxo
 
