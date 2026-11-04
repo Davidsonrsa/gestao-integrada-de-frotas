@@ -1669,6 +1669,45 @@ export default function DetalheCotacaoPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={isEditarCabecalhoOpen} onOpenChange={setIsEditarCabecalhoOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Patrimônio / Setor</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSalvarCabecalho} className="space-y-4">
+            <div>
+              <Label className="text-xs font-semibold text-slate-700">Patrimônio / Equipamento</Label>
+              <Input
+                value={editarPatrimonio}
+                onChange={(e) => setEditarPatrimonio(e.target.value)}
+                placeholder="Ex: 580N 4X4 — RE-30"
+              />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold text-slate-700">Setor</Label>
+              <Input
+                value={editarSetor}
+                onChange={(e) => setEditarSetor(e.target.value)}
+                placeholder="Ex: Manutenção"
+              />
+            </div>
+            <DialogFooter className="gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsEditarCabecalhoOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={saving} className="gap-2">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Pencil className="w-4 h-4" />}
+                Salvar
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
