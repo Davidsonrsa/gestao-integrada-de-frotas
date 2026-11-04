@@ -186,18 +186,12 @@ function Usuarios() {
   } = useQuery({
     queryKey: ["admin-operator-equipment-options"],
     queryFn: async () => {
-      const [{ data: equipamentos, error: equipamentosError }, { data: assignments, error }] =
-        await Promise.all([
-          supabase.from("equipamentos").select("id, numero").order("numero"),
-          supabase.from("operador_equipamentos").select("equipamento_id"),
-        ]);
-      if (equipamentosError) throw equipamentosError;
+      const { data, error } = await supabase
+        .from("equipamentos")
+        .select("id, numero")
+        .order("numero");
       if (error) throw error;
-
-      const assignedIds = new Set(
-        (assignments ?? []).map((assignment) => assignment.equipamento_id),
-      );
-      return (equipamentos ?? []).filter((equipamento) => !assignedIds.has(equipamento.id));
+      return data ?? [];
     },
   });
   const { userId } = useAuth();
@@ -207,6 +201,8 @@ function Usuarios() {
     fullName: "",
     phone: "",
     password: "",
+    equipamentoIds: [] as string[],
+    isOperator: false,
   });
 
   const u = useMutation({
@@ -218,6 +214,7 @@ function Usuarios() {
           fullName: edit.fullName,
           phone: edit.phone || null,
           password: edit.password ? edit.password : null,
+          equipamentoIds: edit.isOperator ? edit.equipamentoIds : null,
         },
       });
     },
@@ -235,13 +232,13 @@ function Usuarios() {
     fullName: "",
     phone: "",
     role: "colaborador" as "colaborador" | "operador",
-    equipamentoId: "",
+    equipamentoIds: [] as string[],
   });
 
   const m = useMutation({
     mutationFn: () => {
-      if (f.role === "operador" && !f.equipamentoId) {
-        throw new Error("Selecione o equipamento exclusivo do operador.");
+      if (f.role === "operador" && f.equipamentoIds.length === 0) {
+        throw new Error("Selecione ao menos um equipamento para o operador.");
       }
       return create({
         data: {
@@ -250,7 +247,7 @@ function Usuarios() {
           fullName: f.fullName,
           phone: f.phone || null,
           role: f.role,
-          equipamentoId: f.role === "operador" ? f.equipamentoId : null,
+          equipamentoIds: f.role === "operador" ? f.equipamentoIds : [],
         },
       });
     },
@@ -267,7 +264,7 @@ function Usuarios() {
         fullName: "",
         phone: "",
         role: "colaborador",
-        equipamentoId: "",
+        equipamentoIds: [],
       });
 
       qc.invalidateQueries({ queryKey: ["admin-users"] });
@@ -315,7 +312,7 @@ function Usuarios() {
           <Select
             value={f.role}
             onValueChange={(role: "colaborador" | "operador") =>
-              setF({ ...f, role, equipamentoId: role === "operador" ? f.equipamentoId : "" })
+              setF({ ...f, role, equipamentoIds: role === "operador" ? f.equipamentoIds : [] })
             }
           >
             <SelectTrigger>
@@ -329,23 +326,12 @@ function Usuarios() {
         </div>
         {f.role === "operador" && (
           <div>
-            <Label className="text-xs">Equipamento exclusivo *</Label>
-            <Select
-              value={f.equipamentoId}
-              onValueChange={(equipamentoId) => setF({ ...f, equipamentoId })}
-              disabled={loadingEquipamentos || !!equipamentosError || equipamentos.length === 0}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um equipamento" />
-              </SelectTrigger>
-              <SelectContent>
-                {equipamentos.map((equipamento) => (
-                  <SelectItem key={equipamento.id} value={equipamento.id}>
-                    {equipamento.numero}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label className="text-xs">Equipamentos do operador *</Label>
+            <EquipamentosPicker
+              options={equipamentos}
+              value={f.equipamentoIds}
+              onChange={(equipamentoIds) => setF({ ...f, equipamentoIds })}
+            />
             {loadingEquipamentos && (
               <p className="mt-1 text-[11px] text-muted-foreground">Carregando equipamentos...</p>
             )}
@@ -378,7 +364,7 @@ function Usuarios() {
             disabled={
               m.isPending ||
               (f.role === "operador" &&
-                (!f.equipamentoId || loadingEquipamentos || !!equipamentosError))
+                (f.equipamentoIds.length === 0 || loadingEquipamentos || !!equipamentosError))
             }
             className="w-full font-semibold"
           >
@@ -425,7 +411,7 @@ function Usuarios() {
                     MAT {emailToMat(usr.email)}
                     {usr.phone ? ` • ${usr.phone}` : ""}
                     {usr.isOperator
-                      ? ` • Equipamento ${usr.equipmentNumber ?? "não vinculado"}`
+                      ? ` • Equip. ${usr.equipmentNumbers.length ? usr.equipmentNumbers.join(", ") : "não vinculado"}`
                       : ""}
                   </p>
                 </div>
@@ -446,6 +432,8 @@ function Usuarios() {
                       fullName: usr.full_name || "",
                       phone: usr.phone || "",
                       password: "",
+                      equipamentoIds: usr.equipmentIds,
+                      isOperator: usr.isOperator,
                     });
                   }}
                 >
@@ -505,11 +493,25 @@ function Usuarios() {
                       />
                     </div>
                   </div>
+                  {edit.isOperator && (
+                    <div>
+                      <Label className="text-xs">Equipamentos do operador</Label>
+                      <EquipamentosPicker
+                        options={equipamentos}
+                        value={edit.equipamentoIds}
+                        onChange={(equipamentoIds) => setEdit({ ...edit, equipamentoIds })}
+                      />
+                    </div>
+                  )}
                   <div className="flex gap-2">
                     <Button
                       type="button"
                       onClick={() => u.mutate()}
-                      disabled={u.isPending || !edit.fullName.trim()}
+                      disabled={
+                        u.isPending ||
+                        !edit.fullName.trim() ||
+                        (edit.isOperator && edit.equipamentoIds.length === 0)
+                      }
                       className="gap-2"
                     >
                       <Save className="w-4 h-4" />
@@ -532,6 +534,44 @@ function Usuarios() {
           ))}
         </ul>
       </Card>
+    </div>
+  );
+}
+
+function EquipamentosPicker({
+  options,
+  value,
+  onChange,
+}: {
+  options: { id: string; numero: string }[];
+  value: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  const [busca, setBusca] = useState("");
+  const filtrados = options.filter((o) => o.numero.toLowerCase().includes(busca.toLowerCase()));
+  const toggle = (id: string) =>
+    onChange(value.includes(id) ? value.filter((v) => v !== id) : [...value, id]);
+  return (
+    <div className="space-y-2 rounded-md border border-border p-2">
+      <Input
+        value={busca}
+        onChange={(e) => setBusca(e.target.value)}
+        placeholder="Buscar equipamento"
+        className="h-8"
+      />
+      <div className="grid max-h-48 grid-cols-3 gap-1 overflow-y-auto sm:grid-cols-4">
+        {filtrados.map((o) => (
+          <label key={o.id} className="flex items-center gap-1.5 text-xs">
+            <input
+              type="checkbox"
+              checked={value.includes(o.id)}
+              onChange={() => toggle(o.id)}
+            />
+            {o.numero}
+          </label>
+        ))}
+      </div>
+      <p className="text-[11px] text-muted-foreground">{value.length} selecionado(s)</p>
     </div>
   );
 }
