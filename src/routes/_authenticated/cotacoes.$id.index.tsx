@@ -409,6 +409,40 @@ export default function DetalheCotacaoPage() {
     setIsNovoItemOpen(true);
   }
 
+  function abrirEdicaoCabecalho() {
+    setEditarPatrimonio(cotacao?.patrimonio ?? "");
+    setEditarSetor(cotacao?.setor ?? "");
+    setIsEditarCabecalhoOpen(true);
+  }
+
+  async function handleSalvarCabecalho(e: React.FormEvent) {
+    e.preventDefault();
+    if (!cotacao) return;
+    try {
+      setSaving(true);
+      const { error } = await supabase
+        .from("cotacoes")
+        .update({
+          patrimonio: editarPatrimonio.trim() || null,
+          setor: editarSetor.trim() || null,
+        })
+        .eq("id", id);
+      if (error) throw error;
+      setCotacao({
+        ...cotacao,
+        patrimonio: editarPatrimonio.trim() || null,
+        setor: editarSetor.trim() || null,
+      });
+      toast.success("Dados da cotação atualizados!");
+      setIsEditarCabecalhoOpen(false);
+    } catch (error: unknown) {
+      const err = error as Error;
+      toast.error(`Erro ao atualizar dados da cotação: ${err.message}`);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handleSalvarItem(e: React.FormEvent) {
     e.preventDefault();
     if (!descricaoItem.trim()) return toast.error("Informe a descrição do item.");
