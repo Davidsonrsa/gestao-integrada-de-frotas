@@ -1110,6 +1110,14 @@ export default function DetalheCotacaoPage() {
               Setor: {cotacao.setor || "—"} | Data: {formatarData(cotacao.data_cotacao)} |{" "}
               <strong>Solicitante:</strong> {nomeSolicitanteFixo}
             </p>
+            <Button
+              type="button"
+              onClick={abrirEdicaoCabecalho}
+              variant="outline"
+              className="mt-3 gap-2 print:hidden"
+            >
+              <Pencil className="w-4 h-4" /> Editar patrimônio / setor
+            </Button>
             {cotacao.observacoes && (
               <p className="text-xs text-slate-500 mt-2">Obs: {cotacao.observacoes}</p>
             )}
