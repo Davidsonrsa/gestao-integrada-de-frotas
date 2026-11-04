@@ -142,6 +142,11 @@ export default function DetalheCotacaoPage() {
   const [unidadeItem, setUnidadeItem] = useState("UN");
   const [itemEditando, setItemEditando] = useState<ItemCotacao | null>(null);
 
+  // Estados para editar cabeçalho (patrimônio/setor)
+  const [isEditarCabecalhoOpen, setIsEditarCabecalhoOpen] = useState(false);
+  const [editarPatrimonio, setEditarPatrimonio] = useState("");
+  const [editarSetor, setEditarSetor] = useState("");
+
   // Vinculação
   const [fornecedorIdSelecionado, setFornecedorIdSelecionado] = useState("");
 
@@ -402,6 +407,40 @@ export default function DetalheCotacaoPage() {
     setQuantidadeItem(String(item.quantidade));
     setUnidadeItem(item.unidade);
     setIsNovoItemOpen(true);
+  }
+
+  function abrirEdicaoCabecalho() {
+    setEditarPatrimonio(cotacao?.patrimonio ?? "");
+    setEditarSetor(cotacao?.setor ?? "");
+    setIsEditarCabecalhoOpen(true);
+  }
+
+  async function handleSalvarCabecalho(e: React.FormEvent) {
+    e.preventDefault();
+    if (!cotacao) return;
+    try {
+      setSaving(true);
+      const { error } = await supabase
+        .from("cotacoes")
+        .update({
+          patrimonio: editarPatrimonio.trim() || null,
+          setor: editarSetor.trim() || null,
+        })
+        .eq("id", id);
+      if (error) throw error;
+      setCotacao({
+        ...cotacao,
+        patrimonio: editarPatrimonio.trim() || null,
+        setor: editarSetor.trim() || null,
+      });
+      toast.success("Dados da cotação atualizados!");
+      setIsEditarCabecalhoOpen(false);
+    } catch (error: unknown) {
+      const err = error as Error;
+      toast.error(`Erro ao atualizar dados da cotação: ${err.message}`);
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleSalvarItem(e: React.FormEvent) {
@@ -1071,6 +1110,14 @@ export default function DetalheCotacaoPage() {
               Setor: {cotacao.setor || "—"} | Data: {formatarData(cotacao.data_cotacao)} |{" "}
               <strong>Solicitante:</strong> {nomeSolicitanteFixo}
             </p>
+            <Button
+              type="button"
+              onClick={abrirEdicaoCabecalho}
+              variant="outline"
+              className="mt-3 gap-2 print:hidden"
+            >
+              <Pencil className="w-4 h-4" /> Editar patrimônio / setor
+            </Button>
             {cotacao.observacoes && (
               <p className="text-xs text-slate-500 mt-2">Obs: {cotacao.observacoes}</p>
             )}
@@ -1620,6 +1667,45 @@ export default function DetalheCotacaoPage() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isEditarCabecalhoOpen} onOpenChange={setIsEditarCabecalhoOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Patrimônio / Setor</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSalvarCabecalho} className="space-y-4">
+            <div>
+              <Label className="text-xs font-semibold text-slate-700">Patrimônio / Equipamento</Label>
+              <Input
+                value={editarPatrimonio}
+                onChange={(e) => setEditarPatrimonio(e.target.value)}
+                placeholder="Ex: 580N 4X4 — RE-30"
+              />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold text-slate-700">Setor</Label>
+              <Input
+                value={editarSetor}
+                onChange={(e) => setEditarSetor(e.target.value)}
+                placeholder="Ex: Manutenção"
+              />
+            </div>
+            <DialogFooter className="gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsEditarCabecalhoOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={saving} className="gap-2">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Pencil className="w-4 h-4" />}
+                Salvar
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
