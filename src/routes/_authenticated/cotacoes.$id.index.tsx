@@ -142,6 +142,11 @@ export default function DetalheCotacaoPage() {
   const [unidadeItem, setUnidadeItem] = useState("UN");
   const [itemEditando, setItemEditando] = useState<ItemCotacao | null>(null);
 
+  // Estados para editar cabeçalho (patrimônio/setor)
+  const [isEditarCabecalhoOpen, setIsEditarCabecalhoOpen] = useState(false);
+  const [editarPatrimonio, setEditarPatrimonio] = useState("");
+  const [editarSetor, setEditarSetor] = useState("");
+
   // Vinculação
   const [fornecedorIdSelecionado, setFornecedorIdSelecionado] = useState("");
 
