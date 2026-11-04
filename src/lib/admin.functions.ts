@@ -24,14 +24,14 @@ const createUserSchema = z
     fullName: z.string().min(1),
     phone: z.string().optional().nullable(),
     role: z.enum(["colaborador", "operador"]).default("colaborador"),
-    equipamentoId: z.string().uuid().nullable().optional(),
+    equipamentoIds: z.array(z.string().uuid()).default([]),
   })
   .superRefine((data, ctx) => {
-    if (data.role === "operador" && !data.equipamentoId) {
+    if (data.role === "operador" && data.equipamentoIds.length === 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Operadores precisam de um equipamento exclusivo.",
-        path: ["equipamentoId"],
+        message: "Selecione ao menos um equipamento para o operador.",
+        path: ["equipamentoIds"],
       });
     }
   });
@@ -43,18 +43,6 @@ export const adminCreateUser = createServerFn({ method: "POST" })
     await assertAdmin(context);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    if (data.role === "operador" && data.equipamentoId) {
-      const { data: existingAssignment, error: assignmentError } = await supabaseAdmin
-        .from("operador_equipamentos")
-        .select("user_id")
-        .eq("equipamento_id", data.equipamentoId)
-        .maybeSingle();
-      if (assignmentError) throw new Error(assignmentError.message);
-      if (existingAssignment) {
-        throw new Error("Este equipamento já está vinculado a outro operador.");
-      }
-    }
 
     const email = matToEmail(data.matricula);
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
@@ -80,7 +68,7 @@ export const adminCreateUser = createServerFn({ method: "POST" })
         if (phoneError) throw new Error(phoneError.message);
       }
 
-      if (data.role === "operador" && data.equipamentoId) {
+      if (data.role === "operador" && data.equipamentoIds.length > 0) {
         const { error: removeDefaultRoleError } = await supabaseAdmin
           .from("user_roles")
           .delete()
@@ -94,13 +82,13 @@ export const adminCreateUser = createServerFn({ method: "POST" })
 
         const { error: assignmentError } = await supabaseAdmin
           .from("operador_equipamentos")
-          .insert({ user_id: newId, equipamento_id: data.equipamentoId });
-        if (assignmentError) {
-          if (assignmentError.code === "23505") {
-            throw new Error("Este equipamento já está vinculado a outro operador.");
-          }
-          throw new Error(assignmentError.message);
-        }
+          .insert(
+            [...new Set(data.equipamentoIds)].map((equipamento_id) => ({
+              user_id: newId,
+              equipamento_id,
+            })),
+          );
+        if (assignmentError) throw new Error(assignmentError.message);
       }
     } catch (creationError) {
       const { error: rollbackError } = await supabaseAdmin.auth.admin.deleteUser(newId);
@@ -150,12 +138,13 @@ export const adminListUsers = createServerFn({ method: "GET" })
       ...p,
       isAdmin: roles?.some((r) => r.user_id === p.id && r.role === "admin") ?? false,
       isOperator: roles?.some((r) => r.user_id === p.id && r.role === "operador") ?? false,
-      equipmentNumber: (() => {
-        const equipmentId = assignments?.find(
-          (assignment) => assignment.user_id === p.id,
-        )?.equipamento_id;
-        return equipmentId ? (equipmentNumbers.get(equipmentId) ?? null) : null;
-      })(),
+      equipmentIds: (assignments ?? [])
+        .filter((assignment) => assignment.user_id === p.id)
+        .map((assignment) => assignment.equipamento_id),
+      equipmentNumbers: (assignments ?? [])
+        .filter((assignment) => assignment.user_id === p.id)
+        .map((assignment) => equipmentNumbers.get(assignment.equipamento_id) ?? "?")
+        .sort(),
     }));
   });
 
@@ -164,6 +153,7 @@ const updateUserSchema = z.object({
   fullName: z.string().min(1),
   phone: z.string().optional().nullable(),
   password: z.string().min(8).optional().nullable(),
+  equipamentoIds: z.array(z.string().uuid()).optional().nullable(),
 });
 
 export const adminUpdateUser = createServerFn({ method: "POST" })
@@ -185,6 +175,27 @@ export const adminUpdateUser = createServerFn({ method: "POST" })
         password: data.password,
       });
       if (error) throw new Error(error.message);
+    }
+
+    if (data.equipamentoIds) {
+      const { data: roles, error: rolesError } = await supabaseAdmin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", data.userId);
+      if (rolesError) throw new Error(rolesError.message);
+      if (roles?.some((r) => r.role === "operador")) {
+        const ids = [...new Set(data.equipamentoIds)];
+        if (ids.length === 0) throw new Error("Selecione ao menos um equipamento para o operador.");
+        const { error: delError } = await supabaseAdmin
+          .from("operador_equipamentos")
+          .delete()
+          .eq("user_id", data.userId);
+        if (delError) throw new Error(delError.message);
+        const { error: insError } = await supabaseAdmin
+          .from("operador_equipamentos")
+          .insert(ids.map((equipamento_id) => ({ user_id: data.userId, equipamento_id })));
+        if (insError) throw new Error(insError.message);
+      }
     }
 
     return { ok: true };
