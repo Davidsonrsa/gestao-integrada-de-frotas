@@ -234,11 +234,7 @@ function EquipamentoDetail() {
         (payload.data_horimetro_atual !== undefined &&
           payload.data_horimetro_atual !== equip?.data_horimetro_atual);
       const localizacao =
-        isOperador && mudouHorimetro ? await solicitarLocalizacaoHorimetro() : null;
-      if (localizacao?.indisponivel)
-        toast.warning(
-          "Localização não autorizada ou indisponível. O lançamento será registrado sem endereço.",
-        );
+        isOperador && mudouHorimetro ? await solicitarLocalizacaoHorimetro(true) : null;
       const comData = mudouHorimetro
         ? {
             ...allowed,

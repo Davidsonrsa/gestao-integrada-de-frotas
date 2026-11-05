@@ -57,6 +57,13 @@
       "when": 1793356152772,
       "tag": "0007_operator_hourmeter_audit",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793880439007,
+      "tag": "0008_require_operator_hourmeter_location",
+      "breakpoints": true
     }
   ]
 }

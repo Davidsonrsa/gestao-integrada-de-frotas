@@ -1603,6 +1603,17 @@ function EquipamentosList() {
     const hoje = new Date();
     const dataHorimetro = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}-${String(hoje.getDate()).padStart(2, "0")}`;
 
+    let endereco: string | null = null;
+    if (isOperador) {
+      try {
+        endereco = (await solicitarLocalizacaoHorimetro(true)).endereco;
+      } catch (erro) {
+        setHorimetroDrafts((drafts) => ({ ...drafts, [equipamentoId]: previous?.toString() ?? "" }));
+        toast.error(erro instanceof Error ? erro.message : "Ative a localização para salvar o horímetro.");
+        return;
+      }
+    }
+
     queryClient.setQueryData<Equip[]>(["equipamentos"], (equipamentos) =>
       equipamentos?.map((equipamento) =>
         equipamento.id === equipamentoId
@@ -1619,16 +1630,8 @@ function EquipamentosList() {
 
     const extras: { horimetro_atualizado_em: string; horimetro_endereco: string | null } = {
       horimetro_atualizado_em: hoje.toISOString(),
-      horimetro_endereco: null,
+      horimetro_endereco: endereco,
     };
-    if (isOperador) {
-      const localizacao = await solicitarLocalizacaoHorimetro();
-      extras.horimetro_endereco = localizacao.endereco;
-      if (localizacao.indisponivel)
-        toast.warning(
-          "Localização não autorizada ou indisponível. O lançamento será registrado sem endereço.",
-        );
-    }
 
     const { error } = await supabase
       .from("equipamentos")

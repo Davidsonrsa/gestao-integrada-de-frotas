@@ -1,8 +1,14 @@
 export type LocalizacaoHorimetro = { endereco: string | null; indisponivel: boolean };
 
-export async function solicitarLocalizacaoHorimetro(): Promise<LocalizacaoHorimetro> {
-  if (typeof navigator === "undefined" || !navigator.geolocation) {
+export async function solicitarLocalizacaoHorimetro(obrigatoria = false): Promise<LocalizacaoHorimetro> {
+  const indisponivel = (): LocalizacaoHorimetro => {
+    if (obrigatoria) {
+      throw new Error("Ative a localização do celular e permita o acesso à localização para salvar o horímetro. Depois, tente novamente.");
+    }
     return { endereco: null, indisponivel: true };
+  };
+  if (typeof navigator === "undefined" || !navigator.geolocation) {
+    return indisponivel();
   }
   const posicao = await new Promise<GeolocationPosition | null>((resolve) => {
     navigator.geolocation.getCurrentPosition(resolve, () => resolve(null), {
@@ -11,7 +17,7 @@ export async function solicitarLocalizacaoHorimetro(): Promise<LocalizacaoHorime
       timeout: 10000,
     });
   });
-  if (!posicao) return { endereco: null, indisponivel: true };
+  if (!posicao) return indisponivel();
   const { latitude, longitude } = posicao.coords;
   const coordenadas = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
   try {
