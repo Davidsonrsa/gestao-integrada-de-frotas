@@ -5,6 +5,7 @@ import {
   itensFiltrosParaCotacao,
   quantidadeItemRevisao,
   resumirItensRevisao,
+  selecionarEquipamentosRelatorio,
 } from "./frota-relatorio";
 
 const base = {
@@ -174,6 +175,19 @@ describe("Resumo de filtros e óleos", () => {
 });
 
 describe("Equipamentos selecionados para relatório", () => {
+  test("usa somente equipamentos marcados dentro da CL na impressão e cotação", () => {
+    const frota = equipamentos.map((e, i) => ({ ...e, id: String(i), filtro_lub: "PSL283" }));
+    const selecionados = selecionarEquipamentosRelatorio(filtrarEquipamentos(frota, "05", "", false), ["1", "2"]);
+    assert.deepEqual(selecionados.map((e) => e.numero), ["RE-40"]);
+    assert.equal(resumirItensRevisao(selecionados)[0]?.total, 1);
+    assert.deepEqual(itensFiltrosParaCotacao(selecionados)[0]?.equipamentos, ["RE-40"]);
+    assert.equal(itensFiltrosParaCotacao(selecionados)[0]?.quantidade, 1);
+  });
+  test("seleção vazia não inclui equipamentos; seleção padrão inclui todos os visíveis", () => {
+    const frota = [{ id: "1" }, { id: "2" }];
+    assert.deepEqual(selecionarEquipamentosRelatorio(frota, []), []);
+    assert.deepEqual(selecionarEquipamentosRelatorio(frota, null), frota);
+  });
   test("inclui somente os itens do CL selecionado", () => {
     assert.deepEqual(
       filtrarEquipamentos(equipamentos, "05", "", false).map((e) => e.numero),

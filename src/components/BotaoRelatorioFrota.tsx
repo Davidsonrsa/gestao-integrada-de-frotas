@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Printer } from "lucide-react";
+import { ListChecks, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ITENS_REVISAO, itensFiltrosParaCotacao, resumirItensRevisao } from "@/lib/frota-relatorio";
+import { ITENS_REVISAO, itensFiltrosParaCotacao, resumirItensRevisao, selecionarEquipamentosRelatorio } from "@/lib/frota-relatorio";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { CotacaoFiltrosDialog } from "@/components/CotacaoFiltrosDialog";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -45,9 +46,15 @@ export function BotaoRelatorioFrota({
   somenteVencidos: boolean;
 }) {
   const [comFiltros, setComFiltros] = useState(false);
+  const [selecionarAberto, setSelecionarAberto] = useState(false);
+  const escopo = JSON.stringify([cl, busca, somenteVencidos]);
+  const [selecao, setSelecao] = useState<{ escopo: string; ids: string[] | null }>({ escopo, ids: null });
+  const ids = selecao.escopo === escopo ? selecao.ids : null;
+  const selecionados = selecionarEquipamentosRelatorio(equipamentos, ids);
+  const equipamentosRelatorio = comFiltros ? selecionados : equipamentos;
   const { isAdmin } = useAuth();
   const imprimir = () => {
-    if (!equipamentos.length) return;
+    if (!equipamentosRelatorio.length) return;
     const janela = window.open("", "_blank", "width=1000,height=750");
     if (!janela) {
       toast.error("Permita abrir a janela para imprimir o relatório.");
@@ -55,7 +62,7 @@ export function BotaoRelatorioFrota({
     }
     janela.opener = null;
     const filtro = cl === "__all" ? "Todas as CL" : `CL ${cl}`;
-    const linhas = equipamentos
+    const linhas = equipamentosRelatorio
       .map((e) => {
         const rodado =
           e.horimetro_atual != null && e.h_revisao != null
@@ -64,7 +71,7 @@ export function BotaoRelatorioFrota({
         return `<tr>${[e.cl, e.numero, e.identificacao, e.placa, e.localizacao, e.status || "Operacional", e.horimetro_atual, e.h_revisao, rodado, e.proxima_revisao_horimetro, e.limite_revisao ?? 500].map((valor) => `<td>${escapar(valor)}</td>`).join("")}</tr>`;
       })
       .join("");
-    const linhasResumo = resumirItensRevisao(equipamentos)
+    const linhasResumo = resumirItensRevisao(equipamentosRelatorio)
       .map(
         (r) =>
           `<tr><td>${r.equipamentos.map(escapar).join(", ")}</td><td>${r.qtd}</td><td>${escapar(r.tipo)}</td><td>${escapar(r.codigo)}</td><td>${r.total ? `${r.total} ${escapar(r.un)}` : "—"}</td></tr>`,
@@ -105,12 +112,37 @@ export function BotaoRelatorioFrota({
         className="h-9 px-2 gap-1 text-[11px] whitespace-nowrap"
         title="Imprimir itens selecionados"
         onClick={imprimir}
-        disabled={!equipamentos.length}
+        disabled={!equipamentosRelatorio.length}
       >
         <Printer className="h-4 w-4" /> Imprimir
       </Button>
       {comFiltros && isAdmin && (
-        <CotacaoFiltrosDialog itens={itensFiltrosParaCotacao(equipamentos)} />
+        <CotacaoFiltrosDialog itens={itensFiltrosParaCotacao(selecionados)} />
+      )}
+      {comFiltros && (
+        <>
+          <Button type="button" size="sm" variant="outline" className="h-9 px-2 gap-1 text-[11px] whitespace-nowrap" onClick={() => setSelecionarAberto(true)} title="Selecionar equipamentos para filtros e óleos">
+            <ListChecks className="h-4 w-4" /> {selecionados.length}/{equipamentos.length}
+          </Button>
+          <Dialog open={selecionarAberto} onOpenChange={setSelecionarAberto}>
+            <DialogContent aria-describedby={undefined} className="max-w-lg">
+              <DialogHeader><DialogTitle>Equipamentos — {cl === "__all" ? "Todas as CL" : `CL ${cl}`}</DialogTitle></DialogHeader>
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <input type="checkbox" checked={equipamentos.length > 0 && selecionados.length === equipamentos.length} onChange={(ev) => setSelecao({ escopo, ids: ev.target.checked ? null : [] })} />
+                Selecionar todos ({selecionados.length}/{equipamentos.length})
+              </label>
+              <div className="max-h-80 overflow-auto divide-y divide-border">
+                {equipamentos.map((e) => (
+                  <label key={e.id} className="flex items-start gap-3 py-3 text-sm cursor-pointer">
+                    <input type="checkbox" className="mt-1" aria-label={`Selecionar ${e.numero}`} checked={selecionados.some((item) => item.id === e.id)} onChange={(ev) => setSelecao({ escopo, ids: ev.target.checked ? [...selecionados.map((item) => item.id), e.id] : selecionados.filter((item) => item.id !== e.id).map((item) => item.id) })} />
+                    <span className="min-w-0 break-words"><span className="font-semibold">{e.numero}</span> · {e.identificacao || "—"}<span className="block text-xs text-muted-foreground">Próxima revisão: {e.proxima_revisao_horimetro != null ? `${e.proxima_revisao_horimetro} h` : "—"}</span></span>
+                  </label>
+                ))}
+              </div>
+              <DialogFooter><Button type="button" onClick={() => setSelecionarAberto(false)}>Concluir seleção</Button></DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </>
       )}
     </div>
   );
