@@ -969,7 +969,8 @@ const calcularTotalMes = (mesId: string) => {
           .bg-gray-200 {
             background-color: #e5e7eb !important;
           }
-          body > div, main, main > div { min-height: 0 !important; }
+          body > div, main, main > div { min-height: 0 !important; background: var(--print-paper) !important; }
+          div:has(> main) { min-height: 0 !important; background: var(--print-paper) !important; }
           main { padding: 0 !important; margin: 0 !important; }
           .medicao-pagina, .medicao-pagina > div {
             padding: 0 !important; margin: 0 !important;
@@ -982,8 +983,12 @@ const calcularTotalMes = (mesId: string) => {
           }
           .medicao-documento > div { margin-top: 0 !important; margin-bottom: 2px !important; }
           .medicao-documento .overflow-x-auto { overflow: visible !important; }
-          .medicao-documento table { width: 100% !important; font-size: 8px !important; line-height: 1.15 !important; }
-          .medicao-documento th, .medicao-documento td { padding: 1px 2px !important; }
+          .medicao-documento table { width: 100% !important; table-layout: fixed; font-size: 8px !important; line-height: 1.15 !important; }
+          .medicao-documento th, .medicao-documento td { padding: 1px 2px !important; overflow-wrap: anywhere; }
+          .medicao-documento thead tr:first-child th:first-child { width: 9%; }
+          .medicao-documento thead tr:first-child th:nth-child(2) { width: 12%; }
+          .medicao-documento thead tr:first-child th:last-child { width: 20%; }
+          .medicao-documento td input { width: 100% !important; max-width: 100% !important; }
           .medicao-documento tr { break-inside: avoid; }
           .medicao-documento input {
             height: 14px !important; min-height: 0 !important;
