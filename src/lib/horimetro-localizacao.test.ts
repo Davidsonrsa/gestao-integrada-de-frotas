@@ -60,4 +60,19 @@ describe("solicitar localização do operador", () => {
       else Reflect.deleteProperty(globalThis, "navigator");
     }
   });
+  for (const code of [1, 2, 3]) {
+    test(`bloqueia lançamento obrigatório quando localização falha (código ${code})`, async () => {
+      const original = Object.getOwnPropertyDescriptor(globalThis, "navigator");
+      Object.defineProperty(globalThis, "navigator", {
+        configurable: true,
+        value: { geolocation: { getCurrentPosition: (_sucesso: PositionCallback, erro: PositionErrorCallback) => erro({ code } as GeolocationPositionError) } },
+      });
+      try {
+        await assert.rejects(solicitarLocalizacaoHorimetro(true), /Ative a localização do celular/);
+      } finally {
+        if (original) Object.defineProperty(globalThis, "navigator", original);
+        else Reflect.deleteProperty(globalThis, "navigator");
+      }
+    });
+  }
 });
