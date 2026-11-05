@@ -17,6 +17,12 @@ export const ITENS_REVISAO = [
   ["tandem_oleo", "Óleo tandem"],
 ] as const;
 
+export function selecionarEquipamentosRelatorio<T extends { id: string }>(equipamentos: T[], ids: readonly string[] | null): T[] {
+  if (ids === null) return equipamentos;
+  const selecionados = new Set(ids);
+  return equipamentos.filter((equipamento) => selecionados.has(equipamento.id));
+}
+
 export function quantidadeItemRevisao(campo: string, valor: string) {
   if (campo.startsWith("filtro")) return { n: 1, un: "un" };
   const codigo = valor.toUpperCase().replace(/\s/g, "");
