@@ -976,6 +976,7 @@ const calcularTotalMes = (mesId: string) => {
             padding: 0 !important; margin: 0 !important;
             border: 0 !important; box-shadow: none !important;
           }
+          .medicao-pagina { width: 194mm !important; max-width: 100% !important; }
           .medicao-documento {
             width: 100%; margin: 0 !important;
             font-size: 8px !important; line-height: 1.15 !important;
@@ -998,6 +999,7 @@ const calcularTotalMes = (mesId: string) => {
             color: var(--print-ink) !important; background: transparent !important;
           }
           .medicao-documento .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .medicao-documento .grid > div { min-width: 0; overflow-wrap: anywhere; }
           .medicao-documento .grid-cols-3, .medicao-documento .md\\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
           .medicao-assinaturas {
             break-inside: avoid !important;
