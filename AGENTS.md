@@ -36,6 +36,7 @@ Não há script de testes automatizados no `package.json`; para mudanças de com
 - Operator hourmeter changes are audited atomically by a database trigger into immutable snapshot rows with admin-only SELECT; both editing screens share the operator location request helper so history and location cannot diverge.
 - Operator hourmeter saves require a fresh location request before optimistic updates; a database trigger rejects missing location metadata so both editing paths enforce the requirement.
 - Fleet filtered reports receive the same filtered equipment array as the visible list, so CL, search and overdue filters cannot diverge between screen and print.
+- Filter/oil reports and quotation previews share one equipment selection intersected with the visible fleet; changing filter scope defaults to all visible equipment to avoid stale cross-CL selections.
 - Fleet revision summaries use the shared report helper to group item codes, equipment numbers and quantities consistently.
 - Fleet-to-quotation actions consolidate filter codes through the report helper and save to existing quotation tables under existing RLS; the preview and insertion use the same item array to avoid mismatches.
 - Maintenance forms and history share scoped print styles and a font/layout-ready print command to keep A4 output consistent without changing saved records.
