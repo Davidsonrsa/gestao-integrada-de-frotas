@@ -17,6 +17,16 @@ import { requireAdmin } from "@/lib/route-guards";
 import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/medicoes")({
   beforeLoad: requireAdmin,
+  head: () => ({
+    meta: [
+      { title: "Medições e Contratos | Gestão Integrada de Frotas" },
+      { name: "description", content: "Controle mensal de medições e contratos da frota, com impressão A4." },
+      { property: "og:title", content: "Medições e Contratos | Gestão Integrada de Frotas" },
+      { property: "og:description", content: "Controle mensal de medições e contratos da frota, com impressão A4." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: MedicoesPage,
 });
 
@@ -933,20 +943,21 @@ const calcularTotalMes = (mesId: string) => {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6 print:p-0 print:m-0 print:max-w-none">
+    <div className="medicao-pagina p-4 md:p-6 max-w-7xl mx-auto space-y-6 print:p-0 print:m-0 print:max-w-none">
       <style>{`
         @media print {
           @page {
             size: A4 portrait;
             margin: 8mm;
           }
-          body {
-            background-color: white !important;
-            color: black !important;
+          html, body {
+            background-color: var(--print-paper) !important;
+            color: var(--print-ink) !important;
+            min-height: 0 !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
-          header, nav, footer, .print\\:hidden {
+          header, nav, footer, .print\\:hidden, [data-sonner-toaster] {
             display: none !important;
           }
           .print\\:block {
@@ -958,11 +969,37 @@ const calcularTotalMes = (mesId: string) => {
           .bg-gray-200 {
             background-color: #e5e7eb !important;
           }
+          body > div, main, main > div { min-height: 0 !important; }
+          main { padding: 0 !important; margin: 0 !important; }
+          .medicao-pagina, .medicao-pagina > div {
+            padding: 0 !important; margin: 0 !important;
+            border: 0 !important; box-shadow: none !important;
+          }
+          .medicao-documento {
+            width: 100%; margin: 0 !important;
+            font-size: 8px !important; line-height: 1.15 !important;
+            break-inside: avoid-page;
+          }
+          .medicao-documento > div { margin-top: 0 !important; margin-bottom: 2px !important; }
+          .medicao-documento .overflow-x-auto { overflow: visible !important; }
+          .medicao-documento table { width: 100% !important; font-size: 8px !important; line-height: 1.15 !important; }
+          .medicao-documento th, .medicao-documento td { padding: 1px 2px !important; }
+          .medicao-documento tr { break-inside: avoid; }
+          .medicao-documento input {
+            height: 14px !important; min-height: 0 !important;
+            padding: 0 !important; border: 0 !important;
+            border-radius: 0 !important; box-shadow: none !important;
+            font-size: 8px !important; line-height: 1.15 !important;
+            color: var(--print-ink) !important; background: transparent !important;
+          }
+          .medicao-documento .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .medicao-documento .grid-cols-3, .medicao-documento .md\\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
           .medicao-assinaturas {
             break-inside: avoid !important;
             page-break-inside: avoid !important;
-            margin-top: 2mm !important;
+            margin-top: 3mm !important;
             padding: 1.5mm 2mm !important;
+            font-size: 8px !important;
           }
           .medicao-assinaturas-linhas {
             padding-top: 7mm !important;
@@ -1228,7 +1265,13 @@ const calcularTotalMes = (mesId: string) => {
                 <Plus size={16} /> Novo Equipamento
               </button>
               <button
-                onClick={() => window.print()}
+                onClick={async () => {
+                  await document.fonts.ready;
+                  await new Promise<void>((resolve) =>
+                    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+                  );
+                  window.print();
+                }}
                 className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm"
               >
                 <Printer size={16} /> Imprimir A4
@@ -1343,29 +1386,7 @@ const calcularTotalMes = (mesId: string) => {
               let totalHoras100Mes = 0;
 
               return (
-                <div className="space-y-1 print:space-y-0.5">
-                  <style>{`
-                    @media print {
-                      @page {
-                        size: A4 portrait;
-                        margin: 4mm !important;
-                      }
-                      body {
-                        font-size: 8px !important;
-                        background: white !important;
-                        color: black !important;
-                      }
-                      input {
-                        border: none !important;
-                        background: transparent !important;
-                        text-align: center !important;
-                        padding: 0 !important;
-                      }
-                      .print\\:hidden {
-                        display: none !important;
-                      }
-                    }
-                  `}</style>
+                <div className="medicao-documento space-y-1 print:space-y-0.5">
 
                   <div className="border border-gray-800 text-[10px] print:text-[7.5px]">
                     <div className="bg-gray-200 text-center font-bold py-0.5 border-b border-gray-800 uppercase">
@@ -1649,7 +1670,7 @@ const calcularTotalMes = (mesId: string) => {
             );
 
             return (
-              <div className="space-y-2 print:space-y-1">
+              <div className="medicao-documento space-y-2 print:space-y-1">
                 <div className="border border-gray-800 text-[10px] print:text-[8px]">
                   <div className="bg-gray-200 text-center font-bold py-1 border-b border-gray-800 uppercase">
                     CONTROLE DE MEDIÇÃO DE HORAS - {mesSelecionado.nome.toUpperCase()} /{" "}
