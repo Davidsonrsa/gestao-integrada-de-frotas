@@ -41,6 +41,7 @@ Não há script de testes automatizados no `package.json`; para mudanças de com
 - The maintenance history parent renders its list only at the exact list URL and always renders Outlet so nested record and print links display the selected form.
 - Maintenance forms share the footer and report generator, persisting supervisor notes in the existing technical-observation field to preserve saved records.
 - New maintenance checklists copy equipment filter codes through one shared mapping without modifying existing historical checklists.
+- Both measurement layouts use the same scoped print rules and font-ready print command; reset shell spacing and compact table inputs so PDF and paper output share pagination without changing saved measurements.
 
 - Reutilize componentes existentes em `src/components/ui/` e ícones de `lucide-react` antes de criar equivalentes.
 - Preserve a separação entre componentes de UI, hooks, integrações Supabase e funções server-side em seus diretórios atuais.
