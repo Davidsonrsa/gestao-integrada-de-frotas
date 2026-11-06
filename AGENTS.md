@@ -40,6 +40,7 @@ Não há script de testes automatizados no `package.json`; para mudanças de com
 - Fleet revision summaries use the shared report helper to group item codes, equipment numbers and quantities consistently.
 - Fleet-to-quotation actions consolidate filter codes through the report helper and save to existing quotation tables under existing RLS; the preview and insertion use the same item array to avoid mismatches.
 - Maintenance forms and history share scoped print styles and a font/layout-ready print command to keep A4 output consistent without changing saved records.
+- Both maintenance editing screens and the Word report mark checklist system blocks through one shared helper, so screen, print and saved report grouping cannot diverge.
 - The maintenance history parent renders its list only at the exact list URL and always renders Outlet so nested record and print links display the selected form.
 - Maintenance forms share the footer and report generator, persisting supervisor notes in the existing technical-observation field to preserve saved records.
 - New maintenance checklists copy equipment filter codes through one shared mapping without modifying existing historical checklists.
