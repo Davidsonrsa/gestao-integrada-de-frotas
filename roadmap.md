@@ -2,7 +2,7 @@
 
 - [x] Ajustar impressão e PDF das medições para uma folha A4 com assinaturas e validar os dois modelos
 
-- [ ] Registrar histórico dos horímetros de operadores com acesso e impressão somente do administrador
+- [x] Registrar histórico dos horímetros de operadores com acesso e impressão somente do administrador
 - [ ] Solicitar localização nos lançamentos do operador nas duas telas e validar o fluxo
 
 - [x] Restringir exclusão de contratos aos administradores
@@ -34,3 +34,5 @@
 - [ ] Admin: cadastrar/editar usuário com tipo Operador e equipamentos designados
 - [ ] Frontend: operador vê só Frota, lança horímetro e cadastra pendências (sem editar/excluir)
 - [ ] Validar com tsgo, testes e Playwright (login como operador)
+- [x] Destacar blocos de sistema (motor, combustível, transmissão, hidráulico, vazamentos, eletricidade, eixos, carregador) no formulário de manutenção
+- [ ] Validar lançamento com localização como operador — bloqueado: aprovação de login como operador recusada
