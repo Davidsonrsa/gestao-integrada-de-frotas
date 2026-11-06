@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
-import { MANUTENCAO_TEMPLATE, type ManutencaoItem, STATUS_LABELS } from "@/lib/manutencao-template";
+import {
+  MANUTENCAO_TEMPLATE,
+  STATUS_LABELS,
+  iniciaBlocoManutencao,
+  type ManutencaoItem,
+} from "@/lib/manutencao-template";
 import { ManutencaoRodape } from "@/components/ManutencaoRodape";
 import { ManutencaoPrintStyles, imprimirPlanoManutencao } from "@/components/ManutencaoPrintStyles";
 import * as XLSX from "xlsx";
@@ -366,41 +371,48 @@ function ManutencaoFormPage() {
               </thead>
               <tbody>
                 {itens.map((it, i) => (
-                  <tr key={i}>
-                    <td className="border px-2 py-1">{it.sistema}</td>
-                    <td className="border px-2 py-1">{it.item}</td>
-                    <td className="border px-2 py-1">{it.acao}</td>
-                    <td className="border px-2 py-1 text-center">{it.pm}</td>
-                    <td className="border px-1 py-0.5">
-                      <input
-                        className="w-full bg-transparent outline-none px-1 py-0.5 text-[11px]"
-                        value={it.codigo ?? ""}
-                        onChange={(e) => updateItem(i, { codigo: e.target.value })}
-                      />
-                    </td>
-                    <td className="border px-1 py-0.5">
-                      <input
-                        className="w-full bg-transparent outline-none px-1 py-0.5 text-[11px]"
-                        value={it.quantidade ?? ""}
-                        onChange={(e) => updateItem(i, { quantidade: e.target.value })}
-                      />
-                    </td>
-                    <td className="border px-1 py-0.5">
-                      <select
-                        className="w-full bg-transparent outline-none text-[11px] py-0.5"
-                        value={it.status ?? ""}
-                        onChange={(e) =>
-                          updateItem(i, { status: e.target.value as ManutencaoItem["status"] })
-                        }
-                      >
-                        {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                          <option key={k} value={k}>
-                            {v}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                  </tr>
+                  <Fragment key={i}>
+                    {iniciaBlocoManutencao(itens, i) && (
+                      <tr className="manutencao-bloco">
+                        <td colSpan={7}>{it.sistema}</td>
+                      </tr>
+                    )}
+                    <tr>
+                      <td className="border px-2 py-1">{it.sistema}</td>
+                      <td className="border px-2 py-1">{it.item}</td>
+                      <td className="border px-2 py-1">{it.acao}</td>
+                      <td className="border px-2 py-1 text-center">{it.pm}</td>
+                      <td className="border px-1 py-0.5">
+                        <input
+                          className="w-full bg-transparent outline-none px-1 py-0.5 text-[11px]"
+                          value={it.codigo ?? ""}
+                          onChange={(e) => updateItem(i, { codigo: e.target.value })}
+                        />
+                      </td>
+                      <td className="border px-1 py-0.5">
+                        <input
+                          className="w-full bg-transparent outline-none px-1 py-0.5 text-[11px]"
+                          value={it.quantidade ?? ""}
+                          onChange={(e) => updateItem(i, { quantidade: e.target.value })}
+                        />
+                      </td>
+                      <td className="border px-1 py-0.5">
+                        <select
+                          className="w-full bg-transparent outline-none text-[11px] py-0.5"
+                          value={it.status ?? ""}
+                          onChange={(e) =>
+                            updateItem(i, { status: e.target.value as ManutencaoItem["status"] })
+                          }
+                        >
+                          {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                            <option key={k} value={k}>
+                              {v}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                    </tr>
+                  </Fragment>
                 ))}
               </tbody>
             </table>

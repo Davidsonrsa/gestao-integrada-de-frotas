@@ -43,6 +43,16 @@ export const MANUTENCAO_TEMPLATE: ManutencaoItem[] = [
   { sistema: "Carregador e Articulação", item: "Lubrificação", acao: "Substituir", pm: "P" },
 ];
 
+/**
+ * Indica se o item na posição `idx` abre um novo bloco de sistema
+ * (Motor, Combustível, Transmissão, ...). Usado pelas duas telas de
+ * manutenção para destacar os blocos sem alterar a estrutura da tabela.
+ */
+export function iniciaBlocoManutencao(itens: ManutencaoItem[], idx: number): boolean {
+  if (idx <= 0) return true;
+  return itens[idx - 1]?.sistema !== itens[idx]?.sistema;
+}
+
 export const STATUS_LABELS: Record<string, string> = {
   "": "—",
   ok: "OK",

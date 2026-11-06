@@ -12,7 +12,11 @@ import {
   BorderStyle,
   ShadingType,
 } from "docx";
-import { STATUS_LABELS, type ManutencaoItem } from "@/lib/manutencao-template";
+import {
+  STATUS_LABELS,
+  iniciaBlocoManutencao,
+  type ManutencaoItem,
+} from "@/lib/manutencao-template";
 
 export const REPORT_TAG = "[RELATORIO]";
 
@@ -51,20 +55,39 @@ export async function buildReportDocx(params: {
       cell(h, { bold: true, shade: "E5E7EB", width: cols[i] }),
     ),
   });
-  const itemRows = params.itens.map(
-    (it) =>
-      new TableRow({
-        children: [
-          cell(it.sistema, { width: cols[0] }),
-          cell(it.item, { width: cols[1] }),
-          cell(it.acao, { width: cols[2] }),
-          cell(it.pm, { width: cols[3] }),
-          cell(it.codigo ?? "", { width: cols[4] }),
-          cell(it.quantidade ?? "", { width: cols[5] }),
-          cell(STATUS_LABELS[it.status ?? ""] ?? "", { width: cols[6] }),
-        ],
-      }),
-  );
+  const totalWidth = cols.reduce((a, b) => a + b, 0);
+  const blocoRow = (sistema: string) =>
+    new TableRow({
+      children: [
+        new TableCell({
+          borders,
+          columnSpan: 7,
+          width: { size: totalWidth, type: WidthType.DXA },
+          shading: { fill: "E5E7EB", type: ShadingType.CLEAR, color: "auto" },
+          margins: { top: 40, bottom: 40, left: 100, right: 100 },
+          children: [
+            new Paragraph({
+              children: [new TextRun({ text: sistema.toUpperCase(), bold: true, size: 18 })],
+            }),
+          ],
+        }),
+      ],
+    });
+
+  const itemRows = params.itens.flatMap((it, i) => {
+    const linha = new TableRow({
+      children: [
+        cell(it.sistema, { width: cols[0] }),
+        cell(it.item, { width: cols[1] }),
+        cell(it.acao, { width: cols[2] }),
+        cell(it.pm, { width: cols[3] }),
+        cell(it.codigo ?? "", { width: cols[4] }),
+        cell(it.quantidade ?? "", { width: cols[5] }),
+        cell(STATUS_LABELS[it.status ?? ""] ?? "", { width: cols[6] }),
+      ],
+    });
+    return iniciaBlocoManutencao(params.itens, i) ? [blocoRow(it.sistema), linha] : [linha];
+  });
 
   const infoRow = (label: string, value: string) =>
     new TableRow({

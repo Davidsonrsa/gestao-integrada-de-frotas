@@ -9,6 +9,19 @@ export async function imprimirPlanoManutencao() {
 export function ManutencaoPrintStyles() {
   return (
     <style>{`
+    /* Blocos de sistema destacados (Motor, Combustível, Transmissão, ...) */
+    .manutencao-documento .manutencao-bloco td {
+      background: var(--muted);
+      color: var(--foreground);
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 4px 8px;
+      border-top: 2px solid var(--foreground);
+      border-bottom: 1px solid var(--border);
+      border-left: 4px solid var(--foreground);
+    }
     @media print {
       @page { size: A4 portrait; margin: 8mm; }
       html, body { background: var(--print-paper) !important; color: var(--print-ink) !important; min-height: 0 !important; }
@@ -36,21 +49,36 @@ export function ManutencaoPrintStyles() {
       .manutencao-documento table { width: 100% !important; font-size: 9px !important; line-height: 1.15 !important; }
       .manutencao-documento thead { display: table-header-group; }
       .manutencao-documento tr { break-inside: avoid; }
-      .manutencao-documento th, .manutencao-documento td { padding: 2px 4px !important; color: var(--print-ink) !important; }
+      .manutencao-documento .manutencao-bloco { break-after: avoid; break-inside: avoid; }
+      .manutencao-documento .manutencao-bloco td {
+        background: #e5e7eb !important;
+        color: var(--print-ink) !important;
+        font-weight: 700 !important;
+        font-size: 8px !important;
+        letter-spacing: 0.05em !important;
+        text-transform: uppercase;
+        padding: 0 4px !important;
+        border-top: 1.2px solid var(--print-ink) !important;
+        border-bottom: 0.5px solid var(--print-ink) !important;
+        border-left: 3px solid var(--print-ink) !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .manutencao-documento th, .manutencao-documento td { padding: 1px 4px !important; color: var(--print-ink) !important; }
       .manutencao-documento td input, .manutencao-documento td select {
-        height: 14px !important; padding: 0 !important; font-size: 9px !important;
+        height: 12px !important; padding: 0 !important; font-size: 8.5px !important;
         border: 0 !important; border-radius: 0 !important; appearance: none;
       }
       .manutencao-documento textarea {
-        min-height: 38px !important; height: auto !important; padding: 4px !important;
+        min-height: 30px !important; height: auto !important; padding: 4px !important;
         font-size: 10px !important; field-sizing: content; resize: none; overflow: visible;
         color: var(--print-ink) !important; background: var(--print-paper) !important;
       }
-      .manutencao-assinaturas { margin-top: 20px !important; padding-top: 0 !important; break-inside: avoid; }
+      .manutencao-assinaturas { margin-top: 12px !important; padding-top: 0 !important; break-inside: avoid; }
       .manutencao-assinaturas > div { break-inside: avoid; }
       .manutencao-rodape { margin-top: 6px !important; }
       .manutencao-supervisor { break-inside: avoid; }
-      .manutencao-rodape .manutencao-assinaturas { margin-top: 16px !important; }
+      .manutencao-rodape .manutencao-assinaturas { margin-top: 10px !important; }
     }
   `}</style>
   );
