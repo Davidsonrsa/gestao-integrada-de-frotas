@@ -33,6 +33,8 @@ Não há script de testes automatizados no `package.json`; para mudanças de com
 - Ao alterar autenticação, permissões ou dados sensíveis, verifique as policies RLS e os cenários documentados em [src/lib/security-checklist.ts](src/lib/security-checklist.ts).
 
 ## Convenções de implementação
+- Equipment invoice costs use admin-scoped RLS reads, canonical invoice amounts and exact legacy prefix matching only when no equipment FK exists; paginate to avoid truncated totals.
+- Quotation manual entry keeps editable local drafts and inserts the validated batch in one request; single-item edits remain separate to preserve existing offers.
 - Operator hourmeter changes are audited atomically by a database trigger into immutable snapshot rows with admin-only SELECT; both editing screens share the operator location request helper so history and location cannot diverge.
 - Operator hourmeter saves require a fresh location request before optimistic updates; a database trigger rejects missing location metadata so both editing paths enforce the requirement.
 - Fleet filtered reports receive the same filtered equipment array as the visible list, so CL, search and overdue filters cannot diverge between screen and print.

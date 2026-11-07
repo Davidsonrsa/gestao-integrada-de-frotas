@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { solicitarLocalizacaoHorimetro } from "@/lib/horimetro-localizacao";
+import { EquipamentoCustosNotas } from "@/components/EquipamentoCustosNotas";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -52,12 +53,12 @@ export const Route = createFileRoute("/_authenticated/equipamentos/$id/")({
       { title: "Detalhes do Equipamento | Gestão Integrada de Frotas" },
       {
         name: "description",
-        content: "Dados do equipamento, fotos e relatórios de manutenção salvos.",
+        content: "Dados do equipamento, manutenção e custos de notas fiscais por período.",
       },
       { property: "og:title", content: "Detalhes do Equipamento | Gestão Integrada de Frotas" },
       {
         property: "og:description",
-        content: "Consulte o equipamento e seus anexos de manutenção.",
+        content: "Consulte manutenção, anexos e custos do equipamento por período.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -1051,6 +1052,8 @@ function EquipamentoDetail() {
           </Button>
         </div>
       </Card>
+
+      {isAdmin && userId && <EquipamentoCustosNotas equipamento={equip} userId={userId} />}
 
       {!isOperador && (
         <Link

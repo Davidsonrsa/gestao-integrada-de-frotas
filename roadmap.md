@@ -1,5 +1,8 @@
 # Roadmap
 
+- [x] Cotação: preencher vários itens e salvar todos juntos — validado com salvamento e recarga
+- [x] Equipamento: exibir custos das notas fiscais por período, com data, descrição e total — validado com notas reais
+
 - [x] Ajustar impressão e PDF das medições para uma folha A4 com assinaturas e validar os dois modelos
 
 - [x] Registrar histórico dos horímetros de operadores com acesso e impressão somente do administrador

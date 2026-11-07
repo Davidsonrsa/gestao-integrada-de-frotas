@@ -25,6 +25,7 @@ import {
   FileText,
 } from "lucide-react";
 import { toast } from "sonner";
+import { CotacaoItensLoteDialog } from "@/components/CotacaoItensLoteDialog";
 
 export const Route = createFileRoute("/_authenticated/cotacoes/$id/")({
   beforeLoad: requireAdmin,
@@ -1132,15 +1133,7 @@ export default function DetalheCotacaoPage() {
       </div>
 
       <div className="flex flex-wrap gap-3 print:hidden">
-        <Button
-          onClick={() => {
-            limparFormularioItem();
-            setIsNovoItemOpen(true);
-          }}
-          className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
-        >
-          <Plus className="w-4 h-4" /> Adicionar Item / Peça
-        </Button>
+        <CotacaoItensLoteDialog cotacaoId={id} onSaved={fetchData} />
         <Button
           onClick={() => setIsVincularFornecedorOpen(true)}
           variant="outline"
