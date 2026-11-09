@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { correspondeBusca } from "@/lib/busca";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -548,7 +549,7 @@ function EquipamentosPicker({
   onChange: (ids: string[]) => void;
 }) {
   const [busca, setBusca] = useState("");
-  const filtrados = options.filter((o) => o.numero.toLowerCase().includes(busca.toLowerCase()));
+  const filtrados = options.filter((o) => correspondeBusca(busca, o.numero));
   const toggle = (id: string) =>
     onChange(value.includes(id) ? value.filter((v) => v !== id) : [...value, id]);
   return (

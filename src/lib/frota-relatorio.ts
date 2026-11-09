@@ -1,3 +1,4 @@
+import { correspondeBusca } from "./busca";
 export const ITENS_REVISAO = [
   ["filtro_lub", "Filtro lubrificante"],
   ["filtro_diesel_p", "Filtro diesel primário"],
@@ -168,8 +169,14 @@ export function filtrarEquipamentos<T extends EquipamentoFiltro>(
       return false;
     return (
       !termo ||
-      [e.numero, e.identificacao, e.placa, e.localizacao, e.operador_contato, e.status].some(
-        (valor) => valor?.toLowerCase().includes(termo),
+      correspondeBusca(
+        termo,
+        e.numero,
+        e.identificacao,
+        e.placa,
+        e.localizacao,
+        e.operador_contato,
+        e.status,
       )
     );
   });

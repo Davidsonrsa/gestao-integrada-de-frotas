@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { correspondeBusca, padraoIlikeBusca } from "@/lib/busca";
 import { createFileRoute } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { requireAdmin } from "@/lib/route-guards";
@@ -237,8 +238,9 @@ function NotasFiscaisPage() {
 
       const termo = termoBusca.trim().replace(/[(),]/g, " ");
       if (termo) {
+        const p = padraoIlikeBusca(termo) || `%${termo}%`;
         query = query.or(
-          `nf.ilike.%${termo}%,fornecedor.ilike.%${termo}%,cl.ilike.%${termo}%,identificacao.ilike.%${termo}%,descricao_produto.ilike.%${termo}%,observacao.ilike.%${termo}%`,
+          `nf.ilike.${p},fornecedor.ilike.${p},cl.ilike.${p},identificacao.ilike.${p},descricao_produto.ilike.${p},observacao.ilike.${p}`,
         );
       }
       if (clFiltro) query = query.eq("cl", clFiltro);
@@ -546,12 +548,15 @@ function NotasFiscaisPage() {
     const clSelecionado = clFiltro.trim().toLowerCase();
     const matchBusca =
       !termo ||
-      nota.nf.toLowerCase().includes(termo) ||
-      nota.fornecedor.toLowerCase().includes(termo) ||
-      nota.identificacao.toLowerCase().includes(termo) ||
-      nota.cl.toLowerCase().includes(termo) ||
-      nota.descricao_produto.toLowerCase().includes(termo) ||
-      nota.observacao.toLowerCase().includes(termo);
+      correspondeBusca(
+        termo,
+        nota.nf,
+        nota.fornecedor,
+        nota.identificacao,
+        nota.cl,
+        nota.descricao_produto,
+        nota.observacao,
+      );
 
     let matchData = true;
     const matchCl = !clSelecionado || nota.cl.toLowerCase() === clSelecionado;

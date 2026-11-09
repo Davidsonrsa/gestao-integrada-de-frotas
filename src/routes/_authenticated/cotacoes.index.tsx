@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { correspondeBusca } from "@/lib/busca";
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -85,9 +86,7 @@ export default function ListaCotacoesPage() {
     return cotacoes.filter((cot) => {
       const matchNumero = String(cot.numero).toLowerCase().includes(filtroNumero.toLowerCase());
 
-      const matchPatrimonio = (cot.patrimonio || "")
-        .toLowerCase()
-        .includes(filtroPatrimonio.toLowerCase());
+      const matchPatrimonio = correspondeBusca(filtroPatrimonio, cot.patrimonio);
 
       const matchSetor = (cot.setor || "").toLowerCase().includes(filtroSetor.toLowerCase());
 
