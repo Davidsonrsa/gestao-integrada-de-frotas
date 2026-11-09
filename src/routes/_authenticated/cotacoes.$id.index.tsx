@@ -1599,11 +1599,27 @@ export default function DetalheCotacaoPage() {
                     );
                     const preco = resp && resp.preco ? resp.preco : 0;
                     const subtotal = preco * (item.quantidade || 1);
+                    const precosItem = respostas
+                      .filter(
+                        (r) =>
+                          String(r.cotacao_item_id).trim() === String(item.id).trim() &&
+                          Number(r.preco) > 0,
+                      )
+                      .map((r) => Number(r.preco));
+                    const menor = precosItem.length ? Math.min(...precosItem) : null;
+                    const ganhou = preco > 0 && menor != null && preco <= menor;
 
                     return (
                       <label
                         key={item.id}
-                        className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-100 text-sm cursor-pointer hover:bg-blue-50/60 shadow-xs transition-colors"
+                        className={`flex items-center justify-between p-3 rounded-lg border-2 text-sm ${ganhou ? "bg-emerald-50 border-emerald-500" : "bg-red-50 border-red-400"}`}
+                        data-ganhou={ganhou}
+                        title={ganhou ? "Fornecedor ganhou este item" : "Fornecedor perdeu este item"}
+                        data-x=""
+                        aria-label={undefined}
+                        style={undefined}
+                        // classes antigas abaixo mantidas apenas para interação
+                        data-old="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-100 text-sm cursor-pointer hover:bg-blue-50/60 shadow-xs transition-colors"
                       >
                         <div className="flex items-center gap-3">
                           <input
@@ -1626,7 +1642,8 @@ export default function DetalheCotacaoPage() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <span className="font-bold text-emerald-600 text-base">{brl(subtotal)}</span>
+                          <span className={`font-bold text-base ${ganhou ? "text-emerald-600" : "text-red-600"}`}>{brl(subtotal)}</span>
+                          <span className={`text-[10px] font-bold uppercase block ${ganhou ? "text-emerald-700" : "text-red-700"}`}>{ganhou ? "Ganhou" : "Perdeu"}</span>
                           <span className="text-xs text-slate-400 block">
                             Unit: {brl(preco)} {resp?.marca ? `• Marca: ${resp.marca}` : ""}
                           </span>
