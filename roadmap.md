@@ -39,3 +39,4 @@
 - [ ] Validar com tsgo, testes e Playwright (login como operador)
 - [x] Destacar blocos de sistema (motor, combustível, transmissão, hidráulico, vazamentos, eletricidade, eixos, carregador) no formulário de manutenção
 - [ ] Validar lançamento com localização como operador — bloqueado: aprovação de login como operador recusada
+- [x] Frota: campo Catálogos com links da frota (ADM cadastra/remove, todos visualizam) — validado no app

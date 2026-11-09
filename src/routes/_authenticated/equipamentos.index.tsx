@@ -38,6 +38,7 @@ import { toast } from "sonner";
 import { BotaoRelatorioFrota } from "@/components/BotaoRelatorioFrota";
 import { filtrarEquipamentos } from "@/lib/frota-relatorio";
 import { HistoricoHorimetroDialog } from "@/components/HistoricoHorimetroDialog";
+import { CatalogosFrotaDialog } from "@/components/CatalogosFrotaDialog";
 import { solicitarLocalizacaoHorimetro } from "@/lib/horimetro-localizacao";
 
 export const Route = createFileRoute("/_authenticated/equipamentos/")({
@@ -1683,6 +1684,7 @@ function EquipamentosList() {
               />
               <BotaoRelatorioVencidos equipamentos={data ?? []} cl={cl} />
               <BotaoPendenciasAbertas clOptions={clOptions} equipamentos={data ?? []} />
+              <CatalogosFrotaDialog />
 
               <Select value={cl} onValueChange={setCl}>
                 <SelectTrigger className="h-9 text-[11px] w-[86px] bg-white border-slate-200">

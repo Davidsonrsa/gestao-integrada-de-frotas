@@ -64,6 +64,13 @@
       "when": 1793880439007,
       "tag": "0008_require_operator_hourmeter_location",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794220318637,
+      "tag": "0009_create_frota_catalogos",
+      "breakpoints": true
     }
   ]
 }

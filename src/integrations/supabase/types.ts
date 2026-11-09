@@ -1579,6 +1579,30 @@ export type Database = {
         }
         Relationships: []
       }
+      frota_catalogos: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          link: string
+          titulo: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          link: string
+          titulo: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          link?: string
+          titulo?: string
+        }
+        Relationships: []
+      }
       horimetro_historico: {
         Row: {
           data_horimetro: string | null
