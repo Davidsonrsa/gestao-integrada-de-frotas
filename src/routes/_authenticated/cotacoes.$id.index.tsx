@@ -1612,14 +1612,8 @@ export default function DetalheCotacaoPage() {
                     return (
                       <label
                         key={item.id}
-                        className={`flex items-center justify-between p-3 rounded-lg border-2 text-sm ${ganhou ? "bg-emerald-50 border-emerald-500" : "bg-red-50 border-red-400"}`}
-                        data-ganhou={ganhou}
+                        className={`flex items-center justify-between p-3 rounded-lg border-2 text-sm cursor-pointer shadow-xs transition-colors ${ganhou ? "bg-emerald-50 border-emerald-500 hover:bg-emerald-100/70" : "bg-red-50 border-red-400 hover:bg-red-100/70"}`}
                         title={ganhou ? "Fornecedor ganhou este item" : "Fornecedor perdeu este item"}
-                        data-x=""
-                        aria-label={undefined}
-                        style={undefined}
-                        // classes antigas abaixo mantidas apenas para interação
-                        data-old="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-100 text-sm cursor-pointer hover:bg-blue-50/60 shadow-xs transition-colors"
                       >
                         <div className="flex items-center gap-3">
                           <input

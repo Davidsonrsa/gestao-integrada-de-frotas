@@ -40,3 +40,6 @@
 - [x] Destacar blocos de sistema (motor, combustível, transmissão, hidráulico, vazamentos, eletricidade, eixos, carregador) no formulário de manutenção
 - [ ] Validar lançamento com localização como operador — bloqueado: aprovação de login como operador recusada
 - [x] Frota: campo Catálogos com links da frota (ADM cadastra/remove, todos visualizam) — validado no app
+- [ ] Pedido de compra: item ganho verde, perdido vermelho — em andamento
+- [ ] Operador não cadastra pendências, só horímetro
+- [ ] Catálogos: anexar PDF
