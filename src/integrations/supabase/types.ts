@@ -1581,24 +1581,27 @@ export type Database = {
       }
       frota_catalogos: {
         Row: {
+          arquivo_path: string | null
           created_at: string
           created_by: string | null
           id: string
-          link: string
+          link: string | null
           titulo: string
         }
         Insert: {
+          arquivo_path?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
-          link: string
+          link?: string | null
           titulo: string
         }
         Update: {
+          arquivo_path?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
-          link?: string
+          link?: string | null
           titulo?: string
         }
         Relationships: []

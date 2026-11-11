@@ -766,7 +766,7 @@ function BotaoPendenciasCard({
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [editDescricao, setEditDescricao] = useState("");
   const [editExecutado, setEditExecutado] = useState("");
-  const { fullName } = useAuth();
+  const { fullName, isOperador } = useAuth();
 
   // Buscar pendências do equipamento
   const { data: pendencias = [], refetch } = useQuery({
@@ -989,6 +989,7 @@ function BotaoPendenciasCard({
           </DialogHeader>
 
           <div className="p-4 max-h-[75vh] overflow-y-auto space-y-4 bg-white">
+            {!isOperador && (
             <form
               onSubmit={handleSalvar}
               className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-3"
@@ -1017,6 +1018,7 @@ function BotaoPendenciasCard({
                 </Button>
               </div>
             </form>
+            )}
 
             <div className="space-y-2">
               <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">

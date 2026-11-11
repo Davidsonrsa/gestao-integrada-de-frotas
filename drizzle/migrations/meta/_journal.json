@@ -71,6 +71,13 @@
       "when": 1794220318637,
       "tag": "0009_create_frota_catalogos",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794395330251,
+      "tag": "0010_operador_sem_pendencias_catalogo_pdf",
+      "breakpoints": true
     }
   ]
 }
