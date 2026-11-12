@@ -1094,6 +1094,7 @@ function BotaoPendenciasCard({
                           </p>
                         </div>
 
+                        {!isOperador && (
                         <div className="flex justify-end gap-2 pt-1 border-t border-slate-100">
                           <Button
                             size="sm"
@@ -1116,6 +1117,7 @@ function BotaoPendenciasCard({
                             <Trash2 className="w-3 h-3 mr-1" /> Deletar
                           </Button>
                         </div>
+                        )}
                       </>
                     )}
                   </div>

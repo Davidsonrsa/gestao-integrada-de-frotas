@@ -43,3 +43,4 @@
 - [ ] Pedido de compra: item ganho verde, perdido vermelho — em andamento
 - [ ] Operador não cadastra pendências, só horímetro
 - [ ] Catálogos: anexar PDF
+- [ ] Operador acessa somente atualização de horímetro (reforço do pedido anterior)
