@@ -642,6 +642,8 @@ export type Database = {
           filtro_respiro: string | null
           filtro_sep_agua: string | null
           filtro_trans: string | null
+          h_implemento: number | null
+          h_implemento_revisao: number | null
           h_revisao: number | null
           hidraulico_oleo: string | null
           horimetro_atual: number | null
@@ -659,6 +661,7 @@ export type Database = {
           observacoes: string | null
           operador_contato: string | null
           placa: string | null
+          proxima_manutencao_implemento: number | null
           proxima_revisao_horimetro: number | null
           status: string | null
           tandem_oleo: string | null
@@ -690,6 +693,8 @@ export type Database = {
           filtro_respiro?: string | null
           filtro_sep_agua?: string | null
           filtro_trans?: string | null
+          h_implemento?: number | null
+          h_implemento_revisao?: number | null
           h_revisao?: number | null
           hidraulico_oleo?: string | null
           horimetro_atual?: number | null
@@ -707,6 +712,7 @@ export type Database = {
           observacoes?: string | null
           operador_contato?: string | null
           placa?: string | null
+          proxima_manutencao_implemento?: number | null
           proxima_revisao_horimetro?: number | null
           status?: string | null
           tandem_oleo?: string | null
@@ -738,6 +744,8 @@ export type Database = {
           filtro_respiro?: string | null
           filtro_sep_agua?: string | null
           filtro_trans?: string | null
+          h_implemento?: number | null
+          h_implemento_revisao?: number | null
           h_revisao?: number | null
           hidraulico_oleo?: string | null
           horimetro_atual?: number | null
@@ -755,6 +763,7 @@ export type Database = {
           observacoes?: string | null
           operador_contato?: string | null
           placa?: string | null
+          proxima_manutencao_implemento?: number | null
           proxima_revisao_horimetro?: number | null
           status?: string | null
           tandem_oleo?: string | null

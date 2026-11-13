@@ -108,7 +108,12 @@ type Equip = {
   filtro_ar_cond1: string | null;
   filtro_ar_cond2: string | null;
   cover_storage_path: string | null;
+  h_implemento: number | null;
+  h_implemento_revisao: number | null;
+  proxima_manutencao_implemento: number | null;
 };
+
+const IMPLEMENTOS_COM_HORIMETRO = ["RV-01", "RV-02", "RV-03"];
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -227,6 +232,9 @@ function EquipamentoDetail() {
               filtro_respiro: payload.filtro_respiro,
               filtro_ar_cond1: payload.filtro_ar_cond1,
               filtro_ar_cond2: payload.filtro_ar_cond2,
+              h_implemento: payload.h_implemento,
+              h_implemento_revisao: payload.h_implemento_revisao,
+              proxima_manutencao_implemento: payload.proxima_manutencao_implemento,
             };
 
       const mudouHorimetro =
@@ -388,6 +396,15 @@ function EquipamentoDetail() {
       : null;
   const limite = Number(form.limite_revisao ?? 500);
   const overdue = hrRodadoCalc != null && hrRodadoCalc > limite;
+  const temImplemento = IMPLEMENTOS_COM_HORIMETRO.includes((equip.numero ?? "").toUpperCase());
+  const rodadoImplemento =
+    form.h_implemento != null && form.h_implemento_revisao != null
+      ? Math.max(0, Number(form.h_implemento) - Number(form.h_implemento_revisao))
+      : null;
+  const manutencaoImplementoVencida =
+    form.h_implemento != null &&
+    form.proxima_manutencao_implemento != null &&
+    Number(form.h_implemento) >= Number(form.proxima_manutencao_implemento);
 
   return (
     <div className="px-3 py-3 md:px-6 md:py-6 max-w-md md:max-w-5xl mx-auto w-full space-y-3">
@@ -837,6 +854,81 @@ function EquipamentoDetail() {
             </select>
           </Field>
         </div>
+
+        {temImplemento && (
+          <div className="space-y-3 rounded-lg border border-sky-300 bg-sky-50/60 p-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <h4 className="text-xs font-bold uppercase tracking-wide text-sky-900">
+                Horímetro do implemento
+              </h4>
+              {manutencaoImplementoVencida && (
+                <Badge variant="destructive" className="blink-overdue">
+                  Manutenção do implemento vencida
+                </Badge>
+              )}
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <Field label="Horímetro implemento">
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  value={form.h_implemento ?? ""}
+                  readOnly={ro}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      h_implemento: e.target.value === "" ? null : Number(e.target.value),
+                    })
+                  }
+                />
+              </Field>
+              <Field label="Últ. manutenção (h)">
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  value={form.h_implemento_revisao ?? ""}
+                  readOnly={ro}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      h_implemento_revisao: e.target.value === "" ? null : Number(e.target.value),
+                    })
+                  }
+                />
+              </Field>
+              <Field label="Próx. manutenção (h)">
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  value={form.proxima_manutencao_implemento ?? ""}
+                  readOnly={ro}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      proxima_manutencao_implemento:
+                        e.target.value === "" ? null : Number(e.target.value),
+                    })
+                  }
+                />
+              </Field>
+            </div>
+            {rodadoImplemento != null && (
+              <p
+                className={`text-xs ${
+                  manutencaoImplementoVencida
+                    ? "text-destructive font-semibold blink-overdue"
+                    : "text-muted-foreground"
+                }`}
+              >
+                Hr rodado do implemento: <span className="tabular-nums">{rodadoImplemento}h</span>
+                <span className="opacity-70">
+                  {" "}
+                  (atual {form.h_implemento} − últ. manutenção {form.h_implemento_revisao})
+                </span>
+              </p>
+            )}
+          </div>
+        )}
 
         <Field label="Limite p/ considerar vencido (Hr rodado)">
           {isAdmin ? (

@@ -40,7 +40,8 @@
 - [x] Destacar blocos de sistema (motor, combustível, transmissão, hidráulico, vazamentos, eletricidade, eixos, carregador) no formulário de manutenção
 - [ ] Validar lançamento com localização como operador — bloqueado: aprovação de login como operador recusada
 - [x] Frota: campo Catálogos com links da frota (ADM cadastra/remove, todos visualizam) — validado no app
-- [ ] Pedido de compra: item ganho verde, perdido vermelho — em andamento
-- [ ] Operador não cadastra pendências, só horímetro
-- [ ] Catálogos: anexar PDF
-- [ ] Operador acessa somente atualização de horímetro (reforço do pedido anterior)
+- [x] Pedido de compra: item ganho verde, perdido vermelho
+- [x] Operador não cadastra pendências, só horímetro (tela + regra no banco)
+- [x] Catálogos: anexar PDF (bucket privado, ADM envia/remove, todos abrem)
+- [x] Operador acessa somente atualização de horímetro
+- [x] RV-01/02/03: horímetro do implemento com controle da próxima manutenção
