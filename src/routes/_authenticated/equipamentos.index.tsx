@@ -782,7 +782,8 @@ function BotaoPendenciasCard({
         console.warn("Aviso ao buscar pendências:", error);
         return [];
       }
-      return data ?? [];
+      const aberta = (p: any) => (!p.status || p.status === "PENDENTE" ? 0 : 1);
+      return [...(data ?? [])].sort((a: any, b: any) => aberta(a) - aberta(b));
     },
   });
 
