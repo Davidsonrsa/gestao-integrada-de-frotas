@@ -92,6 +92,13 @@
       "when": 1794566286235,
       "tag": "0012_operador_nao_altera_implemento",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794789495696,
+      "tag": "0013_restrict_shared_policies_to_staff",
+      "breakpoints": true
     }
   ]
 }
