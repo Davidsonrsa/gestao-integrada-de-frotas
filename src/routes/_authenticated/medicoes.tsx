@@ -13,10 +13,10 @@ import {
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
-import { requireAdmin } from "@/lib/route-guards";
+import { requireAcessoMedicoes } from "@/lib/route-guards";
 import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/medicoes")({
-  beforeLoad: requireAdmin,
+  beforeLoad: requireAcessoMedicoes,
   head: () => ({
     meta: [
       { title: "Medições e Contratos | Gestão Integrada de Frotas" },

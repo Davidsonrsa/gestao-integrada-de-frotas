@@ -2046,6 +2046,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          acesso_medicoes: boolean
           created_at: string
           email: string | null
           full_name: string
@@ -2054,6 +2055,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          acesso_medicoes?: boolean
           created_at?: string
           email?: string | null
           full_name?: string
@@ -2062,6 +2064,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          acesso_medicoes?: boolean
           created_at?: string
           email?: string | null
           full_name?: string
@@ -2186,6 +2189,7 @@ export type Database = {
       }
     }
     Functions: {
+      can_access_medicoes: { Args: never; Returns: boolean }
       can_manage_notas_fiscais: { Args: never; Returns: boolean }
       can_view_notas_fiscais: { Args: never; Returns: boolean }
       gerar_notificacoes_tacografos: { Args: never; Returns: number }
