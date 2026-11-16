@@ -1,3 +1,4 @@
+import { ImagemExpansivel } from "@/components/ImagemExpansivel";
 import * as React from "react";
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -609,12 +610,7 @@ function EquipamentoDetail() {
                 >
                   <div className="aspect-square">
                     {isImage ? (
-                      <img
-                        src={f.url}
-                        alt={f.caption ?? ""}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
+                      <ImagemExpansivel src={f.url} alt={f.caption ?? ""} className="w-full h-full object-cover" />
                     ) : (
                       <a
                         href={f.url || undefined}

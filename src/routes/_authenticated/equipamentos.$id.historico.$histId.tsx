@@ -1,3 +1,4 @@
+import { ImagemExpansivel } from "@/components/ImagemExpansivel";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useEffect, useRef, useState } from "react";
@@ -490,12 +491,7 @@ function ManutencaoFormPage() {
                   >
                     <div className="aspect-square">
                       {isImage ? (
-                        <img
-                          src={f.url}
-                          alt={f.caption ?? ""}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
+                        <ImagemExpansivel src={f.url} alt={f.caption ?? ""} className="w-full h-full object-cover" />
                       ) : (
                         <a
                           href={f.url}
