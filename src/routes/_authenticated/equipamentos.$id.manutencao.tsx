@@ -59,24 +59,6 @@ function ManutencaoPage() {
     },
   });
 
-  // Rascunho: último registro em aberto do usuário para este equipamento
-  const { data: rascunho } = useQuery({
-    queryKey: ["manutencao_rascunho", id, userId],
-    enabled: !!userId,
-    queryFn: async () => {
-      if (!userId) return null;
-      const { data } = await supabase
-        .from("manutencao_historico")
-        .select("*")
-        .eq("equipamento_id", id)
-        .eq("created_by", userId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      return data;
-    },
-  });
-
   const [histId, setHistId] = useState<string | null>(null);
   const [data, setData] = useState("");
   const [horimetro, setHorimetro] = useState("");
@@ -87,26 +69,16 @@ function ManutencaoPage() {
   const [itens, setItens] = useState<ManutencaoItem[]>(MANUTENCAO_TEMPLATE);
 
   useEffect(() => {
-    if (rascunho) {
-      setHistId(rascunho.id);
-      setData(rascunho.data ?? "");
-      setHorimetro(rascunho.horimetro != null ? String(rascunho.horimetro) : "");
-      setTipoRevisao(rascunho.tipo_revisao ?? "");
-      setExecutante(rascunho.executante ?? "");
-      setObservacoes(rascunho.observacoes ?? "");
-      setObservacaoTecnico(rascunho.observacao_tecnico ?? "");
-      const arr = Array.isArray(rascunho.itens)
-        ? (rascunho.itens as unknown as ManutencaoItem[])
-        : [];
-      setItens(arr.length ? arr : MANUTENCAO_TEMPLATE);
-    } else if (e) {
+    // Sempre inicia um plano novo; registros salvos só são editados pelo histórico.
+    if (e && !histId) {
       setItens(criarItensManutencao(e));
       setHorimetro(
         horimetroInicial ?? (e.horimetro_atual != null ? String(e.horimetro_atual) : ""),
       );
       setTipoRevisao(tipoRevisaoInicial ?? `Revisão de ${e.limite_revisao ?? 500}h`);
     }
-  }, [rascunho, e, horimetroInicial, tipoRevisaoInicial]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [e, horimetroInicial, tipoRevisaoInicial]);
 
   const save = useMutation({
     mutationFn: async () => {
@@ -187,7 +159,6 @@ function ManutencaoPage() {
     onSuccess: () => {
       toast.success("Manutenção salva — relatório Word gerado");
       qc.invalidateQueries({ queryKey: ["manutencao_historico", id] });
-      qc.invalidateQueries({ queryKey: ["manutencao_rascunho", id, userId] });
       qc.invalidateQueries({ queryKey: ["manutencao_historico_anexos_count", id] });
     },
     onError: (err: Error) => toast.error(err.message),
