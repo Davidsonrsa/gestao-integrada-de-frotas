@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { correspondeBusca, padraoIlikeBusca } from "@/lib/busca";
+import { correspondeBusca, padroesIlikeNotas } from "@/lib/busca";
 import { createFileRoute } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { requireAdmin } from "@/lib/route-guards";
@@ -32,6 +32,16 @@ import {
 export const Route = createFileRoute("/_authenticated/notas-fiscais/")({
   beforeLoad: requireAdmin,
   component: NotasFiscaisPage,
+  head: () => ({
+    meta: [
+      { title: "Notas Fiscais | Gestão Integrada de Frotas" },
+      { name: "description", content: "Consulte notas fiscais, fornecedores e custos da frota por período." },
+      { property: "og:title", content: "Notas Fiscais | Gestão Integrada de Frotas" },
+      { property: "og:description", content: "Pesquise notas fiscais e custos dos equipamentos da frota." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
 interface NotaFiscalItem {
@@ -238,9 +248,11 @@ function NotasFiscaisPage() {
 
       const termo = termoBusca.trim().replace(/[(),]/g, " ");
       if (termo) {
-        const p = padraoIlikeBusca(termo) || `%${termo}%`;
+        const campos = ["nf", "fornecedor", "cl", "identificacao", "descricao_produto", "observacao"];
         query = query.or(
-          `nf.ilike.${p},fornecedor.ilike.${p},cl.ilike.${p},identificacao.ilike.${p},descricao_produto.ilike.${p},observacao.ilike.${p}`,
+          padroesIlikeNotas(termo)
+            .flatMap((padrao) => campos.map((campo) => `${campo}.ilike.${padrao}`))
+            .join(","),
         );
       }
       if (clFiltro) query = query.eq("cl", clFiltro);

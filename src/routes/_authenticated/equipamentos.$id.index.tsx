@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { solicitarLocalizacaoHorimetro } from "@/lib/horimetro-localizacao";
+import { podeEditarImplemento } from "@/lib/implemento-permissoes";
 import { EquipamentoCustosNotas } from "@/components/EquipamentoCustosNotas";
 import { toast } from "sonner";
 import {
@@ -869,7 +870,7 @@ function EquipamentoDetail() {
                   type="number"
                   inputMode="decimal"
                   value={form.h_implemento ?? ""}
-                  readOnly={ro}
+                  readOnly={!podeEditarImplemento(role)}
                   onChange={(e) =>
                     setForm({
                       ...form,
@@ -883,7 +884,7 @@ function EquipamentoDetail() {
                   type="number"
                   inputMode="decimal"
                   value={form.h_implemento_revisao ?? ""}
-                  readOnly={ro}
+                  readOnly={!podeEditarImplemento(role)}
                   onChange={(e) =>
                     setForm({
                       ...form,
@@ -897,7 +898,7 @@ function EquipamentoDetail() {
                   type="number"
                   inputMode="decimal"
                   value={form.proxima_manutencao_implemento ?? ""}
-                  readOnly={ro}
+                  readOnly={!podeEditarImplemento(role)}
                   onChange={(e) =>
                     setForm({
                       ...form,

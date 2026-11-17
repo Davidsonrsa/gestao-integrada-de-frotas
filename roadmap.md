@@ -1,5 +1,8 @@
 # Roadmap
 
+- [ ] Monitoring: liberar campos de implemento para colaboradores sem liberar operadores
+- [ ] Monitoring: corrigir busca de notas com espaços e acentos, preservando pesquisa de prefixos
+
 - [x] Cotação: preencher vários itens e salvar todos juntos — validado com salvamento e recarga
 - [x] Equipamento: exibir custos das notas fiscais por período, com data, descrição e total — validado com notas reais
 

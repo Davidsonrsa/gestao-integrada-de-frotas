@@ -14,8 +14,17 @@ export function correspondeBusca(termo: string, ...valores: unknown[]): boolean 
   return valores.some((v) => normalizarBusca(v).includes(t));
 }
 
-/** Padrão ILIKE tolerante a separadores: "re21" → "%RE%21%". */
+/** Padrão ILIKE tolerante a separadores, preservando a divisão entre palavras. */
 export function padraoIlikeBusca(termo: string): string {
-  const partes = normalizarBusca(termo).match(/[A-Z]+|[0-9]+/g) ?? [];
+  const partes = termo.split(/[^\p{L}\p{N}]+/u).flatMap((parte) =>
+    normalizarBusca(parte).match(/[A-Z]+|[0-9]+/g) ?? [],
+  );
   return partes.length ? `%${partes.join("%")}%` : "";
+}
+
+/** Mantém a busca textual original (inclusive acentos) junto da busca de prefixos. */
+export function padroesIlikeNotas(termo: string): string[] {
+  const texto = termo.trim().replace(/[(),]/g, " ");
+  if (!texto) return [];
+  return [...new Set([`%${texto}%`, padraoIlikeBusca(texto)].filter(Boolean))];
 }
