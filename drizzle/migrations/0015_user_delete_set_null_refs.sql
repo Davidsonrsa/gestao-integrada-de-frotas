@@ -1,0 +1,5 @@
+ALTER TABLE public.equipamentos DROP CONSTRAINT equipamentos_updated_by_fkey, ADD CONSTRAINT equipamentos_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL;
+ALTER TABLE public.equipamento_fotos ALTER COLUMN uploaded_by DROP NOT NULL;
+ALTER TABLE public.equipamento_fotos DROP CONSTRAINT equipamento_fotos_uploaded_by_fkey, ADD CONSTRAINT equipamento_fotos_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES auth.users(id) ON DELETE SET NULL;
+ALTER TABLE public.notas_fiscais DROP CONSTRAINT notas_fiscais_created_by_fkey, ADD CONSTRAINT notas_fiscais_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL;
+ALTER TABLE public.cotacoes DROP CONSTRAINT cotacoes_solicitante_id_fkey, ADD CONSTRAINT cotacoes_solicitante_id_fkey FOREIGN KEY (solicitante_id) REFERENCES public.profiles(id) ON DELETE SET NULL;
