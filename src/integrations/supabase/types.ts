@@ -1115,6 +1115,8 @@ export type Database = {
           medida: string | null
           modelo: string | null
           observacao: string | null
+          posicao: string | null
+          recapagens: number
           status: string | null
           tipo: string | null
           updated_at: string
@@ -1135,6 +1137,8 @@ export type Database = {
           medida?: string | null
           modelo?: string | null
           observacao?: string | null
+          posicao?: string | null
+          recapagens?: number
           status?: string | null
           tipo?: string | null
           updated_at?: string
@@ -1155,6 +1159,8 @@ export type Database = {
           medida?: string | null
           modelo?: string | null
           observacao?: string | null
+          posicao?: string | null
+          recapagens?: number
           status?: string | null
           tipo?: string | null
           updated_at?: string

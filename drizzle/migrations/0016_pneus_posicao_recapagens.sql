@@ -1,0 +1,1 @@
+ALTER TABLE public.estoque_pneus ADD COLUMN IF NOT EXISTS posicao text, ADD COLUMN IF NOT EXISTS recapagens integer NOT NULL DEFAULT 0;

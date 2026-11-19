@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
-import { Gauge, ImagePlus, LogOut, Plus, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeftRight, Gauge, ImagePlus, PackageOpen, Plus, RotateCw, Trash2, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { estoqueDb as supabase } from "@/lib/estoque-db";
 import { getEstoqueFotoUrls, uploadEstoqueFoto } from "@/lib/estoque-fotos";
 import { useAuth } from "@/hooks/use-auth";
+import { normalizarBusca } from "@/lib/busca";
+import { POSICOES_EIXOS, corRecapagem, LEGENDA_RECAPAGEM } from "@/lib/pneus";
 
 export const Route = createFileRoute("/_authenticated/estoque/pneus")({
   component: EstoquePneusPage,
@@ -14,395 +16,324 @@ type Pneu = {
   id: string;
   codigo: string;
   marca?: string | null;
-  modelo?: string | null;
   medida?: string | null;
-  codigo_serie?: string | null;
-  dot?: string | null;
-  tipo?: string | null;
   valor?: number | null;
-  fornecedor_id?: string | null;
-  data_compra?: string | null;
-  estado?: string | null;
   status?: string | null;
   equipamento_id?: string | null;
+  posicao?: string | null;
+  recapagens?: number | null;
   foto_path?: string | null;
 };
 type Equipamento = { id: string; numero: string; identificacao?: string | null };
 
-const FORM_VAZIO = {
-  codigo: "",
-  marca: "",
-  modelo: "",
-  medida: "",
-  codigo_serie: "",
-  dot: "",
-  tipo: "",
-  valor: "0",
-  data_compra: "",
-  estado: "EM ESTOQUE",
-  status: "EM ESTOQUE",
-};
+const FORM_VAZIO = { codigo: "", marca: "", medida: "", valor: "", recapagens: "0" };
 
 export default function EstoquePneusPage() {
   const { isAdmin } = useAuth();
   const [pneus, setPneus] = useState<Pneu[]>([]);
   const [fotoUrls, setFotoUrls] = useState<Map<string, string>>(new Map());
   const [equipamentos, setEquipamentos] = useState<Equipamento[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saidaId, setSaidaId] = useState<string | null>(null);
-  const [saida, setSaida] = useState({
-    equipamento_id: "",
-    destino: "INSTALADO",
-    responsavel: "",
-    observacao: "",
-  });
+  const [equipId, setEquipId] = useState("");
+  const [posSel, setPosSel] = useState<string | null>(null);
+  const [rodizio, setRodizio] = useState(false);
+  const [aplicarId, setAplicarId] = useState("");
   const [form, setForm] = useState(FORM_VAZIO);
   const [fotoFile, setFotoFile] = useState<File | null>(null);
+  const [busca, setBusca] = useState("");
   const fotoInputRef = useRef<HTMLInputElement>(null);
 
   async function loadData() {
-    try {
-      const [{ data, error }, eqRes] = await Promise.all([
-        supabase.from("estoque_pneus").select("*").order("created_at", { ascending: false }),
-        supabase
-          .from("equipamentos")
-          .select("id, numero, identificacao")
-          .order("numero", { ascending: true }),
-      ]);
-      if (error) throw error;
-      const lista = (data || []) as Pneu[];
-      setPneus(lista);
-      setEquipamentos((eqRes.data || []) as Equipamento[]);
-      setFotoUrls(await getEstoqueFotoUrls(lista.map((p) => p.foto_path)));
-    } catch (error) {
-      console.error("Erro ao carregar pneus:", error);
-    } finally {
-      setLoading(false);
-    }
+    const [{ data, error }, eqRes] = await Promise.all([
+      supabase.from("estoque_pneus").select("*").order("codigo"),
+      supabase.from("equipamentos").select("id, numero, identificacao").order("numero"),
+    ]);
+    if (error) return toast.error("Não foi possível carregar os pneus.");
+    const lista = (data || []) as Pneu[];
+    setPneus(lista);
+    setEquipamentos((eqRes.data || []) as Equipamento[]);
+    setFotoUrls(await getEstoqueFotoUrls(lista.map((p) => p.foto_path)));
   }
-
   useEffect(() => {
     void loadData();
   }, []);
 
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    try {
-      let fotoPath: string | null = null;
-      if (fotoFile) {
-        fotoPath = await uploadEstoqueFoto("pneus", fotoFile);
-      }
+  const montados = useMemo(
+    () => new Map(pneus.filter((p) => p.equipamento_id === equipId && p.posicao).map((p) => [p.posicao!, p])),
+    [pneus, equipId],
+  );
+  const emEstoque = pneus.filter((p) => !p.equipamento_id && (p.status ?? "EM ESTOQUE") === "EM ESTOQUE");
+  const pneuSel = posSel ? montados.get(posSel) : undefined;
+  const equip = equipamentos.find((e) => e.id === equipId);
 
-      const { error } = await supabase.from("estoque_pneus").insert([
-        {
-          codigo: form.codigo,
-          marca: form.marca || null,
-          modelo: form.modelo || null,
-          medida: form.medida || null,
-          codigo_serie: form.codigo_serie || null,
-          dot: form.dot || null,
-          tipo: form.tipo || null,
-          valor: Number(form.valor || 0),
-          data_compra: form.data_compra || null,
-          estado: form.estado,
-          status: form.status,
-          foto_path: fotoPath,
-        },
-      ]);
+  async function mover(p: Pneu, patch: Partial<Pneu>, tipo: string, obs: string) {
+    const { error } = await supabase.from("estoque_pneus").update(patch).eq("id", p.id);
+    if (error) return toast.error(error.message), false;
+    await supabase.from("estoque_movimentacoes").insert({
+      tipo,
+      quantidade: 1,
+      equipamento_id: patch.equipamento_id ?? p.equipamento_id ?? null,
+      documento: p.codigo,
+      observacao: obs,
+      data_movimento: new Date().toISOString().slice(0, 10),
+    });
+    return true;
+  }
+
+  async function clicarPosicao(pos: string) {
+    if (rodizio && pneuSel && posSel) {
+      const destino = montados.get(pos);
+      await mover(pneuSel, { posicao: pos }, "RODÍZIO PNEU", `${pneuSel.codigo}: ${posSel} → ${pos}`);
+      if (destino) await mover(destino, { posicao: posSel }, "RODÍZIO PNEU", `${destino.codigo}: ${pos} → ${posSel}`);
+      setRodizio(false);
+      setPosSel(pos);
+      toast.success("Rodízio registrado.");
+      return void loadData();
+    }
+    setRodizio(false);
+    setAplicarId("");
+    setPosSel(pos);
+  }
+
+  async function aplicar() {
+    const p = pneus.find((x) => x.id === aplicarId);
+    if (!p || !posSel || !equip) return;
+    if (await mover(p, { equipamento_id: equipId, posicao: posSel, status: "INSTALADO" }, "APLICAR PNEU", `${p.codigo} aplicado em ${equip.numero} (${posSel})`)) {
+      toast.success("Pneu aplicado.");
+      void loadData();
+    }
+  }
+
+  async function retirar(destino: "EM ESTOQUE" | "AG. CONSERTO" | "DESCARTADO") {
+    if (!pneuSel) return;
+    if (destino === "DESCARTADO" && !confirm(`Descartar o pneu ${pneuSel.codigo}?`)) return;
+    if (await mover(pneuSel, { equipamento_id: null, posicao: null, status: destino }, destino === "EM ESTOQUE" ? "PNEU P/ ESTOQUE" : destino === "DESCARTADO" ? "PNEU DESCARTADO" : "PNEU AG. CONSERTO", `${pneuSel.codigo} retirado de ${equip?.numero ?? ""} (${posSel}) — ${destino}`)) {
+      toast.success("Pneu atualizado.");
+      void loadData();
+    }
+  }
+
+  async function alterarPneu(p: Pneu, patch: Partial<Pneu>) {
+    const { error } = await supabase.from("estoque_pneus").update(patch).eq("id", p.id);
+    if (error) return toast.error(error.message);
+    void loadData();
+  }
+
+  async function excluirPneu(p: Pneu) {
+    if (!confirm(`Excluir o pneu ${p.codigo}?`)) return;
+    const { data, error } = await supabase.from("estoque_pneus").delete().eq("id", p.id).select("id");
+    if (error || !data?.length) return toast.error("Apenas administradores podem excluir pneus.");
+    void loadData();
+  }
+
+  async function handleSubmit(ev: React.FormEvent) {
+    ev.preventDefault();
+    try {
+      const foto_path = fotoFile ? await uploadEstoqueFoto("pneus", fotoFile) : null;
+      const { error } = await supabase.from("estoque_pneus").insert({
+        codigo: form.codigo.trim().toUpperCase(),
+        marca: form.marca || null,
+        medida: form.medida || null,
+        valor: form.valor ? Number(form.valor) : null,
+        recapagens: Number(form.recapagens || 0),
+        status: "EM ESTOQUE",
+        estado: "EM ESTOQUE",
+        foto_path,
+      });
       if (error) throw error;
       setForm(FORM_VAZIO);
       setFotoFile(null);
       if (fotoInputRef.current) fotoInputRef.current.value = "";
-      toast.success("Pneu salvo.");
-      await loadData();
-    } catch (error) {
-      console.error("Erro ao salvar pneu:", error);
+      toast.success("Pneu cadastrado.");
+      void loadData();
+    } catch {
       toast.error("Não foi possível salvar o pneu.");
     }
   }
 
-  async function confirmarSaida(pneu: Pneu) {
-    try {
-      const { error } = await supabase
-        .from("estoque_pneus")
-        .update({
-          status: saida.destino,
-          estado: saida.destino,
-          equipamento_id: saida.equipamento_id || null,
-          observacao: [
-            `Saída em ${new Date().toLocaleDateString("pt-BR")}`,
-            saida.responsavel && `Resp.: ${saida.responsavel}`,
-            saida.observacao,
-          ]
-            .filter(Boolean)
-            .join(" — "),
-        })
-        .eq("id", pneu.id);
-      if (error) throw error;
-      await supabase.from("estoque_movimentacoes").insert({
-        tipo: "SAÍDA PNEU",
-        quantidade: 1,
-        equipamento_id: saida.equipamento_id || null,
-        responsavel: saida.responsavel || null,
-        documento: pneu.codigo,
-        observacao: `Pneu ${pneu.codigo} — ${saida.destino}${saida.observacao ? ` — ${saida.observacao}` : ""}`,
-        data_movimento: new Date().toISOString().slice(0, 10),
-      });
-      setSaidaId(null);
-      setSaida({ equipamento_id: "", destino: "INSTALADO", responsavel: "", observacao: "" });
-      toast.success("Saída do pneu registrada.");
-      await loadData();
-    } catch (error) {
-      console.error(error);
-      toast.error("Não foi possível registrar a saída do pneu.");
-    }
-  }
+  const nomeEquip = (id?: string | null) => equipamentos.find((x) => x.id === id)?.numero ?? "—";
+  const lista = pneus.filter((p) => !busca || normalizarBusca(`${p.codigo} ${p.marca ?? ""} ${p.medida ?? ""}`).includes(normalizarBusca(busca)));
 
-  async function excluirPneu(pneu: Pneu) {
-    if (!confirm(`Excluir o pneu ${pneu.codigo}? Esta ação não pode ser desfeita.`)) return;
-    const { data, error } = await supabase
-      .from("estoque_pneus")
-      .delete()
-      .eq("id", pneu.id)
-      .select("id");
-    if (error || !data?.length) {
-      toast.error("Não foi possível excluir. Apenas administradores podem excluir pneus.");
-      return;
-    }
-    toast.success("Pneu excluído.");
-    await loadData();
+  function Caixa({ pos }: { pos: string }) {
+    const p = montados.get(pos);
+    const c = p ? corRecapagem(p.recapagens ?? 0) : null;
+    const sel = posSel === pos;
+    return (
+      <button
+        type="button"
+        onClick={() => void clicarPosicao(pos)}
+        title={pos}
+        className={`flex h-20 w-14 flex-col items-center justify-center rounded border-2 text-[10px] font-bold ${sel ? "ring-4 ring-sky-400" : ""} ${p ? "border-slate-800" : "border-dashed border-slate-400 bg-white text-slate-400"}`}
+        style={c ? { background: c.bg, color: c.fg } : undefined}
+      >
+        <span className="break-all px-0.5 leading-tight">{p ? p.codigo : "vazio"}</span>
+        <span className="mt-1 opacity-75">{pos}</span>
+      </button>
+    );
   }
-
-  const nomeEquip = (id?: string | null) => {
-    const e = equipamentos.find((x) => x.id === id);
-    return e ? e.identificacao || e.numero : "—";
-  };
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+    <div className="space-y-6">
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="mb-4 text-lg font-black text-slate-900">Pneus</h2>
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <h2 className="text-lg font-black text-slate-900">Montagem por equipamento</h2>
+          <select
+            value={equipId}
+            onChange={(e) => {
+              setEquipId(e.target.value);
+              setPosSel(null);
+            }}
+            className="rounded-md border border-slate-300 p-2 text-sm"
+          >
+            <option value="">Selecione o equipamento</option>
+            {equipamentos.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.numero} {e.identificacao ? `— ${e.identificacao}` : ""}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        {loading ? (
-          <p className="text-sm text-slate-500">Carregando pneus...</p>
-        ) : pneus.length === 0 ? (
-          <p className="text-sm text-slate-500">Nenhum pneu cadastrado.</p>
-        ) : (
-          <div className="space-y-2">
-            {pneus.map((pneu) => {
-              const fotoUrl = pneu.foto_path ? fotoUrls.get(pneu.foto_path) : undefined;
-              return (
-                <div key={pneu.id} className="rounded-lg border border-slate-200 p-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-3 text-sm">
-                      {fotoUrl && (
-                        <img
-                          src={fotoUrl}
-                          alt={pneu.codigo}
-                          className="h-14 w-14 rounded-md border border-slate-200 object-cover"
-                        />
-                      )}
-                      <div>
-                        <p className="font-bold text-slate-800">{pneu.codigo}</p>
-                        <p className="text-xs text-slate-500">
-                          {[pneu.marca, pneu.medida].filter(Boolean).join(" · ") || "—"} · Status:{" "}
-                          {pneu.status || "—"} · Equip.: {nomeEquip(pneu.equipamento_id)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setSaidaId(saidaId === pneu.id ? null : pneu.id)}
-                        className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs"
-                      >
-                        <LogOut className="h-4 w-4" /> Saída
-                      </button>
-                      {isAdmin && (
-                        <button
-                          type="button"
-                          aria-label="Excluir pneu"
-                          onClick={() => void excluirPneu(pneu)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
+        {equipId ? (
+          <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+            <div className="overflow-x-auto rounded-lg bg-slate-100 p-4">
+              <div className="mx-auto w-fit space-y-4">
+                {POSICOES_EIXOS.map((eixo) => (
+                  <div key={eixo.nome} className="flex items-center gap-1">
+                    <span className="w-14 text-[10px] font-bold text-slate-500">{eixo.nome}</span>
+                    {eixo.esquerda.map((pos) => <Caixa key={pos} pos={pos} />)}
+                    <div className="h-3 w-24 bg-slate-800" />
+                    {eixo.direita.map((pos) => <Caixa key={pos} pos={pos} />)}
                   </div>
-                  {saidaId === pneu.id && (
-                    <div className="mt-3 grid gap-2 md:grid-cols-2">
-                      <select
-                        value={saida.destino}
-                        onChange={(e) => setSaida({ ...saida, destino: e.target.value })}
-                        className="rounded-md border border-slate-300 p-2 text-sm"
-                      >
-                        <option>INSTALADO</option>
-                        <option>RECAPAGEM</option>
-                        <option>DANIFICADO</option>
-                        <option>DESCARTADO</option>
-                      </select>
-                      <select
-                        value={saida.equipamento_id}
-                        onChange={(e) => setSaida({ ...saida, equipamento_id: e.target.value })}
-                        className="rounded-md border border-slate-300 p-2 text-sm"
-                      >
-                        <option value="">Equipamento (opcional)</option>
-                        {equipamentos.map((eq) => (
-                          <option key={eq.id} value={eq.id}>
-                            {eq.identificacao || eq.numero}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        value={saida.responsavel}
-                        onChange={(e) => setSaida({ ...saida, responsavel: e.target.value })}
-                        placeholder="Responsável"
-                        className="rounded-md border border-slate-300 p-2 text-sm"
-                      />
-                      <input
-                        value={saida.observacao}
-                        onChange={(e) => setSaida({ ...saida, observacao: e.target.value })}
-                        placeholder="Observação"
-                        className="rounded-md border border-slate-300 p-2 text-sm"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => void confirmarSaida(pneu)}
-                        className="rounded-md px-3 py-2 text-sm md:col-span-2"
-                      >
-                        Confirmar saída
-                      </button>
-                    </div>
+                ))}
+                <div className="flex items-center gap-1">
+                  <span className="w-14 text-[10px] font-bold text-slate-500">Estepe</span>
+                  <Caixa pos="ESTEPE" />
+                </div>
+              </div>
+              <div className="mt-4 flex flex-wrap justify-center gap-2 text-[10px]">
+                {LEGENDA_RECAPAGEM.map((l) => (
+                  <span key={l.label} className="flex items-center gap-1">
+                    <span className="h-3 w-5 rounded border" style={{ background: l.bg }} /> {l.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-slate-200 p-3 text-sm">
+              {!posSel ? (
+                <p className="text-slate-500">Clique em uma posição do desenho.</p>
+              ) : pneuSel ? (
+                <div className="space-y-2">
+                  <p className="font-black">{pneuSel.codigo} <span className="font-normal text-slate-500">— {posSel}</span></p>
+                  <p className="text-xs text-slate-500">{[pneuSel.marca, pneuSel.medida].filter(Boolean).join(" · ") || "—"}</p>
+                  <div className="flex items-center gap-2 text-xs">
+                    Recapagens:
+                    <button type="button" className="rounded border px-2" onClick={() => void alterarPneu(pneuSel, { recapagens: Math.max(0, (pneuSel.recapagens ?? 0) - 1) })}>−</button>
+                    <b>{pneuSel.recapagens ?? 0}</b>
+                    <button type="button" className="rounded border px-2" onClick={() => void alterarPneu(pneuSel, { recapagens: (pneuSel.recapagens ?? 0) + 1 })}>+</button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 pt-2">
+                    <button type="button" onClick={() => setRodizio(!rodizio)} className={`flex items-center justify-center gap-1 rounded-md border p-2 text-xs font-bold ${rodizio ? "bg-sky-100" : ""}`}>
+                      <RotateCw className="h-4 w-4" /> Rodízio
+                    </button>
+                    <button type="button" onClick={() => void retirar("EM ESTOQUE")} className="flex items-center justify-center gap-1 rounded-md border p-2 text-xs font-bold">
+                      <PackageOpen className="h-4 w-4" /> P/ estoque
+                    </button>
+                    <button type="button" onClick={() => void retirar("AG. CONSERTO")} className="flex items-center justify-center gap-1 rounded-md border p-2 text-xs font-bold text-purple-700">
+                      <Wrench className="h-4 w-4" /> Ag. conserto
+                    </button>
+                    <button type="button" onClick={() => void retirar("DESCARTADO")} className="flex items-center justify-center gap-1 rounded-md border p-2 text-xs font-bold text-red-600">
+                      <Trash2 className="h-4 w-4" /> Descartar
+                    </button>
+                  </div>
+                  {rodizio && <p className="text-xs text-sky-700">Clique na posição de destino (troca se estiver ocupada).</p>}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="font-black">Posição {posSel} vazia</p>
+                  <select value={aplicarId} onChange={(e) => setAplicarId(e.target.value)} className="w-full rounded-md border border-slate-300 p-2 text-sm">
+                    <option value="">Pneu em estoque...</option>
+                    {emEstoque.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.codigo} {p.medida ? `— ${p.medida}` : ""} ({p.recapagens ?? 0} recap.)
+                      </option>
+                    ))}
+                  </select>
+                  <button type="button" disabled={!aplicarId} onClick={() => void aplicar()} className="flex w-full items-center justify-center gap-1 rounded-md bg-sky-600 p-2 text-sm font-bold text-white disabled:bg-slate-300">
+                    <ArrowLeftRight className="h-4 w-4" /> Aplicar pneu
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">Selecione um equipamento para ver e montar os pneus.</p>
+        )}
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="text-lg font-black text-slate-900">Pneus ({pneus.length})</h2>
+            <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar..." className="w-40 rounded-md border border-slate-300 p-2 text-sm" />
+          </div>
+          <div className="space-y-2">
+            {lista.map((p) => {
+              const c = corRecapagem(p.recapagens ?? 0);
+              const foto = p.foto_path ? fotoUrls.get(p.foto_path) : undefined;
+              return (
+                <div key={p.id} className="flex items-center gap-3 rounded-lg border border-slate-200 p-2 text-sm">
+                  <span className="h-8 w-3 rounded" style={{ background: c.bg }} />
+                  {foto && <img src={foto} alt={p.codigo} className="h-10 w-10 rounded object-cover" />}
+                  <div className="flex-1">
+                    <p className="font-bold">{p.codigo}</p>
+                    <p className="text-xs text-slate-500">
+                      {[p.marca, p.medida].filter(Boolean).join(" · ") || "—"} · {p.recapagens ?? 0} recap. · {p.status || "EM ESTOQUE"}
+                      {p.equipamento_id && ` · ${nomeEquip(p.equipamento_id)} (${p.posicao ?? "—"})`}
+                    </p>
+                  </div>
+                  {p.status === "AG. CONSERTO" && (
+                    <button type="button" onClick={() => void alterarPneu(p, { status: "EM ESTOQUE" })} className="rounded border px-2 py-1 text-xs">Voltou p/ estoque</button>
+                  )}
+                  {isAdmin && (
+                    <button type="button" aria-label="Excluir pneu" onClick={() => void excluirPneu(p)} className="text-red-600">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   )}
                 </div>
               );
             })}
           </div>
-        )}
+        </div>
+
+        <form onSubmit={handleSubmit} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-4 flex items-center gap-2">
+            <Gauge className="h-5 w-5 text-sky-700" />
+            <h2 className="text-lg font-black text-slate-900">Cadastrar pneu</h2>
+          </div>
+          <div className="grid gap-3">
+            <input value={form.codigo} onChange={(e) => setForm({ ...form, codigo: e.target.value })} placeholder="Código (ex.: PNEU48)" required className="rounded-md border border-slate-300 p-2 text-sm" />
+            <div className="grid grid-cols-2 gap-3">
+              <input value={form.marca} onChange={(e) => setForm({ ...form, marca: e.target.value })} placeholder="Marca" className="rounded-md border border-slate-300 p-2 text-sm" />
+              <input value={form.medida} onChange={(e) => setForm({ ...form, medida: e.target.value })} placeholder="Medida" className="rounded-md border border-slate-300 p-2 text-sm" />
+              <input type="number" min="0" step="0.01" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} placeholder="Valor (R$)" className="rounded-md border border-slate-300 p-2 text-sm" />
+              <select value={form.recapagens} onChange={(e) => setForm({ ...form, recapagens: e.target.value })} className="rounded-md border border-slate-300 p-2 text-sm">
+                {[0, 1, 2, 3, 4, 5].map((n) => (
+                  <option key={n} value={n}>{n === 0 ? "Novo" : `${n} recapagem(ns)`}</option>
+                ))}
+              </select>
+            </div>
+            <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-slate-300 p-2 text-sm text-slate-600">
+              <ImagePlus className="h-4 w-4 text-sky-700" />
+              {fotoFile ? fotoFile.name : "Foto do pneu (opcional)"}
+              <input ref={fotoInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => setFotoFile(e.target.files?.[0] ?? null)} />
+            </label>
+            <button type="submit" className="rounded-md bg-sky-600 px-4 py-2 text-sm font-bold text-white hover:bg-sky-700">
+              <Plus className="mr-2 inline h-4 w-4" /> Salvar pneu
+            </button>
+          </div>
+        </form>
       </div>
-
-      <form
-        onSubmit={handleSubmit}
-        className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-      >
-        <div className="mb-4 flex items-center gap-2">
-          <Gauge className="h-5 w-5 text-sky-700" />
-          <h2 className="text-lg font-black text-slate-900">Cadastrar pneu</h2>
-        </div>
-
-        <div className="grid gap-3">
-          <input
-            value={form.codigo}
-            onChange={(e) => setForm({ ...form, codigo: e.target.value })}
-            placeholder="Código"
-            required
-            className="rounded-md border border-slate-300 p-2 text-sm"
-          />
-          <div className="grid gap-3 md:grid-cols-2">
-            <input
-              value={form.marca}
-              onChange={(e) => setForm({ ...form, marca: e.target.value })}
-              placeholder="Marca"
-              className="rounded-md border border-slate-300 p-2 text-sm"
-            />
-            <input
-              value={form.modelo}
-              onChange={(e) => setForm({ ...form, modelo: e.target.value })}
-              placeholder="Modelo"
-              className="rounded-md border border-slate-300 p-2 text-sm"
-            />
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            <input
-              value={form.medida}
-              onChange={(e) => setForm({ ...form, medida: e.target.value })}
-              placeholder="Medida"
-              className="rounded-md border border-slate-300 p-2 text-sm"
-            />
-            <input
-              value={form.dot}
-              onChange={(e) => setForm({ ...form, dot: e.target.value })}
-              placeholder="DOT"
-              className="rounded-md border border-slate-300 p-2 text-sm"
-            />
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            <input
-              value={form.codigo_serie}
-              onChange={(e) => setForm({ ...form, codigo_serie: e.target.value })}
-              placeholder="Número de série"
-              className="rounded-md border border-slate-300 p-2 text-sm"
-            />
-            <input
-              value={form.tipo}
-              onChange={(e) => setForm({ ...form, tipo: e.target.value })}
-              placeholder="Tipo"
-              className="rounded-md border border-slate-300 p-2 text-sm"
-            />
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={form.valor}
-              onChange={(e) => setForm({ ...form, valor: e.target.value })}
-              placeholder="Valor"
-              className="rounded-md border border-slate-300 p-2 text-sm"
-            />
-            <input
-              type="date"
-              value={form.data_compra}
-              onChange={(e) => setForm({ ...form, data_compra: e.target.value })}
-              className="rounded-md border border-slate-300 p-2 text-sm"
-            />
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            <select
-              value={form.estado}
-              onChange={(e) => setForm({ ...form, estado: e.target.value })}
-              className="rounded-md border border-slate-300 p-2 text-sm"
-            >
-              <option>EM ESTOQUE</option>
-              <option>INSTALADO</option>
-              <option>RECAPADO</option>
-              <option>DANIFICADO</option>
-              <option>DESCARTADO</option>
-            </select>
-            <select
-              value={form.status}
-              onChange={(e) => setForm({ ...form, status: e.target.value })}
-              className="rounded-md border border-slate-300 p-2 text-sm"
-            >
-              <option>EM ESTOQUE</option>
-              <option>INSTALADO</option>
-              <option>RECAPADO</option>
-              <option>DANIFICADO</option>
-              <option>DESCARTADO</option>
-            </select>
-          </div>
-
-          <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-slate-300 p-2 text-sm text-slate-600">
-            <ImagePlus className="h-4 w-4 text-sky-700" />
-            {fotoFile ? fotoFile.name : "Foto do pneu (opcional)"}
-            <input
-              ref={fotoInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => setFotoFile(e.target.files?.[0] ?? null)}
-            />
-          </label>
-
-          <button
-            type="submit"
-            className="rounded-md bg-sky-600 px-4 py-2 text-sm font-bold text-white hover:bg-sky-700"
-          >
-            <Plus className="mr-2 inline h-4 w-4" />
-            Salvar pneu
-          </button>
-        </div>
-      </form>
     </div>
   );
 }

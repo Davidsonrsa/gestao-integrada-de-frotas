@@ -246,20 +246,7 @@ export default function EstoqueProdutosPage() {
             placeholder="Código fabricante"
             className="rounded-md border border-slate-300 p-2 text-sm"
           />
-          <textarea
-            value={form.descricao}
-            onChange={(e) => setForm({ ...form, descricao: e.target.value })}
-            placeholder="Descrição"
-            className="min-h-20 rounded-md border border-slate-300 p-2 text-sm"
-          />
-
-          <div className="grid gap-3 md:grid-cols-2">
-            <input
-              value={form.marca}
-              onChange={(e) => setForm({ ...form, marca: e.target.value })}
-              placeholder="Marca"
-              className="rounded-md border border-slate-300 p-2 text-sm"
-            />
+          <div className="grid gap-3 grid-cols-2">
             <select
               value={form.unidade}
               onChange={(e) => setForm({ ...form, unidade: e.target.value })}
@@ -270,19 +257,17 @@ export default function EstoqueProdutosPage() {
                   {unit}
                 </option>
               ))}
-              <option value="OUTRA">Outra</option>
             </select>
-          </div>
-
           <input
             type="number"
             min="0"
             step="0.01"
             value={form.estoque_atual}
             onChange={(e) => setForm({ ...form, estoque_atual: e.target.value })}
-            placeholder="Estoque atual"
+            placeholder="Quantidade"
             className="rounded-md border border-slate-300 p-2 text-sm"
           />
+          </div>
 
           <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-slate-300 p-2 text-sm text-slate-600">
             <ImagePlus className="h-4 w-4 text-sky-700" />
@@ -294,22 +279,6 @@ export default function EstoqueProdutosPage() {
               className="hidden"
               onChange={(e) => setFotoFile(e.target.files?.[0] ?? null)}
             />
-          </label>
-
-          <textarea
-            value={form.observacao}
-            onChange={(e) => setForm({ ...form, observacao: e.target.value })}
-            placeholder="Observação"
-            className="min-h-20 rounded-md border border-slate-300 p-2 text-sm"
-          />
-
-          <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-            <input
-              type="checkbox"
-              checked={form.ativo}
-              onChange={(e) => setForm({ ...form, ativo: e.target.checked })}
-            />
-            Produto ativo
           </label>
 
           <button
