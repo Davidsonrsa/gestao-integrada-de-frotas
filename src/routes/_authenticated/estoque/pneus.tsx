@@ -292,8 +292,8 @@ export default function EstoquePneusPage() {
                       {p.equipamento_id && ` · ${nomeEquip(p.equipamento_id)} (${p.posicao ?? "—"})`}
                     </p>
                   </div>
-                  {p.status === "AG. CONSERTO" && (
-                    <button type="button" onClick={() => void alterarPneu(p, { status: "EM ESTOQUE" })} className="rounded border px-2 py-1 text-xs">Voltou p/ estoque</button>
+                  {(p.status === "AG. CONSERTO" || (!p.posicao && (p.equipamento_id || ((p.status ?? "EM ESTOQUE") !== "EM ESTOQUE" && p.status !== "DESCARTADO")))) && (
+                    <button type="button" onClick={() => void alterarPneu(p, { status: "EM ESTOQUE", equipamento_id: null, posicao: null })} className="rounded border px-2 py-1 text-xs">Voltou p/ estoque</button>
                   )}
                   {isAdmin && (
                     <button type="button" aria-label="Excluir pneu" onClick={() => void excluirPneu(p)} className="text-red-600">
