@@ -6,7 +6,7 @@ import { estoqueDb as supabase } from "@/lib/estoque-db";
 import { getEstoqueFotoUrls, uploadEstoqueFoto } from "@/lib/estoque-fotos";
 import { useAuth } from "@/hooks/use-auth";
 import { normalizarBusca } from "@/lib/busca";
-import { POSICOES_EIXOS, corRecapagem, LEGENDA_RECAPAGEM } from "@/lib/pneus";
+import { layoutPneus, corRecapagem, LEGENDA_RECAPAGEM } from "@/lib/pneus";
 
 export const Route = createFileRoute("/_authenticated/estoque/pneus")({
   component: EstoquePneusPage,
@@ -64,6 +64,7 @@ export default function EstoquePneusPage() {
   const emEstoque = pneus.filter((p) => !p.equipamento_id && (p.status ?? "EM ESTOQUE") === "EM ESTOQUE");
   const pneuSel = posSel ? montados.get(posSel) : undefined;
   const equip = equipamentos.find((e) => e.id === equipId);
+  const layout = layoutPneus(equip?.numero);
 
   async function mover(p: Pneu, patch: Partial<Pneu>, tipo: string, obs: string) {
     const { error } = await supabase.from("estoque_pneus").update(patch).eq("id", p.id);
@@ -187,7 +188,7 @@ export default function EstoquePneusPage() {
             <option value="">Selecione o equipamento</option>
             {equipamentos.map((e) => (
               <option key={e.id} value={e.id}>
-                {e.numero} {e.identificacao ? `— ${e.identificacao}` : ""}
+                {e.numero} {e.identificacao ? `— ${e.identificacao}` : ""} ({pneus.filter((p) => p.equipamento_id === e.id).length}/{layoutPneus(e.numero).total} pneus)
               </option>
             ))}
           </select>
@@ -197,7 +198,7 @@ export default function EstoquePneusPage() {
           <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
             <div className="overflow-x-auto rounded-lg bg-slate-100 p-4">
               <div className="mx-auto w-fit space-y-4">
-                {POSICOES_EIXOS.map((eixo) => (
+                {layout.eixos.map((eixo) => (
                   <div key={eixo.nome} className="flex items-center gap-1">
                     <span className="w-14 text-[10px] font-bold text-slate-500">{eixo.nome}</span>
                     {eixo.esquerda.map((pos) => <Caixa key={pos} pos={pos} />)}
@@ -205,10 +206,12 @@ export default function EstoquePneusPage() {
                     {eixo.direita.map((pos) => <Caixa key={pos} pos={pos} />)}
                   </div>
                 ))}
-                <div className="flex items-center gap-1">
-                  <span className="w-14 text-[10px] font-bold text-slate-500">Estepe</span>
-                  <Caixa pos="ESTEPE" />
-                </div>
+                {layout.estepe && (
+                  <div className="flex items-center gap-1">
+                    <span className="w-14 text-[10px] font-bold text-slate-500">Estepe</span>
+                    <Caixa pos="ESTEPE" />
+                  </div>
+                )}
               </div>
               <div className="mt-4 flex flex-wrap justify-center gap-2 text-[10px]">
                 {LEGENDA_RECAPAGEM.map((l) => (

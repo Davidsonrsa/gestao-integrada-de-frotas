@@ -4,6 +4,17 @@ export const POSICOES_EIXOS = [
   { nome: "Eixo 3", esquerda: ["3EE", "3EI"], direita: ["3DI", "3DE"] },
 ];
 
+const EIXOS_RE = [
+  { nome: "Dianteiro", esquerda: ["1E"], direita: ["1D"] },
+  { nome: "Traseiro", esquerda: ["2E"], direita: ["2D"] },
+];
+
+/** Equipamentos com sigla RE (retroescavadeiras) têm 4 pneus, sem estepe. */
+export function layoutPneus(numero?: string | null) {
+  const re = /^\s*RE\b|^\s*RE[-\s]?\d/i.test(numero ?? "");
+  return re ? { eixos: EIXOS_RE, estepe: false, total: 4 } : { eixos: POSICOES_EIXOS, estepe: true, total: 11 };
+}
+
 export const LEGENDA_RECAPAGEM = [
   { label: "Novo", bg: "#111111", fg: "#ffffff" },
   { label: "1 recapagem", bg: "#22c55e", fg: "#111111" },

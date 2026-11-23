@@ -4,3 +4,7 @@ import { corRecapagem } from "./pneus";
 test("novo é preto", () => assert.equal(corRecapagem(0).label, "Novo"));
 test("2 recapagens amarelo", () => assert.equal(corRecapagem(2).label, "2 recapagens"));
 test("mais de 4 cinza", () => assert.equal(corRecapagem(7).label, "+ de 4"));
+import { layoutPneus } from "./pneus";
+test("RE tem 4 pneus", () => assert.equal(layoutPneus("RE-30").total, 4));
+test("RE sem estepe", () => assert.equal(layoutPneus("re 21").estepe, false));
+test("caminhão tem 3 eixos", () => assert.equal(layoutPneus("CM-12").eixos.length, 3));
