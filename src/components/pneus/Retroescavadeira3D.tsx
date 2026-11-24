@@ -2,7 +2,7 @@ import { useState } from "react";
 import { RotateCw } from "lucide-react";
 import { MEDIDAS_RE, corRecapagem } from "@/lib/pneus";
 import { Button } from "@/components/ui/button";
-import foto from "@/assets/retroescavadeira_lateral.png.asset.json";
+import foto from "@/assets/retroescavadeira_lateral.png";
 
 type Pneu = { codigo: string; recapagens?: number | null; medida?: string | null };
 
@@ -32,7 +32,7 @@ export function Retroescavadeira3D({ montados, posSel, onClick }: Props) {
       </div>
       <div className="relative mx-auto w-full max-w-2xl overflow-hidden bg-white">
         <img
-          src={foto.url}
+          src={foto}
           alt="Retroescavadeira"
           className="block w-full select-none transition-transform duration-500"
           style={{ transform: espelhado ? "scaleX(-1)" : undefined }}

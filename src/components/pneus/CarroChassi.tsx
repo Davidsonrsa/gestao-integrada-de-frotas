@@ -1,5 +1,5 @@
 import { POSICOES_CARRO, corRecapagem } from "@/lib/pneus";
-import foto from "@/assets/carro_chassi.png.asset.json";
+import foto from "@/assets/carro_chassi.png";
 
 type Pneu = { codigo: string; recapagens?: number | null; medida?: string | null };
 
@@ -15,7 +15,7 @@ export function CarroChassi({ montados, posSel, onClick }: Props) {
     <div className="flex justify-center">
       <div className="relative w-full max-w-[720px]">
         <img
-          src={foto.url}
+          src={foto}
           alt="Carro visto de cima"
           className="block w-full select-none"
           draggable={false}

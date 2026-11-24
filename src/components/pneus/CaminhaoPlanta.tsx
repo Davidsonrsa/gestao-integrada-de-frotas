@@ -1,5 +1,5 @@
 import { POSICOES_CAMINHAO, corRecapagem } from "@/lib/pneus";
-import foto from "@/assets/caminhao_planta.png.asset.json";
+import foto from "@/assets/caminhao_planta.png";
 
 type Pneu = { codigo: string; recapagens?: number | null; medida?: string | null };
 
@@ -19,7 +19,7 @@ export function CaminhaoPlanta({ montados, posSel, estepe, onClick }: Props) {
       <div className="flex justify-center">
         <div className="relative h-[520px] max-h-[62vh]">
           <img
-            src={foto.url}
+            src={foto}
             alt="Caminhão visto de cima"
             className="block h-full w-auto select-none"
             draggable={false}
