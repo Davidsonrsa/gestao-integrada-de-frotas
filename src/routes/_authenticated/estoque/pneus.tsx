@@ -7,6 +7,7 @@ import { getEstoqueFotoUrls, uploadEstoqueFoto } from "@/lib/estoque-fotos";
 import { useAuth } from "@/hooks/use-auth";
 import { normalizarBusca } from "@/lib/busca";
 import { Retroescavadeira3D } from "@/components/pneus/Retroescavadeira3D";
+import { CaminhaoPlanta } from "@/components/pneus/CaminhaoPlanta";
 import { layoutPneus, corRecapagem, LEGENDA_RECAPAGEM, MEDIDAS_RE } from "@/lib/pneus";
 
 export const Route = createFileRoute("/_authenticated/estoque/pneus")({
@@ -155,24 +156,6 @@ export default function EstoquePneusPage() {
   const nomeEquip = (id?: string | null) => equipamentos.find((x) => x.id === id)?.numero ?? "—";
   const lista = pneus.filter((p) => !busca || normalizarBusca(`${p.codigo} ${p.marca ?? ""} ${p.medida ?? ""}`).includes(normalizarBusca(busca)));
 
-  function Caixa({ pos }: { pos: string }) {
-    const p = montados.get(pos);
-    const c = p ? corRecapagem(p.recapagens ?? 0) : null;
-    const sel = posSel === pos;
-    return (
-      <button
-        type="button"
-        onClick={() => void clicarPosicao(pos)}
-        title={pos}
-        className={`flex h-20 w-14 flex-col items-center justify-center rounded border-2 text-[10px] font-bold ${sel ? "ring-4 ring-sky-400" : ""} ${p ? "border-slate-800" : "border-dashed border-slate-400 bg-white text-slate-400"}`}
-        style={c ? { background: c.bg, color: c.fg } : undefined}
-      >
-        <span className="break-all px-0.5 leading-tight">{p ? p.codigo : "vazio"}</span>
-        <span className="mt-1 opacity-75">{pos}</span>
-      </button>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -198,25 +181,15 @@ export default function EstoquePneusPage() {
         {equipId ? (
           <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
             <div className="overflow-x-auto rounded-lg bg-slate-100 p-4">
-              {!layout.estepe ? (
+              {layout.tipo === "re" ? (
                 <Retroescavadeira3D montados={montados} posSel={posSel} onClick={(pos) => void clicarPosicao(pos)} />
               ) : (
-              <div className="mx-auto w-fit space-y-4">
-                {layout.eixos.map((eixo) => (
-                  <div key={eixo.nome} className="flex items-center gap-1">
-                    <span className="w-14 text-[10px] font-bold text-slate-500">{eixo.nome}</span>
-                    {eixo.esquerda.map((pos) => <Caixa key={pos} pos={pos} />)}
-                    <div className="h-3 w-24 bg-slate-800" />
-                    {eixo.direita.map((pos) => <Caixa key={pos} pos={pos} />)}
-                  </div>
-                ))}
-                {layout.estepe && (
-                  <div className="flex items-center gap-1">
-                    <span className="w-14 text-[10px] font-bold text-slate-500">Estepe</span>
-                    <Caixa pos="ESTEPE" />
-                  </div>
-                )}
-              </div>
+                <CaminhaoPlanta
+                  montados={montados}
+                  posSel={posSel}
+                  estepe={layout.estepe}
+                  onClick={(pos) => void clicarPosicao(pos)}
+                />
               )}
               <div className="mt-4 flex flex-wrap justify-center gap-2 text-[10px]">
                 {LEGENDA_RECAPAGEM.map((l) => (

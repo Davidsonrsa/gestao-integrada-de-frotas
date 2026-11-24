@@ -50,7 +50,7 @@ export function Retroescavadeira3D({ montados, posSel, onClick }: Props) {
               type="button"
               onClick={() => onClick(pos)}
               title={`${pos}${p ? ` — ${p.codigo}${p.medida ? ` (${p.medida})` : ""}` : " — vazio"}`}
-              className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full"
+              className="pneu-roda absolute -translate-x-1/2 -translate-y-1/2 rounded-full"
               style={{ left: `${x}%`, top: `${r.y}%`, width: `${r.w}%`, aspectRatio: "1" }}
             >
               <span

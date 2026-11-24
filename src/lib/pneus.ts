@@ -9,10 +9,31 @@ const EIXOS_RE = [
   { nome: "Traseiro", esquerda: ["2E"], direita: ["2D"] },
 ];
 
-/** Equipamentos com sigla RE (retroescavadeiras) têm 4 pneus, sem estepe. */
+/**
+ * Posições das rodas no desenho do caminhão visto de cima.
+ * x, y = centro da roda; w, h = tamanho da área clicável — tudo em % da imagem.
+ */
+export const POSICOES_CAMINHAO = [
+  { pos: "1E", x: 12.9, y: 18.6, w: 13, h: 12 },
+  { pos: "1D", x: 84.3, y: 18.6, w: 13, h: 12 },
+  { pos: "2EE", x: 10.0, y: 60.2, w: 16, h: 18 },
+  { pos: "2EI", x: 27.1, y: 60.2, w: 16, h: 18 },
+  { pos: "2DI", x: 72.5, y: 60.2, w: 16, h: 18 },
+  { pos: "2DE", x: 88.9, y: 60.2, w: 16, h: 18 },
+  { pos: "3EE", x: 10.0, y: 78.1, w: 16, h: 18 },
+  { pos: "3EI", x: 27.1, y: 78.1, w: 16, h: 18 },
+  { pos: "3DI", x: 72.5, y: 78.1, w: 16, h: 18 },
+  { pos: "3DE", x: 88.9, y: 78.1, w: 16, h: 18 },
+];
+
+export type TipoPneus = "re" | "caminhao";
+
+/** Equipamentos com sigla RE (retroescavadeiras) têm 4 pneus, sem estepe; os demais são caminhões. */
 export function layoutPneus(numero?: string | null) {
   const re = /^\s*RE\b|^\s*RE[-\s]?\d/i.test(numero ?? "");
-  return re ? { eixos: EIXOS_RE, estepe: false, total: 4 } : { eixos: POSICOES_EIXOS, estepe: true, total: 11 };
+  return re
+    ? { tipo: "re" as TipoPneus, eixos: EIXOS_RE, estepe: false, total: 4 }
+    : { tipo: "caminhao" as TipoPneus, eixos: POSICOES_EIXOS, estepe: true, total: 11 };
 }
 
 export const LEGENDA_RECAPAGEM = [

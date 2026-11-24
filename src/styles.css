@@ -116,6 +116,16 @@ button.medicao-equipamento:not([class*="destructive"]):not([class*="outline"]):n
   border: 0 !important;
 }
 
+/* Rodas dos desenhos de pneus: a cor vem de um span interno, não do botão. */
+button.pneu-roda:not([class*="destructive"]):not([class*="outline"]):not(
+    [class*="ghost"]
+  ):not([class*="secondary"]) {
+  background-color: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  font-weight: 400 !important;
+}
+
 button.medicao-lixeira {
   background-color: #dc2626 !important;
   color: #ffffff !important;
