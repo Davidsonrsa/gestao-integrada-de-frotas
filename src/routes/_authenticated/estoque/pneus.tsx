@@ -6,7 +6,8 @@ import { estoqueDb as supabase } from "@/lib/estoque-db";
 import { getEstoqueFotoUrls, uploadEstoqueFoto } from "@/lib/estoque-fotos";
 import { useAuth } from "@/hooks/use-auth";
 import { normalizarBusca } from "@/lib/busca";
-import { layoutPneus, corRecapagem, LEGENDA_RECAPAGEM } from "@/lib/pneus";
+import { Retroescavadeira3D } from "@/components/pneus/Retroescavadeira3D";
+import { layoutPneus, corRecapagem, LEGENDA_RECAPAGEM, MEDIDAS_RE } from "@/lib/pneus";
 
 export const Route = createFileRoute("/_authenticated/estoque/pneus")({
   component: EstoquePneusPage,
@@ -197,6 +198,9 @@ export default function EstoquePneusPage() {
         {equipId ? (
           <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
             <div className="overflow-x-auto rounded-lg bg-slate-100 p-4">
+              {!layout.estepe ? (
+                <Retroescavadeira3D montados={montados} posSel={posSel} onClick={(pos) => void clicarPosicao(pos)} />
+              ) : (
               <div className="mx-auto w-fit space-y-4">
                 {layout.eixos.map((eixo) => (
                   <div key={eixo.nome} className="flex items-center gap-1">
@@ -213,6 +217,7 @@ export default function EstoquePneusPage() {
                   </div>
                 )}
               </div>
+              )}
               <div className="mt-4 flex flex-wrap justify-center gap-2 text-[10px]">
                 {LEGENDA_RECAPAGEM.map((l) => (
                   <span key={l.label} className="flex items-center gap-1">
@@ -318,7 +323,8 @@ export default function EstoquePneusPage() {
             <input value={form.codigo} onChange={(e) => setForm({ ...form, codigo: e.target.value })} placeholder="Código (ex.: PNEU48)" required className="rounded-md border border-slate-300 p-2 text-sm" />
             <div className="grid grid-cols-2 gap-3">
               <input value={form.marca} onChange={(e) => setForm({ ...form, marca: e.target.value })} placeholder="Marca" className="rounded-md border border-slate-300 p-2 text-sm" />
-              <input value={form.medida} onChange={(e) => setForm({ ...form, medida: e.target.value })} placeholder="Medida" className="rounded-md border border-slate-300 p-2 text-sm" />
+              <input value={form.medida} onChange={(e) => setForm({ ...form, medida: e.target.value })} list="medidas-pneu" placeholder="Medida" className="rounded-md border border-slate-300 p-2 text-sm" />
+              <datalist id="medidas-pneu">{[...MEDIDAS_RE.dianteiro, ...MEDIDAS_RE.traseiro].map((m) => <option key={m} value={m} />)}</datalist>
               <input type="number" min="0" step="0.01" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} placeholder="Valor (R$)" className="rounded-md border border-slate-300 p-2 text-sm" />
               <select value={form.recapagens} onChange={(e) => setForm({ ...form, recapagens: e.target.value })} className="rounded-md border border-slate-300 p-2 text-sm">
                 {[0, 1, 2, 3, 4, 5].map((n) => (

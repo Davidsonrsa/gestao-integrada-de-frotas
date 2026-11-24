@@ -27,3 +27,9 @@ export const LEGENDA_RECAPAGEM = [
 export function corRecapagem(n: number) {
   return LEGENDA_RECAPAGEM[Math.min(Math.max(0, Math.floor(n)), 5)];
 }
+
+/** Medidas padrão dos pneus das retroescavadeiras (RE). */
+export const MEDIDAS_RE = {
+  dianteiro: ["12x16,5", "12,80x18"],
+  traseiro: ["19,5x24", "16,9x24", "1400x24"],
+};
