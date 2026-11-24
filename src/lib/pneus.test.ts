@@ -10,10 +10,11 @@ test("RE sem estepe", () => assert.equal(layoutPneus("re 21").estepe, false));
 test("caminhão tem 3 eixos", () => assert.equal(layoutPneus("CB-01").eixos.length, 3));
 test("RE usa desenho da retroescavadeira", () => assert.equal(layoutPneus("RE-21").tipo, "re"));
 test("caminhão usa desenho do caminhão", () => assert.equal(layoutPneus("CB-01").tipo, "caminhao"));
-test("carro CC usa desenho do carro", () => assert.equal(layoutPneus("CC-01").tipo, "carro"));
-test("carro CM usa desenho do carro", () => assert.equal(layoutPneus("CM-12").tipo, "carro"));
+test("carro VC usa desenho do carro", () => assert.equal(layoutPneus("VC-01").tipo, "carro"));
+test("carro HILUX usa desenho do carro", () => assert.equal(layoutPneus("HILUX 02").tipo, "carro"));
+test("CM é caminhão", () => assert.equal(layoutPneus("CM-12").tipo, "caminhao"));
 test("carro tem 4 pneus + estepe", () => {
-  const l = layoutPneus("CC-01");
+  const l = layoutPneus("VC-01");
   assert.equal(l.total, 5);
   assert.equal(l.estepe, true);
   assert.equal(l.eixos.length, 2);

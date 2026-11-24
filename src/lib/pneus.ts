@@ -47,7 +47,7 @@ export type TipoPneus = "re" | "caminhao" | "carro";
 
 /**
  * Sigla RE = retroescavadeira (4 pneus, sem estepe);
- * siglas CC/CM = carros (4 pneus + estepe);
+ * siglas VC/HILUX = carros (4 pneus + estepe);
  * os demais são caminhões (3 eixos + estepe).
  */
 export function layoutPneus(numero?: string | null) {
@@ -55,7 +55,7 @@ export function layoutPneus(numero?: string | null) {
   if (/^\s*RE\b|^\s*RE[-\s]?\d/i.test(n)) {
     return { tipo: "re" as TipoPneus, eixos: EIXOS_RE, estepe: false, total: 4 };
   }
-  if (/^\s*(CC|CM)\b|^\s*(CC|CM)[-\s]?\d/i.test(n)) {
+  if (/^\s*(VC|HILUX)\b|^\s*(VC|HILUX)[-\s]?\d/i.test(n)) {
     return { tipo: "carro" as TipoPneus, eixos: EIXOS_CARRO, estepe: true, total: 5 };
   }
   return { tipo: "caminhao" as TipoPneus, eixos: POSICOES_EIXOS, estepe: true, total: 11 };
