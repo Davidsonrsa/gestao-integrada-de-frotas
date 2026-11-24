@@ -398,6 +398,7 @@ function EquipamentoDetail() {
       : null;
   const limite = Number(form.limite_revisao ?? 500);
   const overdue = hrRodadoCalc != null && hrRodadoCalc > limite;
+  const pctLimite = hrRodadoCalc != null && limite > 0 ? (hrRodadoCalc / limite) * 100 : 0;
   const temImplemento = IMPLEMENTOS_COM_HORIMETRO.includes((equip.numero ?? "").toUpperCase());
   const rodadoImplemento =
     form.h_implemento != null && form.h_implemento_revisao != null
@@ -771,7 +772,65 @@ function EquipamentoDetail() {
           </Field>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <Card
+          className={`p-4 space-y-3 ${
+            overdue ? "border-destructive/50 bg-destructive/5" : "border-primary/30"
+          }`}
+        >
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <h3 className="font-semibold text-sm flex items-center gap-2">
+              <span
+                className={`w-2 h-2 rounded-full ${overdue ? "bg-destructive" : "bg-primary"}`}
+              />
+              Manutenção / Revisão
+            </h3>
+            {hrRodadoCalc != null &&
+              (overdue ? (
+                <Badge variant="destructive" className="blink-overdue">
+                  Vencida há {hrRodadoCalc - limite}h
+                </Badge>
+              ) : (
+                <Badge variant="secondary">Faltam {limite - hrRodadoCalc}h</Badge>
+              ))}
+          </div>
+
+          {hrRodadoCalc != null && (
+            <div className="rounded-md bg-muted/60 p-3 space-y-1.5">
+              <div className="flex items-end justify-between gap-2">
+                <div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Horas rodadas desde a últ. revisão
+                  </p>
+                  <p
+                    className={`text-2xl font-bold tabular-nums leading-none ${
+                      overdue ? "text-destructive blink-overdue" : ""
+                    }`}
+                  >
+                    {hrRodadoCalc}
+                    <span className="text-sm font-normal">h</span>
+                  </p>
+                </div>
+                <p className="text-[11px] text-muted-foreground text-right">
+                  Limite:{" "}
+                  <span className="font-semibold text-foreground tabular-nums">{limite}h</span>
+                </p>
+              </div>
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    overdue ? "bg-destructive" : pctLimite >= 80 ? "bg-amber-500" : "bg-primary"
+                  }`}
+                  style={{ width: `${Math.min(100, pctLimite)}%` }}
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                {Math.round(pctLimite)}% do limite · atual {form.horimetro_atual} − últ. revisão{" "}
+                {form.h_revisao}
+              </p>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
           <Field label="Data últ. revisão">
             <Input
               type="date"
@@ -825,16 +884,6 @@ function EquipamentoDetail() {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Hr rodado (calculado)">
-            <Input
-              type="number"
-              value={hrRodadoCalc ?? ""}
-              readOnly
-              className={
-                overdue ? "blink-overdue border-destructive text-destructive font-semibold" : ""
-              }
-            />
-          </Field>
           <Field label="Status">
             <select
               value={form.status ?? ""}
@@ -952,6 +1001,7 @@ function EquipamentoDetail() {
             <Input value={`${limite} h`} readOnly />
           )}
         </Field>
+        </Card>
 
         {isAdmin && (
           <div className="flex gap-2 pt-2">
