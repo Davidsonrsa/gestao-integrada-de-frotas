@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { normalizarBusca } from "@/lib/busca";
 import { Retroescavadeira3D } from "@/components/pneus/Retroescavadeira3D";
 import { CaminhaoPlanta } from "@/components/pneus/CaminhaoPlanta";
+import { CarroChassi } from "@/components/pneus/CarroChassi";
 import { layoutPneus, corRecapagem, LEGENDA_RECAPAGEM, MEDIDAS_RE } from "@/lib/pneus";
 
 export const Route = createFileRoute("/_authenticated/estoque/pneus")({
@@ -183,6 +184,8 @@ export default function EstoquePneusPage() {
             <div className="overflow-x-auto rounded-lg bg-slate-100 p-4">
               {layout.tipo === "re" ? (
                 <Retroescavadeira3D montados={montados} posSel={posSel} onClick={(pos) => void clicarPosicao(pos)} />
+              ) : layout.tipo === "carro" ? (
+                <CarroChassi montados={montados} posSel={posSel} onClick={(pos) => void clicarPosicao(pos)} />
               ) : (
                 <CaminhaoPlanta
                   montados={montados}
