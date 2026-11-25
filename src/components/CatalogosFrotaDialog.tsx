@@ -115,10 +115,11 @@ export function CatalogosFrotaDialog() {
       <DialogTrigger asChild>
         <Button
           size="sm"
-          className="h-9 px-2.5 text-[11px] gap-1"
+          variant="outline"
+          className="h-9 px-2 text-[11px] border-slate-200 bg-white gap-1 whitespace-nowrap"
           title="Catálogos e links da frota"
         >
-          <BookOpen className="w-3.5 h-3.5" />
+          <BookOpen className="w-4 h-4 text-slate-900" />
           Catálogos
         </Button>
       </DialogTrigger>
