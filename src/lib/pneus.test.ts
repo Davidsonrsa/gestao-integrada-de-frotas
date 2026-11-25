@@ -4,7 +4,30 @@ import { corRecapagem } from "./pneus";
 test("novo é preto", () => assert.equal(corRecapagem(0).label, "Novo"));
 test("2 recapagens amarelo", () => assert.equal(corRecapagem(2).label, "2 recapagens"));
 test("mais de 4 cinza", () => assert.equal(corRecapagem(7).label, "+ de 4"));
-import { layoutPneus, POSICOES_CAMINHAO, POSICOES_CARRO, POSICOES_EIXOS } from "./pneus";
+import { layoutPneus, montagemPneus, podeAplicarPneu, POSICOES_CAMINHAO, POSICOES_CARRO, POSICOES_EIXOS } from "./pneus";
+test("legacy RE positions remain accessible without guessing or changing records", () => {
+  const pneus = ["1E", "1D", "2EI", "2DI"].map((posicao) => ({ posicao }));
+  const montagem = montagemPneus("RE-40", pneus);
+  assert.deepEqual([...montagem.montados.keys()], ["1E", "1D"]);
+  assert.deepEqual(montagem.pendentes.map((p) => p.posicao), ["2EI", "2DI"]);
+  assert.deepEqual(pneus.map((p) => p.posicao), ["1E", "1D", "2EI", "2DI"]);
+});
+test("RE cannot receive a fifth tire while legacy tires remain linked", () => {
+  assert.equal(podeAplicarPneu("RE-40", ["1E", "1D", "2EI", "2DI"].map((posicao) => ({ posicao })), "2E"), false);
+});
+test("new tires require a valid empty position and remaining capacity", () => {
+  assert.equal(podeAplicarPneu("RE-40", [{ posicao: "1E" }], "1E"), false);
+  assert.equal(podeAplicarPneu("RE-40", [], "ESTEPE"), false);
+  assert.equal(podeAplicarPneu("RE-40", [{ posicao: "1E" }], "2E"), true);
+});
+test("unknown, spare, missing and duplicate RE positions are all recoverable", () => {
+  const pneus = ["1EE", "3DI", "ESTEPE", null, "1E", "1E"].map((posicao) => ({ posicao }));
+  assert.equal(montagemPneus("RE-21", pneus).pendentes.length, 5);
+});
+test("truck rear wheels and car spare retain their existing positions", () => {
+  assert.equal(montagemPneus("CB-04", [{ posicao: "2DI" }, { posicao: "ESTEPE" }]).pendentes.length, 0);
+  assert.equal(montagemPneus("HILUX", [{ posicao: "ESTEPE" }]).pendentes.length, 0);
+});
 test("RE tem 4 pneus", () => assert.equal(layoutPneus("RE-30").total, 4));
 test("RE sem estepe", () => assert.equal(layoutPneus("re 21").estepe, false));
 test("caminhão tem 3 eixos", () => assert.equal(layoutPneus("CB-01").eixos.length, 3));

@@ -9,9 +9,18 @@ import { normalizarBusca } from "@/lib/busca";
 import { Retroescavadeira3D } from "@/components/pneus/Retroescavadeira3D";
 import { CaminhaoPlanta } from "@/components/pneus/CaminhaoPlanta";
 import { CarroChassi } from "@/components/pneus/CarroChassi";
-import { layoutPneus, corRecapagem, LEGENDA_RECAPAGEM, MEDIDAS_RE } from "@/lib/pneus";
+import { Button } from "@/components/ui/button";
+import { layoutPneus, montagemPneus, podeAplicarPneu, corRecapagem, LEGENDA_RECAPAGEM, MEDIDAS_RE } from "@/lib/pneus";
 
 export const Route = createFileRoute("/_authenticated/estoque/pneus")({
+  head: () => ({ meta: [
+    { title: "Controle de pneus | Gestão Integrada de Frotas" },
+    { name: "description", content: "Montagem, rodízio e histórico dos pneus da frota." },
+    { property: "og:title", content: "Controle de pneus | Gestão Integrada de Frotas" },
+    { property: "og:description", content: "Montagem, rodízio e histórico dos pneus da frota." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: EstoquePneusPage,
 });
 
@@ -38,6 +47,7 @@ export default function EstoquePneusPage() {
   const [equipamentos, setEquipamentos] = useState<Equipamento[]>([]);
   const [equipId, setEquipId] = useState("");
   const [posSel, setPosSel] = useState<string | null>(null);
+  const [pendenteId, setPendenteId] = useState<string | null>(null);
   const [rodizio, setRodizio] = useState(false);
   const [aplicarId, setAplicarId] = useState("");
   const [form, setForm] = useState(FORM_VAZIO);
@@ -60,13 +70,12 @@ export default function EstoquePneusPage() {
     void loadData();
   }, []);
 
-  const montados = useMemo(
-    () => new Map(pneus.filter((p) => p.equipamento_id === equipId && p.posicao).map((p) => [p.posicao!, p])),
-    [pneus, equipId],
-  );
-  const emEstoque = pneus.filter((p) => !p.equipamento_id && (p.status ?? "EM ESTOQUE") === "EM ESTOQUE");
-  const pneuSel = posSel ? montados.get(posSel) : undefined;
   const equip = equipamentos.find((e) => e.id === equipId);
+  const vinculados = useMemo(() => pneus.filter((p) => p.equipamento_id === equipId), [pneus, equipId]);
+  const montagem = useMemo(() => montagemPneus(equip?.numero, vinculados), [equip?.numero, vinculados]);
+  const { montados, pendentes } = montagem;
+  const emEstoque = pneus.filter((p) => !p.equipamento_id && (p.status ?? "EM ESTOQUE") === "EM ESTOQUE");
+  const pneuSel = pendenteId ? pendentes.find((p) => p.id === pendenteId) : posSel ? montados.get(posSel) : undefined;
   const layout = layoutPneus(equip?.numero);
 
   async function mover(p: Pneu, patch: Partial<Pneu>, tipo: string, obs: string) {
@@ -84,16 +93,19 @@ export default function EstoquePneusPage() {
   }
 
   async function clicarPosicao(pos: string) {
-    if (rodizio && pneuSel && posSel) {
+    if (rodizio && pneuSel) {
       const destino = montados.get(pos);
-      await mover(pneuSel, { posicao: pos }, "RODÍZIO PNEU", `${pneuSel.codigo}: ${posSel} → ${pos}`);
-      if (destino) await mover(destino, { posicao: posSel }, "RODÍZIO PNEU", `${destino.codigo}: ${pos} → ${posSel}`);
+      if (pendenteId && destino) return toast.error("Escolha uma posição vazia para o pneu sem posição no desenho.");
+      if (!await mover(pneuSel, { posicao: pos }, "RODÍZIO PNEU", `${pneuSel.codigo}: ${pneuSel.posicao ?? "sem posição"} → ${pos}`)) return;
+      if (destino && !await mover(destino, { posicao: posSel }, "RODÍZIO PNEU", `${destino.codigo}: ${pos} → ${posSel}`)) return void loadData();
+      setPendenteId(null);
       setRodizio(false);
       setPosSel(pos);
       toast.success("Rodízio registrado.");
       return void loadData();
     }
     setRodizio(false);
+    setPendenteId(null);
     setAplicarId("");
     setPosSel(pos);
   }
@@ -101,6 +113,9 @@ export default function EstoquePneusPage() {
   async function aplicar() {
     const p = pneus.find((x) => x.id === aplicarId);
     if (!p || !posSel || !equip) return;
+    if (!emEstoque.some((item) => item.id === p.id) || !podeAplicarPneu(equip.numero, vinculados, posSel)) {
+      return toast.error("Posição ocupada ou limite de pneus atingido. Reposicione ou retire os pneus vinculados antes de aplicar outro.");
+    }
     if (await mover(p, { equipamento_id: equipId, posicao: posSel, status: "INSTALADO" }, "APLICAR PNEU", `${p.codigo} aplicado em ${equip.numero} (${posSel})`)) {
       toast.success("Pneu aplicado.");
       void loadData();
@@ -167,15 +182,21 @@ export default function EstoquePneusPage() {
             onChange={(e) => {
               setEquipId(e.target.value);
               setPosSel(null);
+              setPendenteId(null);
+              setRodizio(false);
+              setAplicarId("");
             }}
             className="rounded-md border border-slate-300 p-2 text-sm"
           >
             <option value="">Selecione o equipamento</option>
-            {equipamentos.map((e) => (
+            {equipamentos.map((e) => {
+              const resumo = montagemPneus(e.numero, pneus.filter((p) => p.equipamento_id === e.id));
+              return (
               <option key={e.id} value={e.id}>
-                {e.numero} {e.identificacao ? `— ${e.identificacao}` : ""} ({pneus.filter((p) => p.equipamento_id === e.id).length}/{layoutPneus(e.numero).total} pneus)
+                {e.numero} {e.identificacao ? `— ${e.identificacao}` : ""} ({resumo.montados.size}/{resumo.total} pneus{resumo.pendentes.length > 0 ? ` · ${resumo.pendentes.length} sem posição no desenho` : ""})
               </option>
-            ))}
+              );
+            })}
           </select>
         </div>
 
@@ -194,6 +215,21 @@ export default function EstoquePneusPage() {
                   onClick={(pos) => void clicarPosicao(pos)}
                 />
               )}
+              {pendentes.length > 0 && (
+                <section className="mt-4 border-t border-border pt-3">
+                  <h3 className="mb-2 text-sm font-semibold text-foreground">Pneus vinculados sem posição no desenho ({pendentes.length})</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {pendentes.map((p) => (
+                      <Button key={p.id} variant={pendenteId === p.id ? "secondary" : "outline"} size="sm" onClick={() => {
+                        setPendenteId(p.id);
+                        setPosSel(p.posicao ?? null);
+                        setRodizio(false);
+                        setAplicarId("");
+                      }}>{p.codigo} · {p.posicao ?? "Sem posição"}</Button>
+                    ))}
+                  </div>
+                </section>
+              )}
               <div className="mt-4 flex flex-wrap justify-center gap-2 text-[10px]">
                 {LEGENDA_RECAPAGEM.map((l) => (
                   <span key={l.label} className="flex items-center gap-1">
@@ -204,7 +240,7 @@ export default function EstoquePneusPage() {
             </div>
 
             <div className="rounded-lg border border-slate-200 p-3 text-sm">
-              {!posSel ? (
+              {!posSel && !pneuSel ? (
                 <p className="text-slate-500">Clique em uma posição do desenho.</p>
               ) : pneuSel ? (
                 <div className="space-y-2">
@@ -218,7 +254,7 @@ export default function EstoquePneusPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-2 pt-2">
                     <button type="button" onClick={() => setRodizio(!rodizio)} className={`flex items-center justify-center gap-1 rounded-md border p-2 text-xs font-bold ${rodizio ? "bg-sky-100" : ""}`}>
-                      <RotateCw className="h-4 w-4" /> Rodízio
+                      <RotateCw className="h-4 w-4" /> {pendenteId ? "Reposicionar" : "Rodízio"}
                     </button>
                     <button type="button" onClick={() => void retirar("EM ESTOQUE")} className="flex items-center justify-center gap-1 rounded-md border p-2 text-xs font-bold">
                       <PackageOpen className="h-4 w-4" /> P/ estoque
@@ -243,7 +279,8 @@ export default function EstoquePneusPage() {
                       </option>
                     ))}
                   </select>
-                  <button type="button" disabled={!aplicarId} onClick={() => void aplicar()} className="flex w-full items-center justify-center gap-1 rounded-md bg-sky-600 p-2 text-sm font-bold text-white disabled:bg-slate-300">
+                  {vinculados.length >= layout.total && <p className="text-sm text-destructive">Limite de pneus atingido; reposicione ou retire os pneus vinculados.</p>}
+                  <button type="button" disabled={!aplicarId || !podeAplicarPneu(equip?.numero, vinculados, posSel ?? "")} onClick={() => void aplicar()} className="flex w-full items-center justify-center gap-1 rounded-md bg-sky-600 p-2 text-sm font-bold text-white disabled:bg-slate-300">
                     <ArrowLeftRight className="h-4 w-4" /> Aplicar pneu
                   </button>
                 </div>

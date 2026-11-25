@@ -61,6 +61,28 @@ export function layoutPneus(numero?: string | null) {
   return { tipo: "caminhao" as TipoPneus, eixos: POSICOES_EIXOS, estepe: true, total: 11 };
 }
 
+/** Keep ambiguous legacy positions accessible without guessing their physical wheel. */
+export function montagemPneus<T extends { posicao?: string | null }>(numero: string | null | undefined, pneus: T[]) {
+  const layout = layoutPneus(numero);
+  const posicoes = new Set(layout.eixos.flatMap((e) => [...e.esquerda, ...e.direita]));
+  if (layout.estepe) posicoes.add("ESTEPE");
+  const montados = new Map<string, T>();
+  const pendentes: T[] = [];
+  for (const pneu of pneus) {
+    if (pneu.posicao && posicoes.has(pneu.posicao) && !montados.has(pneu.posicao)) {
+      montados.set(pneu.posicao, pneu);
+    } else {
+      pendentes.push(pneu);
+    }
+  }
+  return { montados, pendentes, posicoes, total: layout.total, vinculados: pneus.length };
+}
+
+export function podeAplicarPneu(numero: string | null | undefined, pneus: { posicao?: string | null }[], posicao: string) {
+  const montagem = montagemPneus(numero, pneus);
+  return montagem.posicoes.has(posicao) && !montagem.montados.has(posicao) && montagem.vinculados < montagem.total;
+}
+
 export const LEGENDA_RECAPAGEM = [
   { label: "Novo", bg: "#111111", fg: "#ffffff" },
   { label: "1 recapagem", bg: "#22c55e", fg: "#111111" },

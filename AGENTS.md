@@ -33,6 +33,7 @@ Não há script de testes automatizados no `package.json`; para mudanças de com
 - Ao alterar autenticação, permissões ou dados sensíveis, verifique as policies RLS e os cenários documentados em [src/lib/security-checklist.ts](src/lib/security-checklist.ts).
 
 ## Convenções de implementação
+- Tire assembly uses a shared layout partition: preserve legacy/duplicate positions as individually selectable pending tires and count all linked tires for capacity, so layout changes never hide records or allow extra mounting.
 - Implement hour-meter editability mirrors the existing database role permissions through a shared helper; operators remain restricted to the main hour meter.
 - Invoice server searches combine the original accented text pattern with a word-preserving normalized prefix pattern before pagination, so description searches and equipment searches both retain matching rows.
 - Equipment invoice costs use admin-scoped RLS reads, canonical invoice amounts and exact legacy prefix matching only when no equipment FK exists; paginate to avoid truncated totals.
