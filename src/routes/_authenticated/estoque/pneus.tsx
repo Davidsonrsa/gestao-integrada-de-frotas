@@ -171,6 +171,14 @@ export default function EstoquePneusPage() {
 
   const nomeEquip = (id?: string | null) => equipamentos.find((x) => x.id === id)?.numero ?? "—";
   const lista = pneus.filter((p) => !busca || normalizarBusca(`${p.codigo} ${p.marca ?? ""} ${p.medida ?? ""}`).includes(normalizarBusca(busca)));
+  const medidasCadastradas = useMemo(() => {
+    const todas = new Set<string>([...MEDIDAS_RE.dianteiro, ...MEDIDAS_RE.traseiro]);
+    for (const p of pneus) {
+      const m = p.medida?.trim();
+      if (m) todas.add(m);
+    }
+    return [...todas].sort((a, b) => a.localeCompare(b, "pt-BR", { numeric: true }));
+  }, [pneus]);
 
   return (
     <div className="space-y-6">
@@ -337,7 +345,7 @@ export default function EstoquePneusPage() {
             <div className="grid grid-cols-2 gap-3">
               <input value={form.marca} onChange={(e) => setForm({ ...form, marca: e.target.value })} placeholder="Marca" className="rounded-md border border-slate-300 p-2 text-sm" />
               <input value={form.medida} onChange={(e) => setForm({ ...form, medida: e.target.value })} list="medidas-pneu" placeholder="Medida" className="rounded-md border border-slate-300 p-2 text-sm" />
-              <datalist id="medidas-pneu">{[...MEDIDAS_RE.dianteiro, ...MEDIDAS_RE.traseiro].map((m) => <option key={m} value={m} />)}</datalist>
+              <datalist id="medidas-pneu">{medidasCadastradas.map((m) => <option key={m} value={m} />)}</datalist>
               <input type="number" min="0" step="0.01" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} placeholder="Valor (R$)" className="rounded-md border border-slate-300 p-2 text-sm" />
               <select value={form.recapagens} onChange={(e) => setForm({ ...form, recapagens: e.target.value })} className="rounded-md border border-slate-300 p-2 text-sm">
                 {[0, 1, 2, 3, 4, 5].map((n) => (
