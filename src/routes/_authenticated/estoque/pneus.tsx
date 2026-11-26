@@ -36,9 +36,9 @@ type Pneu = {
   recapagens?: number | null;
   foto_path?: string | null;
 };
-type Equipamento = { id: string; numero: string; identificacao?: string | null };
+type Equipamento = { id: string; numero: string; identificacao?: string | null; cl?: string | null };
 
-const FORM_VAZIO = { codigo: "", marca: "", medida: "", valor: "", recapagens: "0" };
+const FORM_VAZIO = { codigo: "", marca: "", medida: "", valor: "", recapagens: "0", situacao: "EM ESTOQUE" };
 
 export default function EstoquePneusPage() {
   const { isAdmin } = useAuth();
@@ -53,12 +53,14 @@ export default function EstoquePneusPage() {
   const [form, setForm] = useState(FORM_VAZIO);
   const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [busca, setBusca] = useState("");
+  const [clSel, setClSel] = useState("");
+  const [abaLista, setAbaLista] = useState<"todos" | "almox" | "reforma">("todos");
   const fotoInputRef = useRef<HTMLInputElement>(null);
 
   async function loadData() {
     const [{ data, error }, eqRes] = await Promise.all([
       supabase.from("estoque_pneus").select("*").order("codigo"),
-      supabase.from("equipamentos").select("id, numero, identificacao").order("numero"),
+      supabase.from("equipamentos").select("id, numero, identificacao, cl").order("numero"),
     ]);
     if (error) return toast.error("Não foi possível carregar os pneus.");
     const lista = (data || []) as Pneu[];
@@ -122,10 +124,10 @@ export default function EstoquePneusPage() {
     }
   }
 
-  async function retirar(destino: "EM ESTOQUE" | "AG. CONSERTO" | "DESCARTADO") {
+  async function retirar(destino: "EM ESTOQUE" | "AG. CONSERTO" | "EM REFORMA" | "DESCARTADO") {
     if (!pneuSel) return;
     if (destino === "DESCARTADO" && !confirm(`Descartar o pneu ${pneuSel.codigo}?`)) return;
-    if (await mover(pneuSel, { equipamento_id: null, posicao: null, status: destino }, destino === "EM ESTOQUE" ? "PNEU P/ ESTOQUE" : destino === "DESCARTADO" ? "PNEU DESCARTADO" : "PNEU AG. CONSERTO", `${pneuSel.codigo} retirado de ${equip?.numero ?? ""} (${posSel}) — ${destino}`)) {
+    if (await mover(pneuSel, { equipamento_id: null, posicao: null, status: destino }, destino === "EM ESTOQUE" ? "PNEU P/ ESTOQUE" : destino === "DESCARTADO" ? "PNEU DESCARTADO" : destino === "EM REFORMA" ? "PNEU P/ REFORMA" : "PNEU AG. CONSERTO", `${pneuSel.codigo} retirado de ${equip?.numero ?? ""} (${posSel}) — ${destino}`)) {
       toast.success("Pneu atualizado.");
       void loadData();
     }
@@ -154,8 +156,8 @@ export default function EstoquePneusPage() {
         medida: form.medida || null,
         valor: form.valor ? Number(form.valor) : null,
         recapagens: Number(form.recapagens || 0),
-        status: "EM ESTOQUE",
-        estado: "EM ESTOQUE",
+        status: form.situacao,
+        estado: form.situacao,
         foto_path,
       });
       if (error) throw error;
@@ -170,7 +172,11 @@ export default function EstoquePneusPage() {
   }
 
   const nomeEquip = (id?: string | null) => equipamentos.find((x) => x.id === id)?.numero ?? "—";
-  const lista = pneus.filter((p) => !busca || normalizarBusca(`${p.codigo} ${p.marca ?? ""} ${p.medida ?? ""}`).includes(normalizarBusca(busca)));
+  const emReforma = (p: Pneu) => p.status === "EM REFORMA";
+  const noAlmox = (p: Pneu) => !p.equipamento_id && (p.status ?? "EM ESTOQUE") === "EM ESTOQUE";
+  const cls = [...new Set(equipamentos.map((e) => e.cl?.trim()).filter((c): c is string => !!c))].sort((a, b) => a.localeCompare(b, "pt-BR", { numeric: true }));
+  const equipsFiltrados = clSel ? equipamentos.filter((e) => e.cl?.trim() === clSel) : equipamentos;
+  const lista = pneus.filter((p) => (abaLista === "todos" || (abaLista === "almox" ? noAlmox(p) : emReforma(p)))).filter((p) => !busca || normalizarBusca(`${p.codigo} ${p.marca ?? ""} ${p.medida ?? ""}`).includes(normalizarBusca(busca)));
   const medidasCadastradas = useMemo(() => {
     const todas = new Set<string>([...MEDIDAS_RE.dianteiro, ...MEDIDAS_RE.traseiro]);
     for (const p of pneus) {
@@ -185,6 +191,10 @@ export default function EstoquePneusPage() {
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <h2 className="text-lg font-black text-slate-900">Montagem por equipamento</h2>
+          <select value={clSel} onChange={(e) => { setClSel(e.target.value); setEquipId(""); setPosSel(null); setPendenteId(null); }} className="rounded-md border border-slate-300 p-2 text-sm">
+            <option value="">Todas as CL</option>
+            {cls.map((c) => <option key={c} value={c}>CL {c}</option>)}
+          </select>
           <select
             value={equipId}
             onChange={(e) => {
@@ -197,7 +207,7 @@ export default function EstoquePneusPage() {
             className="rounded-md border border-slate-300 p-2 text-sm"
           >
             <option value="">Selecione o equipamento</option>
-            {equipamentos.map((e) => {
+            {equipsFiltrados.map((e) => {
               const resumo = montagemPneus(e.numero, pneus.filter((p) => p.equipamento_id === e.id));
               return (
               <option key={e.id} value={e.id}>
@@ -270,6 +280,9 @@ export default function EstoquePneusPage() {
                     <button type="button" onClick={() => void retirar("AG. CONSERTO")} className="flex items-center justify-center gap-1 rounded-md border p-2 text-xs font-bold text-purple-700">
                       <Wrench className="h-4 w-4" /> Ag. conserto
                     </button>
+                    <button type="button" onClick={() => void retirar("EM REFORMA")} className="flex items-center justify-center gap-1 rounded-md border p-2 text-xs font-bold text-amber-700">
+                      <Wrench className="h-4 w-4" /> P/ reforma
+                    </button>
                     <button type="button" onClick={() => void retirar("DESCARTADO")} className="flex items-center justify-center gap-1 rounded-md border p-2 text-xs font-bold text-red-600">
                       <Trash2 className="h-4 w-4" /> Descartar
                     </button>
@@ -303,8 +316,13 @@ export default function EstoquePneusPage() {
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="mb-3 flex items-center justify-between gap-2">
-            <h2 className="text-lg font-black text-slate-900">Pneus ({pneus.length})</h2>
+            <h2 className="text-lg font-black text-slate-900">Pneus ({lista.length})</h2>
             <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar..." className="w-40 rounded-md border border-slate-300 p-2 text-sm" />
+          </div>
+          <div className="mb-3 flex flex-wrap gap-2">
+            {([["todos", `Todos (${pneus.length})`], ["almox", `Almoxarifado (${pneus.filter(noAlmox).length})`], ["reforma", `Em reforma (${pneus.filter(emReforma).length})`]] as const).map(([k, label]) => (
+              <Button key={k} type="button" size="sm" variant={abaLista === k ? "secondary" : "outline"} onClick={() => setAbaLista(k)}>{label}</Button>
+            ))}
           </div>
           <div className="space-y-2">
             {lista.map((p) => {
@@ -321,6 +339,9 @@ export default function EstoquePneusPage() {
                       {p.equipamento_id && ` · ${nomeEquip(p.equipamento_id)} (${p.posicao ?? "—"})`}
                     </p>
                   </div>
+                  {emReforma(p) && (
+                    <button type="button" onClick={() => void alterarPneu(p, { status: "EM ESTOQUE", equipamento_id: null, posicao: null, recapagens: (p.recapagens ?? 0) + 1 })} className="rounded border px-2 py-1 text-xs">Voltou da reforma</button>
+                  )}
                   {(p.status === "AG. CONSERTO" || (!p.posicao && (p.equipamento_id || ((p.status ?? "EM ESTOQUE") !== "EM ESTOQUE" && p.status !== "DESCARTADO")))) && (
                     <button type="button" onClick={() => void alterarPneu(p, { status: "EM ESTOQUE", equipamento_id: null, posicao: null })} className="rounded border px-2 py-1 text-xs">Voltou p/ estoque</button>
                   )}
@@ -351,6 +372,10 @@ export default function EstoquePneusPage() {
                 {[0, 1, 2, 3, 4, 5].map((n) => (
                   <option key={n} value={n}>{n === 0 ? "Novo" : `${n} recapagem(ns)`}</option>
                 ))}
+              </select>
+              <select value={form.situacao} onChange={(e) => setForm({ ...form, situacao: e.target.value })} className="col-span-2 rounded-md border border-slate-300 p-2 text-sm">
+                <option value="EM ESTOQUE">No almoxarifado (não usado)</option>
+                <option value="EM REFORMA">Em reforma</option>
               </select>
             </div>
             <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-slate-300 p-2 text-sm text-slate-600">
