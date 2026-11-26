@@ -50,7 +50,18 @@ export type TipoPneus = "re" | "caminhao" | "carro";
  * siglas VC/HILUX = carros (4 pneus + estepe);
  * os demais são caminhões (3 eixos + estepe).
  */
-export function layoutPneus(numero?: string | null) {
+export type TipoChassi = TipoPneus | "sem_pneus";
+export const TIPOS_CHASSI: { value: TipoChassi; label: string }[] = [
+  { value: "re", label: "Retroescavadeira (4 pneus)" },
+  { value: "caminhao", label: "Caminhão (10 + estepe)" },
+  { value: "carro", label: "Carro (4 + estepe)" },
+  { value: "sem_pneus", label: "Sem pneus" },
+];
+
+export function layoutPneus(numero?: string | null, tipo?: string | null) {
+  if (tipo === "re") return { tipo: "re" as TipoPneus, eixos: EIXOS_RE, estepe: false, total: 4 };
+  if (tipo === "carro") return { tipo: "carro" as TipoPneus, eixos: EIXOS_CARRO, estepe: true, total: 5 };
+  if (tipo === "caminhao") return { tipo: "caminhao" as TipoPneus, eixos: POSICOES_EIXOS, estepe: true, total: 11 };
   const n = numero ?? "";
   if (/^\s*RE\b|^\s*RE[-\s]?\d/i.test(n)) {
     return { tipo: "re" as TipoPneus, eixos: EIXOS_RE, estepe: false, total: 4 };
@@ -62,8 +73,8 @@ export function layoutPneus(numero?: string | null) {
 }
 
 /** Keep ambiguous legacy positions accessible without guessing their physical wheel. */
-export function montagemPneus<T extends { posicao?: string | null }>(numero: string | null | undefined, pneus: T[]) {
-  const layout = layoutPneus(numero);
+export function montagemPneus<T extends { posicao?: string | null }>(numero: string | null | undefined, pneus: T[], tipo?: string | null) {
+  const layout = layoutPneus(numero, tipo);
   const posicoes = new Set(layout.eixos.flatMap((e) => [...e.esquerda, ...e.direita]));
   if (layout.estepe) posicoes.add("ESTEPE");
   const montados = new Map<string, T>();

@@ -10,7 +10,7 @@ import { Retroescavadeira3D } from "@/components/pneus/Retroescavadeira3D";
 import { CaminhaoPlanta } from "@/components/pneus/CaminhaoPlanta";
 import { CarroChassi } from "@/components/pneus/CarroChassi";
 import { Button } from "@/components/ui/button";
-import { layoutPneus, montagemPneus, podeAplicarPneu, corRecapagem, LEGENDA_RECAPAGEM, MEDIDAS_RE } from "@/lib/pneus";
+import { layoutPneus, montagemPneus, podeAplicarPneu, corRecapagem, LEGENDA_RECAPAGEM, MEDIDAS_RE, TIPOS_CHASSI } from "@/lib/pneus";
 
 export const Route = createFileRoute("/_authenticated/estoque/pneus")({
   head: () => ({ meta: [
@@ -36,7 +36,7 @@ type Pneu = {
   recapagens?: number | null;
   foto_path?: string | null;
 };
-type Equipamento = { id: string; numero: string; identificacao?: string | null; cl?: string | null };
+type Equipamento = { id: string; numero: string; identificacao?: string | null; cl?: string | null; tipo_chassi?: string | null };
 
 const FORM_VAZIO = { codigo: "", marca: "", medida: "", valor: "", recapagens: "0", situacao: "EM ESTOQUE" };
 
@@ -54,13 +54,15 @@ export default function EstoquePneusPage() {
   const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [busca, setBusca] = useState("");
   const [clSel, setClSel] = useState("");
+  const [editId, setEditId] = useState<string | null>(null);
+  const [mostrarSemPneus, setMostrarSemPneus] = useState(false);
   const [abaLista, setAbaLista] = useState<"todos" | "almox" | "reforma">("todos");
   const fotoInputRef = useRef<HTMLInputElement>(null);
 
   async function loadData() {
     const [{ data, error }, eqRes] = await Promise.all([
       supabase.from("estoque_pneus").select("*").order("codigo"),
-      supabase.from("equipamentos").select("id, numero, identificacao, cl").order("numero"),
+      supabase.from("equipamentos").select("id, numero, identificacao, cl, tipo_chassi").order("numero"),
     ]);
     if (error) return toast.error("Não foi possível carregar os pneus.");
     const lista = (data || []) as Pneu[];
@@ -74,11 +76,32 @@ export default function EstoquePneusPage() {
 
   const equip = equipamentos.find((e) => e.id === equipId);
   const vinculados = useMemo(() => pneus.filter((p) => p.equipamento_id === equipId), [pneus, equipId]);
-  const montagem = useMemo(() => montagemPneus(equip?.numero, vinculados), [equip?.numero, vinculados]);
+  const montagem = useMemo(() => montagemPneus(equip?.numero, vinculados, equip?.tipo_chassi), [equip?.numero, equip?.tipo_chassi, vinculados]);
   const { montados, pendentes } = montagem;
   const emEstoque = pneus.filter((p) => !p.equipamento_id && (p.status ?? "EM ESTOQUE") === "EM ESTOQUE");
   const pneuSel = pendenteId ? pendentes.find((p) => p.id === pendenteId) : posSel ? montados.get(posSel) : undefined;
-  const layout = layoutPneus(equip?.numero);
+  const layout = layoutPneus(equip?.numero, equip?.tipo_chassi);
+
+  async function salvarChassi(tipo: string) {
+    if (!equip) return;
+    const { error } = await supabase.from("equipamentos").update({ tipo_chassi: tipo || null }).eq("id", equip.id);
+    if (error) return toast.error("Não foi possível salvar o tipo de chassi.");
+    setEquipamentos((l) => l.map((e) => (e.id === equip.id ? { ...e, tipo_chassi: tipo || null } : e)));
+    setPosSel(null); setPendenteId(null);
+    toast.success("Tipo de chassi salvo.");
+  }
+
+  function editarPneu(p: Pneu) {
+    setEditId(p.id);
+    setForm({ codigo: p.codigo, marca: p.marca ?? "", medida: p.medida ?? "", valor: p.valor != null ? String(p.valor) : "", recapagens: String(p.recapagens ?? 0), situacao: p.status === "EM REFORMA" ? "EM REFORMA" : "EM ESTOQUE" });
+    setFotoFile(null);
+    if (fotoInputRef.current) fotoInputRef.current.value = "";
+    document.getElementById("form-pneu")?.scrollIntoView({ behavior: "smooth" });
+  }
+  function cancelarEdicao() {
+    setEditId(null); setForm(FORM_VAZIO); setFotoFile(null);
+    if (fotoInputRef.current) fotoInputRef.current.value = "";
+  }
 
   async function mover(p: Pneu, patch: Partial<Pneu>, tipo: string, obs: string) {
     const { error } = await supabase.from("estoque_pneus").update(patch).eq("id", p.id);
@@ -150,6 +173,26 @@ export default function EstoquePneusPage() {
     ev.preventDefault();
     try {
       const foto_path = fotoFile ? await uploadEstoqueFoto("pneus", fotoFile) : null;
+      if (editId) {
+        const atual = pneus.find((x) => x.id === editId);
+        const patch: Record<string, unknown> = {
+          codigo: form.codigo.trim().toUpperCase(),
+          marca: form.marca || null,
+          medida: form.medida || null,
+          valor: form.valor ? Number(form.valor) : null,
+          recapagens: Number(form.recapagens || 0),
+        };
+        if (foto_path) patch.foto_path = foto_path;
+        if (atual && !atual.equipamento_id && (atual.status ?? "EM ESTOQUE") !== "DESCARTADO" && atual.status !== "AG. CONSERTO") {
+          patch.status = form.situacao; patch.estado = form.situacao;
+        }
+        const { error } = await supabase.from("estoque_pneus").update(patch).eq("id", editId);
+        if (error) throw error;
+        cancelarEdicao();
+        toast.success("Pneu atualizado.");
+        void loadData();
+        return;
+      }
       const { error } = await supabase.from("estoque_pneus").insert({
         codigo: form.codigo.trim().toUpperCase(),
         marca: form.marca || null,
@@ -175,7 +218,7 @@ export default function EstoquePneusPage() {
   const emReforma = (p: Pneu) => p.status === "EM REFORMA";
   const noAlmox = (p: Pneu) => !p.equipamento_id && (p.status ?? "EM ESTOQUE") === "EM ESTOQUE";
   const cls = [...new Set(equipamentos.map((e) => e.cl?.trim()).filter((c): c is string => !!c))].sort((a, b) => a.localeCompare(b, "pt-BR", { numeric: true }));
-  const equipsFiltrados = clSel ? equipamentos.filter((e) => e.cl?.trim() === clSel) : equipamentos;
+  const equipsFiltrados = (clSel ? equipamentos.filter((e) => e.cl?.trim() === clSel) : equipamentos).filter((e) => mostrarSemPneus || e.tipo_chassi !== "sem_pneus" || e.id === equipId);
   const lista = pneus.filter((p) => (abaLista === "todos" || (abaLista === "almox" ? noAlmox(p) : emReforma(p)))).filter((p) => !busca || normalizarBusca(`${p.codigo} ${p.marca ?? ""} ${p.medida ?? ""}`).includes(normalizarBusca(busca)));
   const medidasCadastradas = useMemo(() => {
     const todas = new Set<string>([...MEDIDAS_RE.dianteiro, ...MEDIDAS_RE.traseiro]);
@@ -208,7 +251,7 @@ export default function EstoquePneusPage() {
           >
             <option value="">Selecione o equipamento</option>
             {equipsFiltrados.map((e) => {
-              const resumo = montagemPneus(e.numero, pneus.filter((p) => p.equipamento_id === e.id));
+              const resumo = montagemPneus(e.numero, pneus.filter((p) => p.equipamento_id === e.id), e.tipo_chassi);
               return (
               <option key={e.id} value={e.id}>
                 {e.numero} {e.identificacao ? `— ${e.identificacao}` : ""} ({resumo.montados.size}/{resumo.total} pneus{resumo.pendentes.length > 0 ? ` · ${resumo.pendentes.length} sem posição no desenho` : ""})
@@ -216,9 +259,21 @@ export default function EstoquePneusPage() {
               );
             })}
           </select>
+          {equip && (
+            <select value={equip.tipo_chassi ?? ""} onChange={(e) => void salvarChassi(e.target.value)} aria-label="Tipo de chassi" className="rounded-md border border-slate-300 p-2 text-sm">
+              <option value="">Chassi: automático pela sigla</option>
+              {TIPOS_CHASSI.map((t) => <option key={t.value} value={t.value}>Chassi: {t.label}</option>)}
+            </select>
+          )}
+          <label className="flex items-center gap-1 text-xs text-slate-600">
+            <input type="checkbox" checked={mostrarSemPneus} onChange={(e) => setMostrarSemPneus(e.target.checked)} />
+            Mostrar equipamentos sem pneus
+          </label>
         </div>
 
-        {equipId ? (
+        {equipId && equip?.tipo_chassi === "sem_pneus" ? (
+          <p className="rounded-lg bg-slate-100 p-4 text-sm text-slate-600">Este equipamento está marcado como <b>sem pneus</b>. Troque o tipo de chassi acima para montar pneus.</p>
+        ) : equipId ? (
           <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
             <div className="overflow-x-auto rounded-lg bg-slate-100 p-4">
               {layout.tipo === "re" ? (
@@ -345,6 +400,7 @@ export default function EstoquePneusPage() {
                   {(p.status === "AG. CONSERTO" || (!p.posicao && (p.equipamento_id || ((p.status ?? "EM ESTOQUE") !== "EM ESTOQUE" && p.status !== "DESCARTADO")))) && (
                     <button type="button" onClick={() => void alterarPneu(p, { status: "EM ESTOQUE", equipamento_id: null, posicao: null })} className="rounded border px-2 py-1 text-xs">Voltou p/ estoque</button>
                   )}
+                  <button type="button" onClick={() => editarPneu(p)} className="rounded border px-2 py-1 text-xs">Editar</button>
                   {isAdmin && (
                     <button type="button" aria-label="Excluir pneu" onClick={() => void excluirPneu(p)} className="text-red-600">
                       <Trash2 className="h-4 w-4" />
@@ -356,10 +412,10 @@ export default function EstoquePneusPage() {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <form id="form-pneu" onSubmit={handleSubmit} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="mb-4 flex items-center gap-2">
             <Gauge className="h-5 w-5 text-sky-700" />
-            <h2 className="text-lg font-black text-slate-900">Cadastrar pneu</h2>
+            <h2 className="text-lg font-black text-slate-900">{editId ? "Editar pneu" : "Cadastrar pneu"}</h2>
           </div>
           <div className="grid gap-3">
             <input value={form.codigo} onChange={(e) => setForm({ ...form, codigo: e.target.value })} placeholder="Código (ex.: PNEU48)" required className="rounded-md border border-slate-300 p-2 text-sm" />
@@ -384,8 +440,9 @@ export default function EstoquePneusPage() {
               <input ref={fotoInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => setFotoFile(e.target.files?.[0] ?? null)} />
             </label>
             <button type="submit" className="rounded-md bg-sky-600 px-4 py-2 text-sm font-bold text-white hover:bg-sky-700">
-              <Plus className="mr-2 inline h-4 w-4" /> Salvar pneu
+              <Plus className="mr-2 inline h-4 w-4" /> {editId ? "Salvar alterações" : "Salvar pneu"}
             </button>
+            {editId && <button type="button" onClick={cancelarEdicao} className="rounded-md border px-4 py-2 text-sm">Cancelar edição</button>}
           </div>
         </form>
       </div>

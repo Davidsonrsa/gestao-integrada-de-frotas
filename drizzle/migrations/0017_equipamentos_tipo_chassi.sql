@@ -1,0 +1,1 @@
+ALTER TABLE public.equipamentos ADD COLUMN IF NOT EXISTS tipo_chassi text CHECK (tipo_chassi IN ('re','caminhao','carro','sem_pneus'));

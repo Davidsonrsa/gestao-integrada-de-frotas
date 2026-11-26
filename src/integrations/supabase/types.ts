@@ -666,6 +666,7 @@ export type Database = {
           status: string | null
           tandem_oleo: string | null
           telefone: string | null
+          tipo_chassi: string | null
           transmissao_oleo: string | null
           u_revisao: number | null
           updated_at: string
@@ -717,6 +718,7 @@ export type Database = {
           status?: string | null
           tandem_oleo?: string | null
           telefone?: string | null
+          tipo_chassi?: string | null
           transmissao_oleo?: string | null
           u_revisao?: number | null
           updated_at?: string
@@ -768,6 +770,7 @@ export type Database = {
           status?: string | null
           tandem_oleo?: string | null
           telefone?: string | null
+          tipo_chassi?: string | null
           transmissao_oleo?: string | null
           u_revisao?: number | null
           updated_at?: string
