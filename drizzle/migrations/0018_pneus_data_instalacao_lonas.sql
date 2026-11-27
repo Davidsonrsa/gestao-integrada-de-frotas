@@ -1,0 +1,1 @@
+ALTER TABLE public.estoque_pneus ADD COLUMN IF NOT EXISTS data_instalacao date, ADD COLUMN IF NOT EXISTS lonas integer;

@@ -1108,12 +1108,14 @@ export type Database = {
           codigo_serie: string | null
           created_at: string
           data_compra: string | null
+          data_instalacao: string | null
           dot: string | null
           equipamento_id: string | null
           estado: string | null
           fornecedor_id: string | null
           foto_path: string | null
           id: string
+          lonas: number | null
           marca: string | null
           medida: string | null
           modelo: string | null
@@ -1130,12 +1132,14 @@ export type Database = {
           codigo_serie?: string | null
           created_at?: string
           data_compra?: string | null
+          data_instalacao?: string | null
           dot?: string | null
           equipamento_id?: string | null
           estado?: string | null
           fornecedor_id?: string | null
           foto_path?: string | null
           id?: string
+          lonas?: number | null
           marca?: string | null
           medida?: string | null
           modelo?: string | null
@@ -1152,12 +1156,14 @@ export type Database = {
           codigo_serie?: string | null
           created_at?: string
           data_compra?: string | null
+          data_instalacao?: string | null
           dot?: string | null
           equipamento_id?: string | null
           estado?: string | null
           fornecedor_id?: string | null
           foto_path?: string | null
           id?: string
+          lonas?: number | null
           marca?: string | null
           medida?: string | null
           modelo?: string | null

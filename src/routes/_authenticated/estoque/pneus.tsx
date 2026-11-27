@@ -34,11 +34,13 @@ type Pneu = {
   equipamento_id?: string | null;
   posicao?: string | null;
   recapagens?: number | null;
+  data_instalacao?: string | null;
+  lonas?: number | null;
   foto_path?: string | null;
 };
 type Equipamento = { id: string; numero: string; identificacao?: string | null; cl?: string | null; tipo_chassi?: string | null };
 
-const FORM_VAZIO = { codigo: "", marca: "", medida: "", valor: "", recapagens: "0", situacao: "EM ESTOQUE" };
+const FORM_VAZIO = { codigo: "", marca: "", medida: "", valor: "", recapagens: "0", situacao: "EM ESTOQUE", data_instalacao: "", lonas: "" };
 
 export default function EstoquePneusPage() {
   const { isAdmin } = useAuth();
@@ -93,7 +95,7 @@ export default function EstoquePneusPage() {
 
   function editarPneu(p: Pneu) {
     setEditId(p.id);
-    setForm({ codigo: p.codigo, marca: p.marca ?? "", medida: p.medida ?? "", valor: p.valor != null ? String(p.valor) : "", recapagens: String(p.recapagens ?? 0), situacao: p.status === "EM REFORMA" ? "EM REFORMA" : "EM ESTOQUE" });
+    setForm({ codigo: p.codigo, marca: p.marca ?? "", medida: p.medida ?? "", valor: p.valor != null ? String(p.valor) : "", recapagens: String(p.recapagens ?? 0), situacao: p.status === "EM REFORMA" ? "EM REFORMA" : "EM ESTOQUE", data_instalacao: p.data_instalacao ?? "", lonas: p.lonas != null ? String(p.lonas) : "" });
     setFotoFile(null);
     if (fotoInputRef.current) fotoInputRef.current.value = "";
     document.getElementById("form-pneu")?.scrollIntoView({ behavior: "smooth" });
@@ -141,7 +143,7 @@ export default function EstoquePneusPage() {
     if (!emEstoque.some((item) => item.id === p.id) || !podeAplicarPneu(equip.numero, vinculados, posSel)) {
       return toast.error("Posição ocupada ou limite de pneus atingido. Reposicione ou retire os pneus vinculados antes de aplicar outro.");
     }
-    if (await mover(p, { equipamento_id: equipId, posicao: posSel, status: "INSTALADO" }, "APLICAR PNEU", `${p.codigo} aplicado em ${equip.numero} (${posSel})`)) {
+    if (await mover(p, { equipamento_id: equipId, posicao: posSel, status: "INSTALADO", data_instalacao: new Date().toISOString().slice(0, 10) }, "APLICAR PNEU", `${p.codigo} aplicado em ${equip.numero} (${posSel})`)) {
       toast.success("Pneu aplicado.");
       void loadData();
     }
@@ -181,6 +183,8 @@ export default function EstoquePneusPage() {
           medida: form.medida || null,
           valor: form.valor ? Number(form.valor) : null,
           recapagens: Number(form.recapagens || 0),
+          data_instalacao: form.data_instalacao || null,
+          lonas: form.lonas ? Number(form.lonas) : null,
         };
         if (foto_path) patch.foto_path = foto_path;
         if (atual && !atual.equipamento_id && (atual.status ?? "EM ESTOQUE") !== "DESCARTADO" && atual.status !== "AG. CONSERTO") {
@@ -199,6 +203,8 @@ export default function EstoquePneusPage() {
         medida: form.medida || null,
         valor: form.valor ? Number(form.valor) : null,
         recapagens: Number(form.recapagens || 0),
+        data_instalacao: form.data_instalacao || null,
+        lonas: form.lonas ? Number(form.lonas) : null,
         status: form.situacao,
         estado: form.situacao,
         foto_path,
@@ -325,6 +331,11 @@ export default function EstoquePneusPage() {
                     <b>{pneuSel.recapagens ?? 0}</b>
                     <button type="button" className="rounded border px-2" onClick={() => void alterarPneu(pneuSel, { recapagens: (pneuSel.recapagens ?? 0) + 1 })}>+</button>
                   </div>
+                  <label className="flex items-center gap-2 text-xs">
+                    Instalado em:
+                    <input type="date" defaultValue={pneuSel.data_instalacao ?? ""} key={pneuSel.id + (pneuSel.data_instalacao ?? "")} onBlur={(e) => { if (e.target.value !== (pneuSel.data_instalacao ?? "")) void alterarPneu(pneuSel, { data_instalacao: e.target.value || null }); }} className="rounded border border-slate-300 px-1 py-0.5" />
+                  </label>
+                  <p className="text-xs">Lonas: <b>{pneuSel.lonas ?? "—"}</b></p>
                   <div className="grid grid-cols-2 gap-2 pt-2">
                     <button type="button" onClick={() => setRodizio(!rodizio)} className={`flex items-center justify-center gap-1 rounded-md border p-2 text-xs font-bold ${rodizio ? "bg-sky-100" : ""}`}>
                       <RotateCw className="h-4 w-4" /> {pendenteId ? "Reposicionar" : "Rodízio"}
@@ -390,7 +401,7 @@ export default function EstoquePneusPage() {
                   <div className="flex-1">
                     <p className="font-bold">{p.codigo}</p>
                     <p className="text-xs text-slate-500">
-                      {[p.marca, p.medida].filter(Boolean).join(" · ") || "—"} · {p.recapagens ?? 0} recap. · {p.status || "EM ESTOQUE"}
+                      {[p.marca, p.medida].filter(Boolean).join(" · ") || "—"} · {p.recapagens ?? 0} recap.{p.lonas ? ` · ${p.lonas} lonas` : ""}{p.data_instalacao ? ` · inst. ${p.data_instalacao.split("-").reverse().join("/")}` : ""} · {p.status || "EM ESTOQUE"}
                       {p.equipamento_id && ` · ${nomeEquip(p.equipamento_id)} (${p.posicao ?? "—"})`}
                     </p>
                   </div>
@@ -429,6 +440,10 @@ export default function EstoquePneusPage() {
                   <option key={n} value={n}>{n === 0 ? "Novo" : `${n} recapagem(ns)`}</option>
                 ))}
               </select>
+              <input type="number" min="1" step="1" value={form.lonas} onChange={(e) => setForm({ ...form, lonas: e.target.value })} placeholder="Qtd. de lonas" className="rounded-md border border-slate-300 p-2 text-sm" />
+              <label className="flex flex-col text-xs text-slate-600">Data de instalação
+                <input type="date" value={form.data_instalacao} onChange={(e) => setForm({ ...form, data_instalacao: e.target.value })} className="rounded-md border border-slate-300 p-2 text-sm" />
+              </label>
               <select value={form.situacao} onChange={(e) => setForm({ ...form, situacao: e.target.value })} className="col-span-2 rounded-md border border-slate-300 p-2 text-sm">
                 <option value="EM ESTOQUE">No almoxarifado (não usado)</option>
                 <option value="EM REFORMA">Em reforma</option>
