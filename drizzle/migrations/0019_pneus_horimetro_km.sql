@@ -1,0 +1,1 @@
+ALTER TABLE public.estoque_pneus ADD COLUMN IF NOT EXISTS horimetro_km numeric, ADD COLUMN IF NOT EXISTS horimetro_km_tipo text;

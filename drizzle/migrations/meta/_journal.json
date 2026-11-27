@@ -134,6 +134,13 @@
       "when": 1795778501882,
       "tag": "0018_pneus_data_instalacao_lonas",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1795778560379,
+      "tag": "0019_pneus_horimetro_km",
+      "breakpoints": true
     }
   ]
 }

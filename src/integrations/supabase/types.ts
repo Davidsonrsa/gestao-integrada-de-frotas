@@ -1114,6 +1114,8 @@ export type Database = {
           estado: string | null
           fornecedor_id: string | null
           foto_path: string | null
+          horimetro_km: number | null
+          horimetro_km_tipo: string | null
           id: string
           lonas: number | null
           marca: string | null
@@ -1138,6 +1140,8 @@ export type Database = {
           estado?: string | null
           fornecedor_id?: string | null
           foto_path?: string | null
+          horimetro_km?: number | null
+          horimetro_km_tipo?: string | null
           id?: string
           lonas?: number | null
           marca?: string | null
@@ -1162,6 +1166,8 @@ export type Database = {
           estado?: string | null
           fornecedor_id?: string | null
           foto_path?: string | null
+          horimetro_km?: number | null
+          horimetro_km_tipo?: string | null
           id?: string
           lonas?: number | null
           marca?: string | null
